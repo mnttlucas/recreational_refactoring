@@ -1,0 +1,10 @@
+ADDI $2,$0,0
+ADDI $3,$0,5
+ADDI $4,$0,3
+ADDI $5,$0,1
+BEQ $2,$3,5
+MULT $4,$5
+MFLO $5
+ADDI $2,$2,1
+JAL 4
+NOP

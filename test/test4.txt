@@ -1,0 +1,3 @@
+ADDI $2   ,   $0   ,   2 #commentaire ADD 2 dans 2
+            ADDI $3,$0,3
+SUB $4,$3,$2
