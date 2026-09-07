@@ -158,5 +158,5 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 	}
 
 	if(cfg->verbose)
-		printf("%s\n", instr.toString);
+		printf("%s", instr.toString);
 }
