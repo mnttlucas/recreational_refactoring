@@ -57,24 +57,19 @@ void remove_sign(char *chaine)
 
 void bin_twos_complement(int start, int end, int *arr)
 {
-	int i;
-	for(i = start; i <= end; i++)
+	int found_one = 0;
+
+	if(start < 0 || start > end)
+		return;
+
+	for(int i = end; i >= start; i--)
 	{
-		if(arr[i] == 0){
-			arr[i] = 1;
-		}
-		else{
-			arr[i] = 0;
-		}
+		if(found_one)
+			arr[i] ^= 1;
+		else if(arr[i] == 1)
+			found_one = 1;
 	}
-	i = end;
-	while(arr[i] == 1){
-		arr[i--] = 0;
-	}
-	arr[i] = 1;
 }
-
-
 
 void cpu_dump(CPU *cpu, config *cfg){
 	int memory;
