@@ -38,23 +38,6 @@ void bin_arr_to_hex_arr(int *bin_arr, char *hex_arr)
 	hex_arr[8] = '\0';
 }
 
-void bin_zero(int *arr)
-{
-	for(int i = 0; i < 32; i++)
-		arr[i] = 0;
-}
-
-void remove_sign(char *chaine)
-{
-	int i = 0;
-	while(chaine[i + 1] != '\0')
-	{
-		chaine[i] = chaine[i + 1];
-		i++;
-	}
-	chaine[i] = '\0';
-}
-
 void bin_twos_complement(int start, int end, int *arr)
 {
 	int found_one = 0;
@@ -71,35 +54,40 @@ void bin_twos_complement(int start, int end, int *arr)
 	}
 }
 
-void cpu_dump(CPU *cpu, config *cfg){
-	int memory;
-	long value;
-	char carHex[4] = {'0', '4', '8', 'C'}, space[2];
-	printf("\033[2J\033[H");
-	printf("-------------------- Registers' status -------------------\n");
-	for(int i = 0; i < 8; i++){
-		for(int j = 0; j < 4; j++){
-			value = register_read(cpu, 4 * i + j);
-			printf("$%s%d : %-10ld ", 4 * i + j <= 9 ? "0" : "", 4 * i + j, value);
-		}
+void bin_zero(int *arr)
+{
+	for(int i = 0; i < 32; i++)
+		arr[i] = 0;
+}
+
+void cpu_dump(CPU *cpu, config *cfg)
+{
+	char hex_char[4] = {'0', '4', '8', 'C'}, wait[2];
+
+	printf("\033[2J\033[H\n-------------------- Registers' status -------------------\n");
+	for(int i = 0; i < 8; i++)
+	{
+		for(int j = 0; j < 4; j++)
+			printf("$%s%d : %-10ld ", 4 * i + j <= 9 ? "0" : "", 4 * i + j, register_read(cpu, 4 * i + j));
 		printf("\n");
 	}
 	printf("                 HI  : %-10ld LO  : %-10ld\n", register_read(cpu, REG_HI), register_read(cpu, REG_LO));
-	printf("\n");
-	printf("------------------------------------ Memory status -----------------------------------\n");
-	for(int i = 0; i < 5; i++){
-		for(int j = 0; j < 4; j++){
-			memory = memory_read(cpu, 4 * i + j);
-			printf("@0000 00%d%c : %-10d ", i, carHex[j], memory);
-		}
+
+	printf("\n------------------------------------ Memory status -----------------------------------\n");
+	for(int i = 0; i < 5; i++)
+	{
+		for(int j = 0; j < 4; j++)
+			printf("@0000 00%d%c : %-10d ", i, hex_char[j], memory_read(cpu, 4 * i + j));
 		printf("\n");
 	}
 	printf("\n");
+
 	if(cfg->step)
-		fgets(space, sizeof(space), stdin);
+		fgets(wait, sizeof(wait), stdin);
 }
 
-void long_to_bin_arr(int start, int end, long value, int *arr){
+void long_to_bin_arr(int start, int end, long value, int *arr)
+{
 	long bin = 1;
 
 	for(int i = start; i < end; i++)
@@ -117,8 +105,8 @@ void long_to_bin_arr(int start, int end, long value, int *arr){
 
 int register_string_to_int(char *reg)
 {
-	size_t reg_length = strlen(reg);
 	int reg_int, reg_is_only_numbers = 1;
+	size_t reg_length = strlen(reg);
 
 	for(size_t i = 0; i < reg_length; i++)
 	{
@@ -163,4 +151,17 @@ int register_string_to_int(char *reg)
 	}
 
 	return(reg_int);
+}
+
+void remove_sign(char *str)
+{
+	int i = 0;
+
+	while(str[i + 1] != '\0')
+	{
+		str[i] = str[i + 1];
+		i++;
+	}
+
+	str[i] = '\0';
 }
