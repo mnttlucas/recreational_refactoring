@@ -8,8 +8,7 @@
 
 void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 {
-	long d, res, resHI, resLO, mem, nb;
-	int i;
+	long address, res, res_HI, res_LO, shift_amount;
 
 	switch(instr.opcode)
 	{
@@ -55,10 +54,10 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 		case DIV :
 			if(register_read(cpu, instr.rt) != 0)
 			{
-				resHI = register_read(cpu, instr.rs) / register_read(cpu, instr.rt);
-				resLO = register_read(cpu, instr.rs) % register_read(cpu, instr.rt);
-				register_write(cpu, REG_HI, resHI);
-				register_write(cpu, REG_LO, resLO);
+				res_HI = register_read(cpu, instr.rs) / register_read(cpu, instr.rt);
+				res_LO = register_read(cpu, instr.rs) % register_read(cpu, instr.rt);
+				register_write(cpu, REG_HI, res_HI);
+				register_write(cpu, REG_LO, res_LO);
 			}
 			register_write(cpu, REG_PC, register_read(cpu, REG_PC) + 1);
 			break;
@@ -78,8 +77,8 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 			register_write(cpu, REG_PC, register_read(cpu, REG_PC) + 1);
 			break;
 		case LW :
-			mem = register_read(cpu, instr.base) + instr.offset;
-			res = memory_read(cpu, (int) mem);
+			address = register_read(cpu, instr.base) + instr.offset;
+			res = memory_read(cpu, (int) address);
 			register_write(cpu, instr.rt, res);
 			register_write(cpu, REG_PC, register_read(cpu, REG_PC) + 1);
 			break;
@@ -94,10 +93,10 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 			register_write(cpu, REG_PC, register_read(cpu, REG_PC) + 1);
 			break;
 		case MULT :
-			resLO = (register_read(cpu, instr.rs) * register_read(cpu, instr.rt)) & 65535;
-			resHI = register_read(cpu, instr.rs) * register_read(cpu, instr.rt) - resLO;
-			register_write(cpu, REG_HI, resHI);
-			register_write(cpu, REG_LO, resLO);
+			res_LO = (register_read(cpu, instr.rs) * register_read(cpu, instr.rt)) & 65535;
+			res_HI = register_read(cpu, instr.rs) * register_read(cpu, instr.rt) - res_LO;
+			register_write(cpu, REG_HI, res_HI);
+			register_write(cpu, REG_LO, res_LO);
 			register_write(cpu, REG_PC, register_read(cpu, REG_PC) + 1);
 			break;
 		case NOP :
@@ -109,16 +108,16 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 			register_write(cpu, REG_PC, register_read(cpu, REG_PC) + 1);
 			break;
 		case ROTR :
-			d = register_read(cpu, instr.sa);
+			shift_amount = register_read(cpu, instr.sa);
 			res = register_read(cpu, instr.rt);
-			res = res >> d | res << (32 - d);
+			res = res >> shift_amount | res << (32 - shift_amount);
 			register_write(cpu, instr.rd, res);
 			register_write(cpu, REG_PC, register_read(cpu, REG_PC) + 1);
 			break;
 		case SLL :
-			nb = register_read(cpu, instr.sa);
+			shift_amount = register_read(cpu, instr.sa);
 			res = register_read(cpu, instr.rt);
-			for(i = 0; i < nb; i++)
+			for(int i = 0; i < shift_amount; i++)
 				res = (res * 2) & 8589934591;
 			register_write(cpu, instr.rd, res);
 			register_write(cpu, REG_PC, register_read(cpu, REG_PC) + 1);
@@ -131,9 +130,9 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 			register_write(cpu, REG_PC, register_read(cpu, REG_PC) + 1);
 			break;
 		case SRL :
-			nb = register_read(cpu, instr.sa);
+			shift_amount = register_read(cpu, instr.sa);
 			res = register_read(cpu, instr.rt);
-			for(i = 0; i < nb; i++)
+			for(int i = 0; i < shift_amount; i++)
 				res /= 2;
 			register_write(cpu, instr.rd, res);
 			register_write(cpu, REG_PC, register_read(cpu, REG_PC) + 1);
@@ -145,8 +144,8 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 			break;
 		case SW :
 			res = register_read(cpu, instr.rt);
-			mem = register_read(cpu, instr.base) + instr.offset;
-			memory_write(cpu, (int) mem, (int) res);
+			address = register_read(cpu, instr.base) + instr.offset;
+			memory_write(cpu, (int) address, (int) res);
 			register_write(cpu, REG_PC, register_read(cpu, REG_PC) + 1);
 			break;
 		case XOR :
