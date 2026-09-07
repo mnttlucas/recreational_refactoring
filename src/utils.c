@@ -148,8 +148,8 @@ void cpu_dump(CPU *cpu, config *cfg){
 	int i, j, m;
 	long v;
 	char carHex[4] = {'0', '4', '8', 'C'}, space[2];
-	printf("\n");
-	printf("------------ Affichage des états des registres -----------\n");
+	printf("\033[2J\033[H");
+	printf("-------------------- Registers' status -------------------\n");
 	for(i = 0; i < 8; i++){
 		for(j = 0; j < 4; j++){
 			v = register_read(cpu, 4 * i + j);
@@ -159,7 +159,7 @@ void cpu_dump(CPU *cpu, config *cfg){
 	}
 	printf("                 HI  : %-10ld LO  : %-10ld\n", register_read(cpu, REG_HI), register_read(cpu, REG_LO));
 	printf("\n");
-	printf("-------------------------- Affichage des états de la mémoire -------------------------\n");
+	printf("------------------------------------ Memory status -----------------------------------\n");
 	for(i = 0; i < 5; i++){
 		for(j = 0; j < 4; j++){
 			m = memory_read(cpu, 4 * i + j);

@@ -1,7 +1,8 @@
-#ifndef INSTRUCTION_H
-#define INSTRUCTION_H
+#ifndef	INSTRUCTION_H
+#define	INSTRUCTION_H
 
-enum OPCODE {
+enum OPCODE
+{
 	ADD,
 	ADDI,
 	AND,
@@ -31,9 +32,9 @@ enum OPCODE {
 
 typedef struct instruction
 {
-	int type;          	
-	int etiq;
 	enum OPCODE opcode;
+	int type;
+	int etiq;
 	int rs;
 	int rt;
 	int rd;
@@ -47,4 +48,4 @@ typedef struct instruction
 	int exit;
 } instruction;
 
-#endif /* INSTRUCTION_H */
+#endif	/* INSTRUCTION_H */

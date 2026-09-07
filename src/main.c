@@ -10,50 +10,56 @@
 #include "registers.h"
 #include "utils.h"
 
-void interactive_mode(CPU *cpu, config *cfg){
-	instruction instructionEnCours;
-	instructionEnCours.exit = 0;
+void interactive_mode(CPU *cpu, config *cfg)
+{
+	instruction current_instr;
+	current_instr.exit = 0;
+
 	registers_init(cpu);
 	memory_init(cpu);
-	while(instructionEnCours.exit == 0){
-		printf("Entrez votre instruction :\n");
-		instructionEnCours = decode_instruction(0, NULL);
-		if(instructionEnCours.exit == 0){
-			execute_instruction(cpu, cfg, instructionEnCours);
+
+	while(current_instr.exit == 0)
+	{
+		printf("[#] Enter your instruction :\n");
+		current_instr = decode_instruction(0, NULL);
+		if(current_instr.exit == 0)
+		{
+			execute_instruction(cpu, cfg, current_instr);
 			cpu_dump(cpu, cfg);
 		}
 	}
 }
 
 void batch_mode(CPU *cpu, config *cfg, char *fichierR, char *fichierS1, char *fichierS2){
-	int erreur = 0;
+	int error = 0;
 	long i = 0, n;
 	char chaine[30];
 	instruction tabInstructions[100];
 	FILE *fr, *fs1, *fs2;
+
 	registers_init(cpu);
 	memory_init(cpu);
-	if(cfg->step){
-		if(((fr = fopen(fichierR, "r")) == NULL)){
-			printf("Erreur d'ouverture du fichier\n");
-			erreur = 1;
+
+	if(cfg->step)
+		if(((fr = fopen(fichierR, "r")) == NULL))
+		{
+			printf("[!] batch_mode : fopen() error\n");
+			error = 1;
 		}
-	}
-	if(!cfg->step){
+	if(!cfg->step)
 		if(((fr = fopen(fichierR, "r")) == NULL) || ((fs1 = fopen(fichierS1, "w")) == NULL) || ((fs2 = fopen(fichierS2, "w")) == NULL)){
-			printf("Erreur d'ouverture du/des fichier(s)\n");
-			erreur = 1;
+			printf("[!] batch_mode : fopen() error\n");
+			error = 1;
 		}
-	}
-	if(!erreur){
-		printf("\n----Instruction Decode----\n");
+	if(!error){
+		printf("\n--- Instruction decode ---\n");
 		while(!feof(fr)){
 			tabInstructions[i] = decode_instruction(1, fr);
 			if(tabInstructions[i].opcode > 0 && tabInstructions[i].opcode <= 25){
 				i++;
 			}
 		}
-		printf("\n---------Execute---------\n");
+		printf("\n-- Instruction  execute --\n");
 		n = i;
 		if(!cfg->step){
 			for(i = 0; i < n; i++){
