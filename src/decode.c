@@ -6,7 +6,8 @@
 #include "instruction.h"
 #include "utils.h"
 
-instruction decode_instruction(int mode, FILE *fichier){
+instruction decode_instruction(int mode, FILE *fichier)
+{
 	char bloc[50];
 	char param1[20], param2[20], param3[20];
 	int instructionBin[32];
@@ -31,15 +32,15 @@ instruction decode_instruction(int mode, FILE *fichier){
 				else if(mode == 1){
 					fscanf(fichier, " $%[^,] , $%[^,] , $%s ", param1, param2, param3);
 				}
-				binary_zero(instructionBin);
+				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				instr.rs = register_string_to_int(param2);
 				instr.rt = register_string_to_int(param3);
-				changeBin(16, 20, instr.rd, instructionBin);
-				changeBin(6, 10, instr.rs, instructionBin);
-				changeBin(11, 15, instr.rt, instructionBin);
-				changeBin(21, 31, 32, instructionBin);
-				binary_to_hex(instructionBin, instructionHex);
+				long_to_bin_arr(16, 20, instr.rd, instructionBin);
+				long_to_bin_arr(6, 10, instr.rs, instructionBin);
+				long_to_bin_arr(11, 15, instr.rt, instructionBin);
+				long_to_bin_arr(21, 31, 32, instructionBin);
+				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = ADD;
 				instr.type = 2;
@@ -57,20 +58,20 @@ instruction decode_instruction(int mode, FILE *fichier){
 					signe = 1;
 					remove_sign(param3);
 				}
-				binary_zero(instructionBin);
+				bin_zero(instructionBin);
 				instr.rt = register_string_to_int(param1);
 				instr.rs = register_string_to_int(param2);
 				instr.immediate = atoi(param3);
-				changeBin(11, 15, instr.rt, instructionBin);
-				changeBin(6, 10, instr.rs, instructionBin);
-				changeBin(16, 31, instr.immediate, instructionBin);
-				changeBin(0, 5, 8, instructionBin);
+				long_to_bin_arr(11, 15, instr.rt, instructionBin);
+				long_to_bin_arr(6, 10, instr.rs, instructionBin);
+				long_to_bin_arr(16, 31, instr.immediate, instructionBin);
+				long_to_bin_arr(0, 5, 8, instructionBin);
 				if(signe){
 					instr.immediate = instr.immediate * -1;
-					binary_twos_complement(16, 31, instructionBin);
+					bin_twos_complement(16, 31, instructionBin);
 					signe = 0;
 				}
-				binary_to_hex(instructionBin, instructionHex);
+				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = ADDI;
 				instr.type = 2;
@@ -84,15 +85,15 @@ instruction decode_instruction(int mode, FILE *fichier){
 				else if(mode == 1){
 					fscanf(fichier, " $%[^,] , $%[^,] , $%s ", param1, param2, param3);
 				}
-				binary_zero(instructionBin);
+				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				instr.rs = register_string_to_int(param2);
 				instr.rt = register_string_to_int(param3);
-				changeBin(16, 20, instr.rd, instructionBin);
-				changeBin(6, 10, instr.rs, instructionBin);
-				changeBin(11, 15, instr.rt, instructionBin);
-				changeBin(21, 31, 36, instructionBin);
-				binary_to_hex(instructionBin, instructionHex);
+				long_to_bin_arr(16, 20, instr.rd, instructionBin);
+				long_to_bin_arr(6, 10, instr.rs, instructionBin);
+				long_to_bin_arr(11, 15, instr.rt, instructionBin);
+				long_to_bin_arr(21, 31, 36, instructionBin);
+				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = AND;
 				instr.type = 2;
@@ -110,20 +111,20 @@ instruction decode_instruction(int mode, FILE *fichier){
 					signe = 1;
 					remove_sign(param3);
 				}
-				binary_zero(instructionBin);
+				bin_zero(instructionBin);
 				instr.rt = register_string_to_int(param1);
 				instr.rs = register_string_to_int(param2);
 				instr.offset = atoi(param3);
-				changeBin(6, 10, instr.rt, instructionBin);
-				changeBin(11, 15, instr.rs, instructionBin);
-				changeBin(16, 31, instr.offset, instructionBin);
-				changeBin(0, 5, 4, instructionBin);
+				long_to_bin_arr(6, 10, instr.rt, instructionBin);
+				long_to_bin_arr(11, 15, instr.rs, instructionBin);
+				long_to_bin_arr(16, 31, instr.offset, instructionBin);
+				long_to_bin_arr(0, 5, 4, instructionBin);
 				if(signe){
 					instr.immediate = instr.immediate * -1;
-					binary_twos_complement(16, 31, instructionBin);
+					bin_twos_complement(16, 31, instructionBin);
 					signe = 0;
 				}
-				binary_to_hex(instructionBin, instructionHex);
+				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = BEQ;
 				instr.type = 2;
@@ -141,18 +142,18 @@ instruction decode_instruction(int mode, FILE *fichier){
 					signe = 1;
 					remove_sign(param2);
 				}
-				binary_zero(instructionBin);
+				bin_zero(instructionBin);
 				instr.rs = register_string_to_int(param1);
 				instr.offset = atoi(param2);
-				changeBin(6, 10, instr.rs, instructionBin);
-				changeBin(16, 31, instr.offset, instructionBin);
-				changeBin(0, 5, 7, instructionBin);
+				long_to_bin_arr(6, 10, instr.rs, instructionBin);
+				long_to_bin_arr(16, 31, instr.offset, instructionBin);
+				long_to_bin_arr(0, 5, 7, instructionBin);
 				if(signe){
 					instr.offset = instr.offset * -1;
-					binary_twos_complement(16, 31, instructionBin);
+					bin_twos_complement(16, 31, instructionBin);
 					signe = 0;
 				}
-				binary_to_hex(instructionBin, instructionHex);
+				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = BGTZ;
 				instr.type = 2;
@@ -170,18 +171,18 @@ instruction decode_instruction(int mode, FILE *fichier){
 					signe = 1;
 					remove_sign(param2);
 				}
-				binary_zero(instructionBin);
+				bin_zero(instructionBin);
 				instr.rs = register_string_to_int(param1);
 				instr.offset = atoi(param2);
-				changeBin(6, 10, instr.rs, instructionBin);
-				changeBin(16, 31, instr.offset, instructionBin);
-				changeBin(0, 5, 6, instructionBin);
+				long_to_bin_arr(6, 10, instr.rs, instructionBin);
+				long_to_bin_arr(16, 31, instr.offset, instructionBin);
+				long_to_bin_arr(0, 5, 6, instructionBin);
 				if(signe){
 					instr.offset = instr.offset * -1;
-					binary_twos_complement(16, 31, instructionBin);
+					bin_twos_complement(16, 31, instructionBin);
 					signe = 0;
 				}
-				binary_to_hex(instructionBin, instructionHex);
+				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = BLEZ;
 				instr.type = 2;
@@ -199,20 +200,20 @@ instruction decode_instruction(int mode, FILE *fichier){
 					signe = 1;
 					remove_sign(param3);
 				}
-				binary_zero(instructionBin);
+				bin_zero(instructionBin);
 				instr.rt = register_string_to_int(param1);
 				instr.rs = register_string_to_int(param2);
 				instr.offset = atoi(param3);
-				changeBin(6, 10, instr.rt, instructionBin);
-				changeBin(11, 15, instr.rs, instructionBin);
-				changeBin(16, 31, instr.offset, instructionBin);
-				changeBin(0, 5, 5, instructionBin);
+				long_to_bin_arr(6, 10, instr.rt, instructionBin);
+				long_to_bin_arr(11, 15, instr.rs, instructionBin);
+				long_to_bin_arr(16, 31, instr.offset, instructionBin);
+				long_to_bin_arr(0, 5, 5, instructionBin);
 				if(signe){
 					instr.offset = instr.offset * -1;
-					binary_twos_complement(16, 31, instructionBin);
+					bin_twos_complement(16, 31, instructionBin);
 					signe = 0;
 				}
-				binary_to_hex(instructionBin, instructionHex);
+				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = BNE;
 				instr.type = 2;
@@ -226,13 +227,13 @@ instruction decode_instruction(int mode, FILE *fichier){
 				else if(mode == 1){
 					fscanf(fichier, " $%[^,] , $%s ", param1, param2);
 				}
-				binary_zero(instructionBin);
+				bin_zero(instructionBin);
 				instr.rs = register_string_to_int(param1);
 				instr.rt = register_string_to_int(param2);
-				changeBin(6, 10, instr.rs, instructionBin);
-				changeBin(11, 15, instr.rt, instructionBin);
-				changeBin(16, 31, 26, instructionBin);
-				binary_to_hex(instructionBin, instructionHex);
+				long_to_bin_arr(6, 10, instr.rs, instructionBin);
+				long_to_bin_arr(11, 15, instr.rt, instructionBin);
+				long_to_bin_arr(16, 31, 26, instructionBin);
+				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = DIV;
 				instr.type = 2;
@@ -249,11 +250,11 @@ instruction decode_instruction(int mode, FILE *fichier){
 				else if(mode == 1){
 					fscanf(fichier, " %s ", param1);
 				}
-				binary_zero(instructionBin);
+				bin_zero(instructionBin);
 				instr.target = register_string_to_int(param1);
-				changeBin(6, 31, instr.target, instructionBin);
-				changeBin(0, 5, 2, instructionBin);
-				binary_to_hex(instructionBin, instructionHex);
+				long_to_bin_arr(6, 31, instr.target, instructionBin);
+				long_to_bin_arr(0, 5, 2, instructionBin);
+				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = J;
 				instr.type = 2;
@@ -267,11 +268,11 @@ instruction decode_instruction(int mode, FILE *fichier){
 				else if(mode == 1){
 					fscanf(fichier, " %s ", param1);
 				}
-				binary_zero(instructionBin);
+				bin_zero(instructionBin);
 				instr.target = register_string_to_int(param1);
-				changeBin(6, 31, instr.target, instructionBin);
-				changeBin(0, 5, 3, instructionBin);
-				binary_to_hex(instructionBin, instructionHex);
+				long_to_bin_arr(6, 31, instr.target, instructionBin);
+				long_to_bin_arr(0, 5, 3, instructionBin);
+				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = JAL;
 				instr.type = 2;
@@ -285,11 +286,11 @@ instruction decode_instruction(int mode, FILE *fichier){
 				else if(mode == 1){
 					fscanf(fichier, " $%s ", param1);
 				}
-				binary_zero(instructionBin);
+				bin_zero(instructionBin);
 				instr.rs = register_string_to_int(param1);
-				changeBin(6, 10, instr.rs, instructionBin);
-				changeBin(11, 31, 8, instructionBin);
-				binary_to_hex(instructionBin, instructionHex);
+				long_to_bin_arr(6, 10, instr.rs, instructionBin);
+				long_to_bin_arr(11, 31, 8, instructionBin);
+				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = JR;
 				instr.type = 2;
@@ -303,13 +304,13 @@ instruction decode_instruction(int mode, FILE *fichier){
 				else if(mode == 1){
 					fscanf(fichier, " $%[^,] , %s ", param1, param2);
 				}
-				binary_zero(instructionBin);
+				bin_zero(instructionBin);
 				instr.rt = register_string_to_int(param1);
 				instr.immediate = register_string_to_int(param2);
-				changeBin(11, 15, instr.rt, instructionBin);
-				changeBin(16, 31, instr.immediate, instructionBin);
-				changeBin(0, 5, 15, instructionBin);
-				binary_to_hex(instructionBin, instructionHex);
+				long_to_bin_arr(11, 15, instr.rt, instructionBin);
+				long_to_bin_arr(16, 31, instr.immediate, instructionBin);
+				long_to_bin_arr(0, 5, 15, instructionBin);
+				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = LUI;
 				instr.type = 2;
@@ -327,20 +328,20 @@ instruction decode_instruction(int mode, FILE *fichier){
 					signe = 1;
 					remove_sign(param2);
 				}
-				binary_zero(instructionBin);
+				bin_zero(instructionBin);
 				instr.rt = register_string_to_int(param1);
 				instr.offset = register_string_to_int(param2);
 				instr.base = register_string_to_int(param3);
-				changeBin(11, 15, instr.rt, instructionBin);
-				changeBin(16, 31, instr.offset, instructionBin);
-				changeBin(6, 10, instr.base, instructionBin);
-				changeBin(0, 5, 35, instructionBin);
+				long_to_bin_arr(11, 15, instr.rt, instructionBin);
+				long_to_bin_arr(16, 31, instr.offset, instructionBin);
+				long_to_bin_arr(6, 10, instr.base, instructionBin);
+				long_to_bin_arr(0, 5, 35, instructionBin);
 				if(signe){
 					instr.offset = instr.offset * -1;
-					binary_twos_complement(16, 31, instructionBin);
+					bin_twos_complement(16, 31, instructionBin);
 					signe = 0;
 				}
-				binary_to_hex(instructionBin, instructionHex);
+				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = LW;
 				instr.type = 2;
@@ -354,11 +355,11 @@ instruction decode_instruction(int mode, FILE *fichier){
 				else if(mode == 1){
 					fscanf(fichier, " $%s ", param1);
 				}
-				binary_zero(instructionBin);
+				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
-				changeBin(16, 20, instr.rd, instructionBin);
-				changeBin(21, 31, 16, instructionBin);
-				binary_to_hex(instructionBin, instructionHex);
+				long_to_bin_arr(16, 20, instr.rd, instructionBin);
+				long_to_bin_arr(21, 31, 16, instructionBin);
+				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = MFHI;
 				instr.type = 2;
@@ -372,11 +373,11 @@ instruction decode_instruction(int mode, FILE *fichier){
 				else if(mode == 1){
 					fscanf(fichier, " $%s ", param1);
 				}
-				binary_zero(instructionBin);
+				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
-				changeBin(16, 20, instr.rd, instructionBin);
-				changeBin(21, 31, 18, instructionBin);
-				binary_to_hex(instructionBin, instructionHex);
+				long_to_bin_arr(16, 20, instr.rd, instructionBin);
+				long_to_bin_arr(21, 31, 18, instructionBin);
+				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = MFLO;
 				instr.type = 2;
@@ -390,13 +391,13 @@ instruction decode_instruction(int mode, FILE *fichier){
 				else if(mode == 1){
 					fscanf(fichier, " $%[^,] , $%s ", param1, param2);
 				}
-				binary_zero(instructionBin);
+				bin_zero(instructionBin);
 				instr.rs = register_string_to_int(param1);
 				instr.rt = register_string_to_int(param2);
-				changeBin(6, 10, instr.rs, instructionBin);
-				changeBin(11, 15, instr.rt, instructionBin);
-				changeBin(16, 31, 24, instructionBin);
-				binary_to_hex(instructionBin, instructionHex);
+				long_to_bin_arr(6, 10, instr.rs, instructionBin);
+				long_to_bin_arr(11, 15, instr.rt, instructionBin);
+				long_to_bin_arr(16, 31, 24, instructionBin);
+				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = MULT;
 				instr.type = 2;
@@ -404,8 +405,8 @@ instruction decode_instruction(int mode, FILE *fichier){
 				printf("MULT $%s,$%s -> 0x%s\n", param1, param2, instructionHex);
 			}
 			else if(!strcmp(bloc, "NOP")){
-				binary_zero(instructionBin);
-				binary_to_hex(instructionBin, instructionHex);
+				bin_zero(instructionBin);
+				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = NOP;
 				instr.type = 2;
@@ -419,15 +420,15 @@ instruction decode_instruction(int mode, FILE *fichier){
 				else if(mode == 1){
 					fscanf(fichier, " $%[^,] , $%[^,] , $%s ", param1, param2, param3);
 				}
-				binary_zero(instructionBin);
+				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				instr.rs = register_string_to_int(param2);
 				instr.rt = register_string_to_int(param3);
-				changeBin(16, 20, instr.rd, instructionBin);
-				changeBin(6, 10, instr.rs, instructionBin);
-				changeBin(11, 15, instr.rt, instructionBin);
-				changeBin(21, 31, 37, instructionBin);
-				binary_to_hex(instructionBin, instructionHex);
+				long_to_bin_arr(16, 20, instr.rd, instructionBin);
+				long_to_bin_arr(6, 10, instr.rs, instructionBin);
+				long_to_bin_arr(11, 15, instr.rt, instructionBin);
+				long_to_bin_arr(21, 31, 37, instructionBin);
+				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = OR;
 				instr.type = 2;
@@ -441,16 +442,16 @@ instruction decode_instruction(int mode, FILE *fichier){
 				else if(mode == 1){
 					fscanf(fichier, " $%[^,] , $%[^,] , %s ", param1, param2, param3);
 				}
-				binary_zero(instructionBin);
+				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				instr.rt = register_string_to_int(param2);
 				instr.sa = register_string_to_int(param3);
-				changeBin(16, 20, instr.rd, instructionBin);
-				changeBin(11, 15, instr.rt, instructionBin);
-				changeBin(21, 25, instr.sa, instructionBin);
-				changeBin(10, 10, 1, instructionBin);
-				changeBin(26, 31, 2, instructionBin);
-				binary_to_hex(instructionBin, instructionHex);
+				long_to_bin_arr(16, 20, instr.rd, instructionBin);
+				long_to_bin_arr(11, 15, instr.rt, instructionBin);
+				long_to_bin_arr(21, 25, instr.sa, instructionBin);
+				long_to_bin_arr(10, 10, 1, instructionBin);
+				long_to_bin_arr(26, 31, 2, instructionBin);
+				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = ROTR;
 				instr.type = 2;
@@ -464,14 +465,14 @@ instruction decode_instruction(int mode, FILE *fichier){
 				else if(mode == 1){
 					fscanf(fichier, " $%[^,] , $%[^,] , %s ", param1, param2, param3);
 				}
-				binary_zero(instructionBin);
+				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				instr.rt = register_string_to_int(param2);
 				instr.sa = register_string_to_int(param3);
-				changeBin(16, 20, instr.rd, instructionBin);
-				changeBin(11, 15, instr.rt, instructionBin);
-				changeBin(21, 25, instr.sa, instructionBin);
-				binary_to_hex(instructionBin, instructionHex);
+				long_to_bin_arr(16, 20, instr.rd, instructionBin);
+				long_to_bin_arr(11, 15, instr.rt, instructionBin);
+				long_to_bin_arr(21, 25, instr.sa, instructionBin);
+				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = SLL;
 				instr.type = 2;
@@ -485,15 +486,15 @@ instruction decode_instruction(int mode, FILE *fichier){
 				else if(mode == 1){
 					fscanf(fichier, " $%[^,] , $%[^,] , $%s ", param1, param2, param3);
 				}
-				binary_zero(instructionBin);
+				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				instr.rs = register_string_to_int(param2);
 				instr.rt = register_string_to_int(param3);
-				changeBin(16, 20, instr.rd, instructionBin);
-				changeBin(6, 10, instr.rs, instructionBin);
-				changeBin(11, 15, instr.rt, instructionBin);
-				changeBin(21, 31, 42, instructionBin);
-				binary_to_hex(instructionBin, instructionHex);
+				long_to_bin_arr(16, 20, instr.rd, instructionBin);
+				long_to_bin_arr(6, 10, instr.rs, instructionBin);
+				long_to_bin_arr(11, 15, instr.rt, instructionBin);
+				long_to_bin_arr(21, 31, 42, instructionBin);
+				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = SLT;
 				instr.type = 2;
@@ -507,15 +508,15 @@ instruction decode_instruction(int mode, FILE *fichier){
 				else if(mode == 1){
 					fscanf(fichier, " $%[^,] , $%[^,] , %s ", param1, param2, param3);
 				}
-				binary_zero(instructionBin);
+				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				instr.rt = register_string_to_int(param2);
 				instr.sa = register_string_to_int(param3);
-				changeBin(16, 20, instr.rd, instructionBin);
-				changeBin(11, 15, instr.rt, instructionBin);
-				changeBin(21, 25, instr.sa, instructionBin);
-				changeBin(26, 31, 2, instructionBin);
-				binary_to_hex(instructionBin, instructionHex);
+				long_to_bin_arr(16, 20, instr.rd, instructionBin);
+				long_to_bin_arr(11, 15, instr.rt, instructionBin);
+				long_to_bin_arr(21, 25, instr.sa, instructionBin);
+				long_to_bin_arr(26, 31, 2, instructionBin);
+				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = SRL;
 				instr.type = 2;
@@ -529,15 +530,15 @@ instruction decode_instruction(int mode, FILE *fichier){
 				else if(mode == 1){
 					fscanf(fichier, " $%[^,] , $%[^,] , $%s ", param1, param2, param3);
 				}
-				binary_zero(instructionBin);
+				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				instr.rs = register_string_to_int(param2);
 				instr.rt = register_string_to_int(param3);
-				changeBin(16, 20, instr.rd, instructionBin);
-				changeBin(6, 10, instr.rs, instructionBin);
-				changeBin(11, 15, instr.rt, instructionBin);
-				changeBin(21, 31, 34, instructionBin);
-				binary_to_hex(instructionBin, instructionHex);
+				long_to_bin_arr(16, 20, instr.rd, instructionBin);
+				long_to_bin_arr(6, 10, instr.rs, instructionBin);
+				long_to_bin_arr(11, 15, instr.rt, instructionBin);
+				long_to_bin_arr(21, 31, 34, instructionBin);
+				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = SUB;
 				instr.type = 2;
@@ -555,20 +556,20 @@ instruction decode_instruction(int mode, FILE *fichier){
 					signe = 1;
 					remove_sign(param2);
 				}
-				binary_zero(instructionBin);
+				bin_zero(instructionBin);
 				instr.rt = register_string_to_int(param1);
 				instr.offset = register_string_to_int(param2);
 				instr.base = register_string_to_int(param3);
-				changeBin(11, 15, instr.rt, instructionBin);
-				changeBin(16, 31, instr.offset, instructionBin);
-				changeBin(6, 10, instr.base, instructionBin);
-				changeBin(0, 5, 43, instructionBin);
+				long_to_bin_arr(11, 15, instr.rt, instructionBin);
+				long_to_bin_arr(16, 31, instr.offset, instructionBin);
+				long_to_bin_arr(6, 10, instr.base, instructionBin);
+				long_to_bin_arr(0, 5, 43, instructionBin);
 				if(signe){
 					instr.offset = instr.offset * -1;
-					binary_twos_complement(16, 31, instructionBin);
+					bin_twos_complement(16, 31, instructionBin);
 					signe = 0;
 				}
-				binary_to_hex(instructionBin, instructionHex);
+				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = SW;
 				instr.type = 2;
@@ -582,15 +583,15 @@ instruction decode_instruction(int mode, FILE *fichier){
 				else if(mode == 1){
 					fscanf(fichier, " $%[^,] , $%[^,] , $%s ", param1, param2, param3);
 				}
-				binary_zero(instructionBin);
+				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				instr.rs = register_string_to_int(param2);
 				instr.rt = register_string_to_int(param3);
-				changeBin(16, 20, instr.rd, instructionBin);
-				changeBin(6, 10, instr.rs, instructionBin);
-				changeBin(11, 15, instr.rt, instructionBin);
-				changeBin(21, 31, 38, instructionBin);
-				binary_to_hex(instructionBin, instructionHex);
+				long_to_bin_arr(16, 20, instr.rd, instructionBin);
+				long_to_bin_arr(6, 10, instr.rs, instructionBin);
+				long_to_bin_arr(11, 15, instr.rt, instructionBin);
+				long_to_bin_arr(21, 31, 38, instructionBin);
+				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = XOR;
 				instr.type = 2;

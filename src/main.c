@@ -15,9 +15,6 @@ void interactive_mode(CPU *cpu, config *cfg)
 	instruction current_instr;
 	current_instr.exit = 0;
 
-	registers_init(cpu);
-	memory_init(cpu);
-
 	while(current_instr.exit == 0)
 	{
 		printf("[#] Enter your instruction :\n");
@@ -36,9 +33,6 @@ void batch_mode(CPU *cpu, config *cfg, char *fichierR, char *fichierS1, char *fi
 	char chaine[30];
 	instruction tabInstructions[100];
 	FILE *fr, *fs1, *fs2;
-
-	registers_init(cpu);
-	memory_init(cpu);
 
 	if(cfg->step)
 		if(((fr = fopen(fichierR, "r")) == NULL))
@@ -102,6 +96,9 @@ int main(int argc, char *argv[])
 	CPU cpu;
 	config cfg = {0};
 
+	memory_init(&cpu);
+	registers_init(&cpu);
+
 	if(argc == 1)
 	{
 		cfg.verbose = 0;
@@ -109,7 +106,7 @@ int main(int argc, char *argv[])
 	}
 	else{
 		cfg.verbose = 1;
-		if(argc == 3 && !strcmp(argv[2], "-pas"))
+		if(argc == 3 && !strcmp(argv[2], "-step"))
 		{
 			cfg.step = 1;
 			batch_mode(&cpu, &cfg, argv[1], NULL, NULL);
@@ -120,11 +117,10 @@ int main(int argc, char *argv[])
 		}
 		else
 		{
-		fprintf(stderr, 
-"[!] Usage:\n \
-- %s pour le mode interactif\n \
-- %s -pas {pathfile fichier d'instructions} pour le mode automatique en pas à pas\n \
-- %s {pathfile fichier d'instructions} {pathfile sortie décodée} {pathfile sortie registre} pour le mode automatique\n",
+fprintf(stderr, "[!] Usage:\n \
+- %s for interactive mode\n \
+- %s -step {pathfile instructions file} for batch mode (step by step)\n \
+- %s {pathfile instructions file} {pathfile hex instructions output} {pathfile registers output} for batch mode\n",
 argv[0], argv[0], argv[0]);
 		}
 	}
