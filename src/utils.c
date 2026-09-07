@@ -3,9 +3,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "cpu.h"
 #include "memory.h"
 #include "registers.h"
+#include "utils.h"
 
 int register_string_to_int(char *reg)
 {
@@ -144,10 +144,10 @@ void binary_to_hex(int *tabBin, char *tabHex){
 	tabHex[8] = '\0';
 }
 
-void cpu_dump(CPU *cpu){
+void cpu_dump(CPU *cpu, config *cfg){
 	int i, j, m;
 	long v;
-	char carHex[4] = {'0', '4', '8', 'C'};
+	char carHex[4] = {'0', '4', '8', 'C'}, space[2];
 	printf("\n");
 	printf("------------ Affichage des états des registres -----------\n");
 	for(i = 0; i < 8; i++){
@@ -168,4 +168,6 @@ void cpu_dump(CPU *cpu){
 		printf("\n");
 	}
 	printf("\n");
+	if(cfg->step)
+		fgets(space, sizeof(space), stdin);
 }

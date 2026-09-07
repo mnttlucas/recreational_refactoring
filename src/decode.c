@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "decode.h"
+#include "instruction.h"
 #include "utils.h"
 
 instruction decode_instruction(int mode, FILE *fichier){
@@ -40,8 +41,9 @@ instruction decode_instruction(int mode, FILE *fichier){
 				changeBin(21, 31, 32, instructionBin);
 				binary_to_hex(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
-				instr.opcode = 1;
+				instr.opcode = ADD;
 				instr.type = 2;
+				sprintf(instr.toString, "ADD $%s,$%s,$%s -> 0x%s\n", param1, param2, param3, instructionHex);
 				printf("ADD $%s,$%s,$%s -> 0x%s\n", param1, param2, param3, instructionHex);
 			}
 			else if(!strcmp(bloc, "ADDI")){
@@ -70,8 +72,9 @@ instruction decode_instruction(int mode, FILE *fichier){
 				}
 				binary_to_hex(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
-				instr.opcode = 2;
+				instr.opcode = ADDI;
 				instr.type = 2;
+				sprintf(instr.toString, "ADDI $%s,$%s,%s -> 0x%s\n", param1, param2, param3, instructionHex);
 				printf("ADDI $%s,$%s,%s -> 0x%s\n", param1, param2, param3, instructionHex);
 			}
 			else if(!strcmp(bloc, "AND")){
@@ -91,8 +94,9 @@ instruction decode_instruction(int mode, FILE *fichier){
 				changeBin(21, 31, 36, instructionBin);
 				binary_to_hex(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
-				instr.opcode = 3;
+				instr.opcode = AND;
 				instr.type = 2;
+				sprintf(instr.toString, "AND $%s,$%s,$%s -> 0x%s\n", param1, param2, param3, instructionHex);
 				printf("AND $%s,$%s,$%s -> 0x%s\n", param1, param2, param3, instructionHex);
 			}
 			else if(!strcmp(bloc, "BEQ")){
@@ -121,8 +125,9 @@ instruction decode_instruction(int mode, FILE *fichier){
 				}
 				binary_to_hex(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
-				instr.opcode = 4;
+				instr.opcode = BEQ;
 				instr.type = 2;
+				sprintf(instr.toString, "BEQ $%s,$%s,%s -> 0x%s\n", param1, param2, param3, instructionHex);
 				printf("BEQ $%s,$%s,%s -> 0x%s\n", param1, param2, param3, instructionHex);
 			}
 			else if(!strcmp(bloc, "BGTZ")){
@@ -149,8 +154,9 @@ instruction decode_instruction(int mode, FILE *fichier){
 				}
 				binary_to_hex(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
-				instr.opcode = 5;
+				instr.opcode = BGTZ;
 				instr.type = 2;
+				sprintf(instr.toString, "BGTZ $%s,%s -> 0x%s\n", param1, param2, instructionHex);
 				printf("BGTZ $%s,%s -> 0x%s\n", param1, param2, instructionHex);
 			}
 			else if(!strcmp(bloc, "BLEZ")){
@@ -177,8 +183,9 @@ instruction decode_instruction(int mode, FILE *fichier){
 				}
 				binary_to_hex(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
-				instr.opcode = 6;
+				instr.opcode = BLEZ;
 				instr.type = 2;
+				sprintf(instr.toString, "BLEZ $%s,%s -> 0x%s\n", param1, param2, instructionHex);
 				printf("BLEZ $%s,%s -> 0x%s\n", param1, param2, instructionHex);
 			}
 			else if(!strcmp(bloc, "BNE")){
@@ -207,8 +214,9 @@ instruction decode_instruction(int mode, FILE *fichier){
 				}
 				binary_to_hex(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
-				instr.opcode = 7;
+				instr.opcode = BNE;
 				instr.type = 2;
+				sprintf(instr.toString, "BNE $%s,$%s,%s -> 0x%s\n", param1, param2, param3, instructionHex);
 				printf("BNE $%s,$%s,%s -> 0x%s\n", param1, param2, param3, instructionHex);
 			}
 			else if(!strcmp(bloc, "DIV")){
@@ -226,8 +234,9 @@ instruction decode_instruction(int mode, FILE *fichier){
 				changeBin(16, 31, 26, instructionBin);
 				binary_to_hex(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
-				instr.opcode = 8;
+				instr.opcode = DIV;
 				instr.type = 2;
+				sprintf(instr.toString, "DIV $%s,$%s -> 0x%s\n", param1, param2, instructionHex);
 				printf("DIV $%s,$%s -> 0x%s\n", param1, param2, instructionHex);
 			}
 			else if(!strcmp(bloc, "EXIT")){
@@ -246,8 +255,9 @@ instruction decode_instruction(int mode, FILE *fichier){
 				changeBin(0, 5, 2, instructionBin);
 				binary_to_hex(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
-				instr.opcode = 9;
+				instr.opcode = J;
 				instr.type = 2;
+				sprintf(instr.toString, "J %s -> 0x%s\n", param1, instructionHex);
 				printf("J %s -> 0x%s\n", param1, instructionHex);
 			}
 			else if(!strcmp(bloc, "JAL")){
@@ -263,8 +273,9 @@ instruction decode_instruction(int mode, FILE *fichier){
 				changeBin(0, 5, 3, instructionBin);
 				binary_to_hex(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
-				instr.opcode = 10;
+				instr.opcode = JAL;
 				instr.type = 2;
+				sprintf(instr.toString, "JAL %s -> 0x%s\n", param1, instructionHex);
 				printf("JAL %s -> 0x%s\n", param1, instructionHex);
 			}
 			else if(!strcmp(bloc, "JR")){
@@ -280,8 +291,9 @@ instruction decode_instruction(int mode, FILE *fichier){
 				changeBin(11, 31, 8, instructionBin);
 				binary_to_hex(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
-				instr.opcode = 11;
+				instr.opcode = JR;
 				instr.type = 2;
+				sprintf(instr.toString, "JR $%s -> 0x%s\n", param1, instructionHex);
 				printf("JR $%s -> 0x%s\n", param1, instructionHex);
 			}
 			else if(!strcmp(bloc, "LUI")){
@@ -299,8 +311,9 @@ instruction decode_instruction(int mode, FILE *fichier){
 				changeBin(0, 5, 15, instructionBin);
 				binary_to_hex(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
-				instr.opcode = 12;
+				instr.opcode = LUI;
 				instr.type = 2;
+				sprintf(instr.toString, "LUI $%s,%s -> 0x%s\n", param1, param2, instructionHex);
 				printf("LUI $%s,%s -> 0x%s\n", param1, param2, instructionHex);
 			}
 			else if(!strcmp(bloc, "LW")){
@@ -329,8 +342,9 @@ instruction decode_instruction(int mode, FILE *fichier){
 				}
 				binary_to_hex(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
-				instr.opcode = 13;
+				instr.opcode = LW;
 				instr.type = 2;
+				sprintf(instr.toString, "LW $%s,%s($%s) -> 0x%s\n", param1, param2, param3, instructionHex);
 				printf("LW $%s,%s($%s) -> 0x%s\n", param1, param2, param3, instructionHex);
 			}
 			else if(!strcmp(bloc, "MFHI")){
@@ -346,8 +360,9 @@ instruction decode_instruction(int mode, FILE *fichier){
 				changeBin(21, 31, 16, instructionBin);
 				binary_to_hex(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
-				instr.opcode = 14;
+				instr.opcode = MFHI;
 				instr.type = 2;
+				sprintf(instr.toString, "MFHI $%s -> 0x%s\n", param1, instructionHex);
 				printf("MFHI $%s -> 0x%s\n", param1, instructionHex);
 			}
 			else if(!strcmp(bloc, "MFLO")){
@@ -363,8 +378,9 @@ instruction decode_instruction(int mode, FILE *fichier){
 				changeBin(21, 31, 18, instructionBin);
 				binary_to_hex(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
-				instr.opcode = 15;
+				instr.opcode = MFLO;
 				instr.type = 2;
+				sprintf(instr.toString, "MFLO $%s -> 0x%s\n", param1, instructionHex);
 				printf("MFLO $%s -> 0x%s\n", param1, instructionHex);
 			}
 			else if(!strcmp(bloc, "MULT")){
@@ -382,16 +398,18 @@ instruction decode_instruction(int mode, FILE *fichier){
 				changeBin(16, 31, 24, instructionBin);
 				binary_to_hex(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
-				instr.opcode = 16;
+				instr.opcode = MULT;
 				instr.type = 2;
+				sprintf(instr.toString, "MULT $%s,$%s -> 0x%s\n", param1, param2, instructionHex);
 				printf("MULT $%s,$%s -> 0x%s\n", param1, param2, instructionHex);
 			}
 			else if(!strcmp(bloc, "NOP")){
 				binary_zero(instructionBin);
 				binary_to_hex(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
-				instr.opcode = 17;
+				instr.opcode = NOP;
 				instr.type = 2;
+				sprintf(instr.toString, "NOP -> 0x%s\n", instructionHex);
 				printf("NOP -> 0x%s\n", instructionHex);
 			}
 			else if(!strcmp(bloc, "OR")){
@@ -411,8 +429,9 @@ instruction decode_instruction(int mode, FILE *fichier){
 				changeBin(21, 31, 37, instructionBin);
 				binary_to_hex(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
-				instr.opcode = 18;
+				instr.opcode = OR;
 				instr.type = 2;
+				sprintf(instr.toString, "OR $%s,$%s,$%s -> 0x%s\n", param1, param2, param3, instructionHex);
 				printf("OR $%s,$%s,$%s -> 0x%s\n", param1, param2, param3, instructionHex);
 			}
 			else if(!strcmp(bloc, "ROTR")){
@@ -433,8 +452,9 @@ instruction decode_instruction(int mode, FILE *fichier){
 				changeBin(26, 31, 2, instructionBin);
 				binary_to_hex(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
-				instr.opcode = 19;
+				instr.opcode = ROTR;
 				instr.type = 2;
+				sprintf(instr.toString, "ROTR $%s,$%s,%s -> 0x%s\n", param1, param2, param3, instructionHex);
 				printf("ROTR $%s,$%s,%s -> 0x%s\n", param1, param2, param3, instructionHex);
 			}
 			else if(!strcmp(bloc, "SLL")){
@@ -453,8 +473,9 @@ instruction decode_instruction(int mode, FILE *fichier){
 				changeBin(21, 25, instr.sa, instructionBin);
 				binary_to_hex(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
-				instr.opcode = 20;
+				instr.opcode = SLL;
 				instr.type = 2;
+				sprintf(instr.toString, "SLL $%s,$%s,%s -> 0x%s\n", param1, param2, param3, instructionHex);
 				printf("SLL $%s,$%s,%s -> 0x%s\n", param1, param2, param3, instructionHex);
 			}
 			else if(!strcmp(bloc, "SLT")){
@@ -474,8 +495,9 @@ instruction decode_instruction(int mode, FILE *fichier){
 				changeBin(21, 31, 42, instructionBin);
 				binary_to_hex(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
-				instr.opcode = 21;
+				instr.opcode = SLT;
 				instr.type = 2;
+				sprintf(instr.toString, "SLT $%s,$%s,$%s -> 0x%s\n", param1, param2, param3, instructionHex);
 				printf("SLT $%s,$%s,$%s -> 0x%s\n", param1, param2, param3, instructionHex);
 			}
 			else if(!strcmp(bloc, "SRL")){
@@ -495,8 +517,9 @@ instruction decode_instruction(int mode, FILE *fichier){
 				changeBin(26, 31, 2, instructionBin);
 				binary_to_hex(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
-				instr.opcode = 22;
+				instr.opcode = SRL;
 				instr.type = 2;
+				sprintf(instr.toString, "SRL $%s,$%s,%s -> 0x%s\n", param1, param2, param3, instructionHex);
 				printf("SRL $%s,$%s,%s -> 0x%s\n", param1, param2, param3, instructionHex);
 			}
 			else if(!strcmp(bloc, "SUB")){
@@ -516,8 +539,9 @@ instruction decode_instruction(int mode, FILE *fichier){
 				changeBin(21, 31, 34, instructionBin);
 				binary_to_hex(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
-				instr.opcode = 23;
+				instr.opcode = SUB;
 				instr.type = 2;
+				sprintf(instr.toString, "SUB $%s,$%s,$%s -> 0x%s\n", param1, param2, param3, instructionHex);
 				printf("SUB $%s,$%s,$%s -> 0x%s\n", param1, param2, param3, instructionHex);
 			}
 			else if(!strcmp(bloc, "SW")){
@@ -546,8 +570,9 @@ instruction decode_instruction(int mode, FILE *fichier){
 				}
 				binary_to_hex(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
-				instr.opcode = 24;
+				instr.opcode = SW;
 				instr.type = 2;
+				sprintf(instr.toString, "SW $%s,%s($%s) -> 0x%s\n", param1, param2, param3, instructionHex);
 				printf("SW $%s,%s($%s) -> 0x%s\n", param1, param2, param3, instructionHex);
 			}
 			else if(!strcmp(bloc, "XOR")){
@@ -567,8 +592,9 @@ instruction decode_instruction(int mode, FILE *fichier){
 				changeBin(21, 31, 38, instructionBin);
 				binary_to_hex(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
-				instr.opcode = 25;
+				instr.opcode = XOR;
 				instr.type = 2;
+				sprintf(instr.toString, "XOR $%s,$%s,$%s -> 0x%s\n", param1, param2, param3, instructionHex);
 				printf("XOR $%s,$%s,$%s -> 0x%s\n", param1, param2, param3, instructionHex);
 			}
 		}
