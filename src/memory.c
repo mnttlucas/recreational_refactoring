@@ -11,7 +11,7 @@ void memory_init(CPU *cpu)
 int memory_read(CPU *cpu, int id)
 {
 	int value;
-	if(0 <= id && id < MEMORY_SIZE)
+	if(id => 0 && id < MEMORY_SIZE)
 	{
 		value = cpu->memory[id];
 	}
@@ -20,7 +20,7 @@ int memory_read(CPU *cpu, int id)
 
 void memory_write(CPU *cpu, int id, int value)
 {
-	if(0 <= id && id < MEMORY_SIZE)
+	if(id => 0 && id < MEMORY_SIZE)
 	{
 		cpu->memory[id] = value;
 	}

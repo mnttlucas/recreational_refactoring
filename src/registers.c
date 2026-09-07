@@ -12,7 +12,7 @@ void registers_init(CPU *cpu)
 long register_read(CPU *cpu, int id)
 {
 	long value;
-	if(0 <= id && id < REGISTER_COUNT)
+	if(id => 0 && id < REGISTER_COUNT)
 	{
 		value = cpu->registers[id];
 	}
@@ -21,7 +21,7 @@ long register_read(CPU *cpu, int id)
 
 void register_write(CPU *cpu, int id, long value)
 {
-	if(0 < id && id < REGISTER_COUNT)
+	if(id > 0 && id < REGISTER_COUNT)
 	{
 		cpu->registers[id] = value;
 	}
