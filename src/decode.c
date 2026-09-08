@@ -8,30 +8,27 @@
 
 instruction decode_instruction(int mode, FILE *fichier)
 {
-	char bloc[50];
-	char param1[20], param2[20], param3[20];
-	int instructionBin[32];
-	char instructionHex[9];
-	int signe = 0;
+	char bloc[50], instructionHex[9], param1[20], param2[20], param3[20];
+	int instructionBin[32], signe = 0;
 	instruction instr = {0};
-	if(mode == 0){
-		fscanf(stdin, "%s", bloc);
+
+	FILE *in = (!mode) ? stdin : fichier;
+
+	if(fscanf(in, "%49s", bloc) != 1)
+	{
+		instr.exit = 1;
+		return instr;
 	}
-	else if(mode == 1){
-		fscanf(fichier, "%s", bloc);
-	}
-	if(bloc[0] != '#'){
-		if(bloc[0] == '.'){
+
+	if(bloc[0] != '#')
+	{
+		if(bloc[0] == '.')
 			printf("Pour l'instant pas de prise en charge des directives\n");
-		}
-		else{
-			if(!strcmp(bloc, "ADD")){
-				if(mode == 0){
-					fscanf(stdin, " $%[^,] , $%[^,] , $%s", param1, param2, param3);
-				}
-				else if(mode == 1){
-					fscanf(fichier, " $%[^,] , $%[^,] , $%s ", param1, param2, param3);
-				}
+		else
+		{
+			if(!strcmp(bloc, "ADD"))
+			{
+				fscanf(in, " $%[^,] , $%[^,] , $%s ", param1, param2, param3);
 				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				instr.rs = register_string_to_int(param2);
@@ -47,14 +44,11 @@ instruction decode_instruction(int mode, FILE *fichier)
 				sprintf(instr.toString, "ADD $%s,$%s,$%s -> 0x%s\n", param1, param2, param3, instructionHex);
 				printf("ADD $%s,$%s,$%s -> 0x%s\n", param1, param2, param3, instructionHex);
 			}
-			else if(!strcmp(bloc, "ADDI")){
-				if(mode == 0){
-					fscanf(stdin, " $%[^,] , $%[^,] , %s", param1, param2, param3);
-				}
-				else if(mode == 1){
-					fscanf(fichier, " $%[^,] , $%[^,] , %s ", param1, param2, param3);
-				}
-				if(param3[0] == '-'){
+			else if(!strcmp(bloc, "ADDI"))
+			{
+				fscanf(in, " $%[^,] , $%[^,] , %s ", param1, param2, param3);
+				if(param3[0] == '-')
+				{
 					signe = 1;
 					remove_sign(param3);
 				}
@@ -66,7 +60,8 @@ instruction decode_instruction(int mode, FILE *fichier)
 				long_to_bin_arr(6, 10, instr.rs, instructionBin);
 				long_to_bin_arr(16, 31, instr.immediate, instructionBin);
 				long_to_bin_arr(0, 5, 8, instructionBin);
-				if(signe){
+				if(signe)
+				{
 					instr.immediate = instr.immediate * -1;
 					bin_twos_complement(16, 31, instructionBin);
 					signe = 0;
@@ -78,13 +73,9 @@ instruction decode_instruction(int mode, FILE *fichier)
 				sprintf(instr.toString, "ADDI $%s,$%s,%s -> 0x%s\n", param1, param2, param3, instructionHex);
 				printf("ADDI $%s,$%s,%s -> 0x%s\n", param1, param2, param3, instructionHex);
 			}
-			else if(!strcmp(bloc, "AND")){
-				if(mode == 0){
-					fscanf(stdin, " $%[^,] , $%[^,] , $%s", param1, param2, param3);
-				}
-				else if(mode == 1){
-					fscanf(fichier, " $%[^,] , $%[^,] , $%s ", param1, param2, param3);
-				}
+			else if(!strcmp(bloc, "AND"))
+			{
+				fscanf(in, " $%[^,] , $%[^,] , $%s ", param1, param2, param3);
 				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				instr.rs = register_string_to_int(param2);
@@ -100,14 +91,11 @@ instruction decode_instruction(int mode, FILE *fichier)
 				sprintf(instr.toString, "AND $%s,$%s,$%s -> 0x%s\n", param1, param2, param3, instructionHex);
 				printf("AND $%s,$%s,$%s -> 0x%s\n", param1, param2, param3, instructionHex);
 			}
-			else if(!strcmp(bloc, "BEQ")){
-				if(mode == 0){
-					fscanf(stdin, " $%[^,] , $%[^,] , %s", param1, param2, param3);
-				}
-				else if(mode == 1){
-					fscanf(fichier, " $%[^,] , $%[^,] , %s ", param1, param2, param3);
-				}
-				if(param3[0] == '-'){
+			else if(!strcmp(bloc, "BEQ"))
+			{
+				fscanf(in, " $%[^,] , $%[^,] , %s ", param1, param2, param3);
+				if(param3[0] == '-')
+				{
 					signe = 1;
 					remove_sign(param3);
 				}
@@ -119,7 +107,8 @@ instruction decode_instruction(int mode, FILE *fichier)
 				long_to_bin_arr(11, 15, instr.rs, instructionBin);
 				long_to_bin_arr(16, 31, instr.offset, instructionBin);
 				long_to_bin_arr(0, 5, 4, instructionBin);
-				if(signe){
+				if(signe)
+				{
 					instr.immediate = instr.immediate * -1;
 					bin_twos_complement(16, 31, instructionBin);
 					signe = 0;
@@ -131,14 +120,11 @@ instruction decode_instruction(int mode, FILE *fichier)
 				sprintf(instr.toString, "BEQ $%s,$%s,%s -> 0x%s\n", param1, param2, param3, instructionHex);
 				printf("BEQ $%s,$%s,%s -> 0x%s\n", param1, param2, param3, instructionHex);
 			}
-			else if(!strcmp(bloc, "BGTZ")){
-				if(mode == 0){
-					fscanf(stdin, " $%[^,]  , %s", param1, param2);
-				}
-				else if(mode == 1){
-					fscanf(fichier, " $%[^,]  , %s ", param1, param2);
-				}
-				if(param2[0] == '-'){
+			else if(!strcmp(bloc, "BGTZ"))
+			{
+				fscanf(in, " $%[^,]  , %s ", param1, param2);
+				if(param2[0] == '-')
+				{
 					signe = 1;
 					remove_sign(param2);
 				}
@@ -148,7 +134,8 @@ instruction decode_instruction(int mode, FILE *fichier)
 				long_to_bin_arr(6, 10, instr.rs, instructionBin);
 				long_to_bin_arr(16, 31, instr.offset, instructionBin);
 				long_to_bin_arr(0, 5, 7, instructionBin);
-				if(signe){
+				if(signe)
+				{
 					instr.offset = instr.offset * -1;
 					bin_twos_complement(16, 31, instructionBin);
 					signe = 0;
@@ -160,14 +147,11 @@ instruction decode_instruction(int mode, FILE *fichier)
 				sprintf(instr.toString, "BGTZ $%s,%s -> 0x%s\n", param1, param2, instructionHex);
 				printf("BGTZ $%s,%s -> 0x%s\n", param1, param2, instructionHex);
 			}
-			else if(!strcmp(bloc, "BLEZ")){
-				if(mode == 0){
-					fscanf(stdin, " $%[^,]  , %s", param1, param2);
-				}
-				else if(mode == 1){
-					fscanf(fichier, " $%[^,]  , %s ", param1, param2);
-				}
-				if(param2[0] == '-'){
+			else if(!strcmp(bloc, "BLEZ"))
+			{
+				fscanf(in, " $%[^,]  , %s ", param1, param2);
+				if(param2[0] == '-')
+				{
 					signe = 1;
 					remove_sign(param2);
 				}
@@ -177,7 +161,8 @@ instruction decode_instruction(int mode, FILE *fichier)
 				long_to_bin_arr(6, 10, instr.rs, instructionBin);
 				long_to_bin_arr(16, 31, instr.offset, instructionBin);
 				long_to_bin_arr(0, 5, 6, instructionBin);
-				if(signe){
+				if(signe)
+				{
 					instr.offset = instr.offset * -1;
 					bin_twos_complement(16, 31, instructionBin);
 					signe = 0;
@@ -189,14 +174,11 @@ instruction decode_instruction(int mode, FILE *fichier)
 				sprintf(instr.toString, "BLEZ $%s,%s -> 0x%s\n", param1, param2, instructionHex);
 				printf("BLEZ $%s,%s -> 0x%s\n", param1, param2, instructionHex);
 			}
-			else if(!strcmp(bloc, "BNE")){
-				if(mode == 0){
-					fscanf(stdin, " $%[^,] , $%[^,] , %s", param1, param2, param3);
-				}
-				else if(mode == 1){
-					fscanf(fichier, " $%[^,] , $%[^,] , %s ", param1, param2, param3);
-				}
-				if(param3[0] == '-'){
+			else if(!strcmp(bloc, "BNE"))
+			{
+				fscanf(in, " $%[^,] , $%[^,] , %s ", param1, param2, param3);
+				if(param3[0] == '-')
+				{
 					signe = 1;
 					remove_sign(param3);
 				}
@@ -208,7 +190,8 @@ instruction decode_instruction(int mode, FILE *fichier)
 				long_to_bin_arr(11, 15, instr.rs, instructionBin);
 				long_to_bin_arr(16, 31, instr.offset, instructionBin);
 				long_to_bin_arr(0, 5, 5, instructionBin);
-				if(signe){
+				if(signe)
+				{
 					instr.offset = instr.offset * -1;
 					bin_twos_complement(16, 31, instructionBin);
 					signe = 0;
@@ -220,13 +203,9 @@ instruction decode_instruction(int mode, FILE *fichier)
 				sprintf(instr.toString, "BNE $%s,$%s,%s -> 0x%s\n", param1, param2, param3, instructionHex);
 				printf("BNE $%s,$%s,%s -> 0x%s\n", param1, param2, param3, instructionHex);
 			}
-			else if(!strcmp(bloc, "DIV")){
-				if(mode == 0){
-					fscanf(stdin, " $%[^,] , $%s", param1, param2);
-				}
-				else if(mode == 1){
-					fscanf(fichier, " $%[^,] , $%s ", param1, param2);
-				}
+			else if(!strcmp(bloc, "DIV"))
+			{
+				fscanf(in, " $%[^,] , $%s ", param1, param2);
 				bin_zero(instructionBin);
 				instr.rs = register_string_to_int(param1);
 				instr.rt = register_string_to_int(param2);
@@ -240,16 +219,11 @@ instruction decode_instruction(int mode, FILE *fichier)
 				sprintf(instr.toString, "DIV $%s,$%s -> 0x%s\n", param1, param2, instructionHex);
 				printf("DIV $%s,$%s -> 0x%s\n", param1, param2, instructionHex);
 			}
-			else if(!strcmp(bloc, "EXIT")){
+			else if(!strcmp(bloc, "EXIT"))
 				instr.exit = 1;
-			}
-			else if(!strcmp(bloc, "J")){
-				if(mode == 0){
-					fscanf(stdin, " %s", param1);
-				}
-				else if(mode == 1){
-					fscanf(fichier, " %s ", param1);
-				}
+			else if(!strcmp(bloc, "J"))
+			{
+				fscanf(in, " %s ", param1);
 				bin_zero(instructionBin);
 				instr.target = register_string_to_int(param1);
 				long_to_bin_arr(6, 31, instr.target, instructionBin);
@@ -261,13 +235,9 @@ instruction decode_instruction(int mode, FILE *fichier)
 				sprintf(instr.toString, "J %s -> 0x%s\n", param1, instructionHex);
 				printf("J %s -> 0x%s\n", param1, instructionHex);
 			}
-			else if(!strcmp(bloc, "JAL")){
-				if(mode == 0){
-					fscanf(stdin, " %s", param1);
-				}
-				else if(mode == 1){
-					fscanf(fichier, " %s ", param1);
-				}
+			else if(!strcmp(bloc, "JAL"))
+			{
+				fscanf(in, " %s ", param1);
 				bin_zero(instructionBin);
 				instr.target = register_string_to_int(param1);
 				long_to_bin_arr(6, 31, instr.target, instructionBin);
@@ -279,13 +249,9 @@ instruction decode_instruction(int mode, FILE *fichier)
 				sprintf(instr.toString, "JAL %s -> 0x%s\n", param1, instructionHex);
 				printf("JAL %s -> 0x%s\n", param1, instructionHex);
 			}
-			else if(!strcmp(bloc, "JR")){
-				if(mode == 0){
-					fscanf(stdin, " $%s", param1);
-				}
-				else if(mode == 1){
-					fscanf(fichier, " $%s ", param1);
-				}
+			else if(!strcmp(bloc, "JR"))
+			{
+				fscanf(in, " $%s ", param1);
 				bin_zero(instructionBin);
 				instr.rs = register_string_to_int(param1);
 				long_to_bin_arr(6, 10, instr.rs, instructionBin);
@@ -297,13 +263,9 @@ instruction decode_instruction(int mode, FILE *fichier)
 				sprintf(instr.toString, "JR $%s -> 0x%s\n", param1, instructionHex);
 				printf("JR $%s -> 0x%s\n", param1, instructionHex);
 			}
-			else if(!strcmp(bloc, "LUI")){
-				if(mode == 0){
-					fscanf(stdin, " $%[^,] , %s", param1, param2);
-				}
-				else if(mode == 1){
-					fscanf(fichier, " $%[^,] , %s ", param1, param2);
-				}
+			else if(!strcmp(bloc, "LUI"))
+			{
+				fscanf(in, " $%[^,] , %s ", param1, param2);
 				bin_zero(instructionBin);
 				instr.rt = register_string_to_int(param1);
 				instr.immediate = register_string_to_int(param2);
@@ -317,14 +279,11 @@ instruction decode_instruction(int mode, FILE *fichier)
 				sprintf(instr.toString, "LUI $%s,%s -> 0x%s\n", param1, param2, instructionHex);
 				printf("LUI $%s,%s -> 0x%s\n", param1, param2, instructionHex);
 			}
-			else if(!strcmp(bloc, "LW")){
-				if(mode == 0){
-					fscanf(stdin, " $%[^,] , %[^(] ($%[^)])", param1, param2, param3);
-				}
-				else if(mode == 1){
-					fscanf(fichier, " $%[^,] , %[^(] ($%[^)]) ", param1, param2, param3);
-				}
-				if(param2[0] == '-'){
+			else if(!strcmp(bloc, "LW"))
+			{
+				fscanf(in, " $%[^,] , %[^(] ($%[^)]) ", param1, param2, param3);
+				if(param2[0] == '-')
+				{
 					signe = 1;
 					remove_sign(param2);
 				}
@@ -336,7 +295,8 @@ instruction decode_instruction(int mode, FILE *fichier)
 				long_to_bin_arr(16, 31, instr.offset, instructionBin);
 				long_to_bin_arr(6, 10, instr.base, instructionBin);
 				long_to_bin_arr(0, 5, 35, instructionBin);
-				if(signe){
+				if(signe)
+				{
 					instr.offset = instr.offset * -1;
 					bin_twos_complement(16, 31, instructionBin);
 					signe = 0;
@@ -348,13 +308,9 @@ instruction decode_instruction(int mode, FILE *fichier)
 				sprintf(instr.toString, "LW $%s,%s($%s) -> 0x%s\n", param1, param2, param3, instructionHex);
 				printf("LW $%s,%s($%s) -> 0x%s\n", param1, param2, param3, instructionHex);
 			}
-			else if(!strcmp(bloc, "MFHI")){
-				if(mode == 0){
-					fscanf(stdin, " $%s", param1);
-				}
-				else if(mode == 1){
-					fscanf(fichier, " $%s ", param1);
-				}
+			else if(!strcmp(bloc, "MFHI"))
+			{
+				fscanf(in, " $%s ", param1);
 				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				long_to_bin_arr(16, 20, instr.rd, instructionBin);
@@ -366,13 +322,9 @@ instruction decode_instruction(int mode, FILE *fichier)
 				sprintf(instr.toString, "MFHI $%s -> 0x%s\n", param1, instructionHex);
 				printf("MFHI $%s -> 0x%s\n", param1, instructionHex);
 			}
-			else if(!strcmp(bloc, "MFLO")){
-				if(mode == 0){
-					fscanf(stdin, " $%s", param1);
-				}
-				else if(mode == 1){
-					fscanf(fichier, " $%s ", param1);
-				}
+			else if(!strcmp(bloc, "MFLO"))
+			{
+				fscanf(in, " $%s ", param1);
 				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				long_to_bin_arr(16, 20, instr.rd, instructionBin);
@@ -384,13 +336,9 @@ instruction decode_instruction(int mode, FILE *fichier)
 				sprintf(instr.toString, "MFLO $%s -> 0x%s\n", param1, instructionHex);
 				printf("MFLO $%s -> 0x%s\n", param1, instructionHex);
 			}
-			else if(!strcmp(bloc, "MULT")){
-				if(mode == 0){
-					fscanf(stdin, " $%[^,] , $%s", param1, param2);
-				}
-				else if(mode == 1){
-					fscanf(fichier, " $%[^,] , $%s ", param1, param2);
-				}
+			else if(!strcmp(bloc, "MULT"))
+			{
+				fscanf(in, " $%[^,] , $%s ", param1, param2);
 				bin_zero(instructionBin);
 				instr.rs = register_string_to_int(param1);
 				instr.rt = register_string_to_int(param2);
@@ -404,7 +352,8 @@ instruction decode_instruction(int mode, FILE *fichier)
 				sprintf(instr.toString, "MULT $%s,$%s -> 0x%s\n", param1, param2, instructionHex);
 				printf("MULT $%s,$%s -> 0x%s\n", param1, param2, instructionHex);
 			}
-			else if(!strcmp(bloc, "NOP")){
+			else if(!strcmp(bloc, "NOP"))
+			{
 				bin_zero(instructionBin);
 				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
@@ -413,13 +362,9 @@ instruction decode_instruction(int mode, FILE *fichier)
 				sprintf(instr.toString, "NOP -> 0x%s\n", instructionHex);
 				printf("NOP -> 0x%s\n", instructionHex);
 			}
-			else if(!strcmp(bloc, "OR")){
-				if(mode == 0){
-					fscanf(stdin, " $%[^,] , $%[^,] , $%s", param1, param2, param3);
-				}
-				else if(mode == 1){
-					fscanf(fichier, " $%[^,] , $%[^,] , $%s ", param1, param2, param3);
-				}
+			else if(!strcmp(bloc, "OR"))
+			{
+				fscanf(in, " $%[^,] , $%[^,] , $%s ", param1, param2, param3);
 				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				instr.rs = register_string_to_int(param2);
@@ -435,13 +380,9 @@ instruction decode_instruction(int mode, FILE *fichier)
 				sprintf(instr.toString, "OR $%s,$%s,$%s -> 0x%s\n", param1, param2, param3, instructionHex);
 				printf("OR $%s,$%s,$%s -> 0x%s\n", param1, param2, param3, instructionHex);
 			}
-			else if(!strcmp(bloc, "ROTR")){
-				if(mode == 0){
-					fscanf(stdin, " $%[^,] , $%[^,] , %s", param1, param2, param3);
-				}
-				else if(mode == 1){
-					fscanf(fichier, " $%[^,] , $%[^,] , %s ", param1, param2, param3);
-				}
+			else if(!strcmp(bloc, "ROTR"))
+			{
+				fscanf(in, " $%[^,] , $%[^,] , %s ", param1, param2, param3);
 				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				instr.rt = register_string_to_int(param2);
@@ -458,13 +399,9 @@ instruction decode_instruction(int mode, FILE *fichier)
 				sprintf(instr.toString, "ROTR $%s,$%s,%s -> 0x%s\n", param1, param2, param3, instructionHex);
 				printf("ROTR $%s,$%s,%s -> 0x%s\n", param1, param2, param3, instructionHex);
 			}
-			else if(!strcmp(bloc, "SLL")){
-				if(mode == 0){
-					fscanf(stdin, " $%[^,] , $%[^,] , %s", param1, param2, param3);
-				}
-				else if(mode == 1){
-					fscanf(fichier, " $%[^,] , $%[^,] , %s ", param1, param2, param3);
-				}
+			else if(!strcmp(bloc, "SLL"))
+			{
+				fscanf(in, " $%[^,] , $%[^,] , %s ", param1, param2, param3);
 				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				instr.rt = register_string_to_int(param2);
@@ -479,13 +416,9 @@ instruction decode_instruction(int mode, FILE *fichier)
 				sprintf(instr.toString, "SLL $%s,$%s,%s -> 0x%s\n", param1, param2, param3, instructionHex);
 				printf("SLL $%s,$%s,%s -> 0x%s\n", param1, param2, param3, instructionHex);
 			}
-			else if(!strcmp(bloc, "SLT")){
-				if(mode == 0){
-					fscanf(stdin, " $%[^,] , $%[^,] , $%s", param1, param2, param3);
-				}
-				else if(mode == 1){
-					fscanf(fichier, " $%[^,] , $%[^,] , $%s ", param1, param2, param3);
-				}
+			else if(!strcmp(bloc, "SLT"))
+			{
+				fscanf(in, " $%[^,] , $%[^,] , $%s ", param1, param2, param3);
 				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				instr.rs = register_string_to_int(param2);
@@ -501,13 +434,9 @@ instruction decode_instruction(int mode, FILE *fichier)
 				sprintf(instr.toString, "SLT $%s,$%s,$%s -> 0x%s\n", param1, param2, param3, instructionHex);
 				printf("SLT $%s,$%s,$%s -> 0x%s\n", param1, param2, param3, instructionHex);
 			}
-			else if(!strcmp(bloc, "SRL")){
-				if(mode == 0){
-					fscanf(stdin, " $%[^,] , $%[^,] , %s", param1, param2, param3);
-				}
-				else if(mode == 1){
-					fscanf(fichier, " $%[^,] , $%[^,] , %s ", param1, param2, param3);
-				}
+			else if(!strcmp(bloc, "SRL"))
+			{
+				fscanf(in, " $%[^,] , $%[^,] , %s ", param1, param2, param3);
 				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				instr.rt = register_string_to_int(param2);
@@ -523,13 +452,9 @@ instruction decode_instruction(int mode, FILE *fichier)
 				sprintf(instr.toString, "SRL $%s,$%s,%s -> 0x%s\n", param1, param2, param3, instructionHex);
 				printf("SRL $%s,$%s,%s -> 0x%s\n", param1, param2, param3, instructionHex);
 			}
-			else if(!strcmp(bloc, "SUB")){
-				if(mode == 0){
-					fscanf(stdin, " $%[^,] , $%[^,] , $%s", param1, param2, param3);
-				}
-				else if(mode == 1){
-					fscanf(fichier, " $%[^,] , $%[^,] , $%s ", param1, param2, param3);
-				}
+			else if(!strcmp(bloc, "SUB"))
+			{
+				fscanf(in, " $%[^,] , $%[^,] , $%s ", param1, param2, param3);
 				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				instr.rs = register_string_to_int(param2);
@@ -545,14 +470,11 @@ instruction decode_instruction(int mode, FILE *fichier)
 				sprintf(instr.toString, "SUB $%s,$%s,$%s -> 0x%s\n", param1, param2, param3, instructionHex);
 				printf("SUB $%s,$%s,$%s -> 0x%s\n", param1, param2, param3, instructionHex);
 			}
-			else if(!strcmp(bloc, "SW")){
-				if(mode == 0){
-					fscanf(stdin, " $%[^,] , %[^(] ($%[^)])", param1, param2, param3);
-				}
-				else if(mode == 1){
-					fscanf(fichier, " $%[^,] , %[^(] ($%[^)]) ", param1, param2, param3);
-				}
-				if(param2[0] == '-'){
+			else if(!strcmp(bloc, "SW"))
+			{
+				fscanf(in, " $%[^,] , %[^(] ($%[^)]) ", param1, param2, param3);
+				if(param2[0] == '-')
+				{
 					signe = 1;
 					remove_sign(param2);
 				}
@@ -564,7 +486,8 @@ instruction decode_instruction(int mode, FILE *fichier)
 				long_to_bin_arr(16, 31, instr.offset, instructionBin);
 				long_to_bin_arr(6, 10, instr.base, instructionBin);
 				long_to_bin_arr(0, 5, 43, instructionBin);
-				if(signe){
+				if(signe)
+				{
 					instr.offset = instr.offset * -1;
 					bin_twos_complement(16, 31, instructionBin);
 					signe = 0;
@@ -576,13 +499,9 @@ instruction decode_instruction(int mode, FILE *fichier)
 				sprintf(instr.toString, "SW $%s,%s($%s) -> 0x%s\n", param1, param2, param3, instructionHex);
 				printf("SW $%s,%s($%s) -> 0x%s\n", param1, param2, param3, instructionHex);
 			}
-			else if(!strcmp(bloc, "XOR")){
-				if(mode == 0){
-					fscanf(stdin, " $%[^,] , $%[^,] , $%s", param1, param2, param3);
-				}
-				else if(mode == 1){
-					fscanf(fichier, " $%[^,] , $%[^,] , $%s ", param1, param2, param3);
-				}
+			else if(!strcmp(bloc, "XOR"))
+			{
+				fscanf(in, " $%[^,] , $%[^,] , $%s ", param1, param2, param3);
 				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				instr.rs = register_string_to_int(param2);
@@ -600,14 +519,11 @@ instruction decode_instruction(int mode, FILE *fichier)
 			}
 		}
 	}
-	else{
+	else
+	{
 		instr.type = -1;
-		if(mode == 0){
-			fscanf(stdin, " %[^\n]\n", bloc);
-		}
-		else if(mode == 1){
-			fscanf(fichier, " %[^\n]\n", bloc);
-		}
+		fscanf(in, " %[^\n]\n", bloc);
 	}
+
 	return(instr);
 }

@@ -10,6 +10,16 @@
 #include "registers.h"
 #include "utils.h"
 
+void close_files(FILE *in, FILE *out_hex, FILE *out_regs, char *path_out_hex, char *path_out_regs)
+{
+	fclose(in);
+	if(path_out_hex && path_out_regs)
+	{
+		fclose(out_hex);
+		fclose(out_regs);
+	}
+}
+
 void interactive_mode(CPU *cpu, config *cfg)
 {
 	instruction current_instr = {0};
@@ -52,9 +62,14 @@ void batch_mode(CPU *cpu, config *cfg, char *path_in, char *path_out_hex, char *
 	}
 
 	printf("\n--- Instruction decode ---\n");
-	while(!feof(in))
+	while(1)
 	{
 		instructions_arr[i] = decode_instruction(1, in);
+		if(instructions_arr[i].exit)
+		{
+			close_files(in, out_hex, out_regs, path_out_hex, path_out_regs);
+			break;
+		}
 		if(instructions_arr[i].opcode > 0 && instructions_arr[i].opcode <= 25)
 			i++;
 	}
@@ -82,6 +97,8 @@ void batch_mode(CPU *cpu, config *cfg, char *path_in, char *path_out_hex, char *
 		fprintf(out_regs, "HI : %ld\n", register_read(cpu, REG_HI));
 		fprintf(out_regs, "LO : %ld\n", register_read(cpu, REG_LO));
 	}
+
+	close_files(in, out_hex, out_regs, path_out_hex, path_out_regs);
 }
 
 int main(int argc, char *argv[])
