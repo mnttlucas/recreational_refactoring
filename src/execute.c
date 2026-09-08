@@ -160,8 +160,3 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 	if(cfg->verbose)
 		printf("%s", instr.toString);
 }
-
-void increment_pc(CPU *cpu)
-{
-	register_write(cpu, REG_PC, register_read(cpu, REG_PC) + 1);
-}

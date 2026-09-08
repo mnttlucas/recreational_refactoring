@@ -86,6 +86,26 @@ void cpu_dump(CPU *cpu, config *cfg)
 		fgets(wait, sizeof(wait), stdin);
 }
 
+void increment_pc(CPU *cpu)
+{
+	register_write(cpu, REG_PC, register_read(cpu, REG_PC) + 1);
+}
+
+void log_instruction(instruction *instr)
+{
+	if(!instr->exit)
+		printf("%s", instr->toString);
+}
+
+void log_usage(char *prog_name)
+{
+fprintf(stderr, "\n[!] Usage:\n \
+- %s for interactive mode\n \
+- %s -step {pathfile instructions file} for batch mode (step by step)\n \
+- %s {pathfile instructions file} {pathfile hex instructions output} {pathfile registers output} for batch mode\n",
+prog_name, prog_name, prog_name);
+}
+
 void long_to_bin_arr(int start, int end, long value, int *arr)
 {
 	long bin = 1;

@@ -10,16 +10,6 @@
 #include "registers.h"
 #include "utils.h"
 
-void close_files(FILE *in, FILE *out_hex, FILE *out_regs, char *path_out_hex, char *path_out_regs)
-{
-	fclose(in);
-	if(path_out_hex && path_out_regs)
-	{
-		fclose(out_hex);
-		fclose(out_regs);
-	}
-}
-
 void interactive_mode(CPU *cpu, config *cfg)
 {
 	instruction current_instr = {0};
@@ -46,7 +36,7 @@ void batch_mode(CPU *cpu, config *cfg, char *path_in, char *path_out_hex, char *
 	{
 		if(((in = fopen(path_in, "r")) == NULL))
 		{
-			printf("[!] batch_mode : fopen() error\n");
+			printf("\n[!] batch_mode : fopen() error\n");
 			return;
 		}
 	}
@@ -56,7 +46,7 @@ void batch_mode(CPU *cpu, config *cfg, char *path_in, char *path_out_hex, char *
 			((out_hex = fopen(path_out_hex, "w")) == NULL) ||
 			((out_regs = fopen(path_out_regs, "w")) == NULL))
 		{
-			printf("[!] batch_mode : fopen() error\n");
+			printf("\n[!] batch_mode : fopen() error\n");
 			return;
 		}
 	}
@@ -66,10 +56,7 @@ void batch_mode(CPU *cpu, config *cfg, char *path_in, char *path_out_hex, char *
 	{
 		instructions_arr[i] = decode_instruction(1, in);
 		if(instructions_arr[i].exit)
-		{
-			close_files(in, out_hex, out_regs, path_out_hex, path_out_regs);
 			break;
-		}
 		if(instructions_arr[i].opcode > 0 && instructions_arr[i].opcode <= 25)
 			i++;
 	}
@@ -98,23 +85,26 @@ void batch_mode(CPU *cpu, config *cfg, char *path_in, char *path_out_hex, char *
 		fprintf(out_regs, "LO : %ld\n", register_read(cpu, REG_LO));
 	}
 
-	close_files(in, out_hex, out_regs, path_out_hex, path_out_regs);
+	fclose(in);
+	if(path_out_hex && path_out_regs)
+	{
+		fclose(out_hex);
+		fclose(out_regs);
+	}
 }
 
 int main(int argc, char *argv[])
 {
-	CPU cpu;
 	config cfg = {0};
+	CPU cpu;
 
 	memory_init(&cpu);
 	registers_init(&cpu);
 
 	if(argc == 1)
-	{
-		cfg.verbose = 0;
 		interactive_mode(&cpu, &cfg);
-	}
-	else{
+	else
+	{
 		cfg.verbose = 1;
 		if(argc == 3 && !strcmp(argv[2], "-step"))
 		{
@@ -122,17 +112,10 @@ int main(int argc, char *argv[])
 			batch_mode(&cpu, &cfg, argv[1], NULL, NULL);
 		}
 		else if(argc == 4)
-		{
 			batch_mode(&cpu, &cfg, argv[1], argv[2], argv[3]);
-		}
 		else
-		{
-fprintf(stderr, "[!] Usage:\n \
-- %s for interactive mode\n \
-- %s -step {pathfile instructions file} for batch mode (step by step)\n \
-- %s {pathfile instructions file} {pathfile hex instructions output} {pathfile registers output} for batch mode\n",
-argv[0], argv[0], argv[0]);
-		}
+			log_usage(argv[0]);
+
 	}
 	return(0);
 }
