@@ -93,7 +93,7 @@ void increment_pc(CPU *cpu)
 
 int is_negative(char *str)
 {
-	return(str[0] == "-");
+	return(str[0] == '-');
 }
 
 void log_instruction(instruction *instr)

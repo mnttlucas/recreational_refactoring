@@ -55,21 +55,17 @@ instruction decode_instruction(int mode, FILE *fichier)
 					signe = 1;
 					remove_sign(param3);
 				}
-				bin_zero(instructionBin);
 				instr.rt = register_string_to_int(param1);
 				instr.rs = register_string_to_int(param2);
 				instr.immediate = atoi(param3);
-				long_to_bin_arr(0, 5, 8, instructionBin);
-				long_to_bin_arr(6, 10, instr.rs, instructionBin);
-				long_to_bin_arr(11, 15, instr.rt, instructionBin);
-				long_to_bin_arr(16, 31, instr.immediate, instructionBin);
+				instruction_field fields[] = {FIELD(0, 5, 8), FIELD(6, 10, instr.rs), FIELD(11, 15, instr.rt), FIELD(16, 31, instr.immediate)};
+				build_instruction_bin(fields, 4, instructionBin, instructionHex);
 				if(signe)
 				{
 					instr.immediate = instr.immediate * -1;
 					bin_twos_complement(16, 31, instructionBin);
 					signe = 0;
 				}
-				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = ADDI;
 				instr.type = 2;
