@@ -5,6 +5,7 @@
 #include "execute.h"
 #include "memory.h"
 #include "registers.h"
+#include "utils.h"
 
 void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 {

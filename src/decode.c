@@ -6,6 +6,14 @@
 #include "instruction.h"
 #include "utils.h"
 
+void build_instruction_bin(instruction_field *arr, size_t field_count, int *bin_arr, char *hex_arr)
+{
+	bin_zero(bin_arr);
+	for(size_t i = 0; i < field_count; i++)
+		long_to_bin_arr(arr[i].start_bit, arr[i].end_bit, arr[i].value, bin_arr);
+	bin_arr_to_hex_arr(bin_arr, hex_arr);
+}
+
 instruction decode_instruction(int mode, FILE *fichier)
 {
 	char bloc[50], instructionHex[9], param1[20], param2[20], param3[20];
@@ -29,15 +37,11 @@ instruction decode_instruction(int mode, FILE *fichier)
 			if(!strcmp(bloc, "ADD"))
 			{
 				fscanf(in, " $%[^,] , $%[^,] , $%s ", param1, param2, param3);
-				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				instr.rs = register_string_to_int(param2);
 				instr.rt = register_string_to_int(param3);
-				long_to_bin_arr(6, 10, instr.rs, instructionBin);
-				long_to_bin_arr(11, 15, instr.rt, instructionBin);
-				long_to_bin_arr(16, 20, instr.rd, instructionBin);
-				long_to_bin_arr(21, 31, 32, instructionBin);
-				bin_arr_to_hex_arr(instructionBin, instructionHex);
+				instruction_field fields[] = {FIELD(6, 10, instr.rs), FIELD(11, 15, instr.rt), FIELD(16, 20, instr.rd), FIELD(21, 31, 32)};
+				build_instruction_bin(fields, 4, instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = ADD;
 				instr.type = 2;

@@ -91,6 +91,11 @@ void increment_pc(CPU *cpu)
 	register_write(cpu, REG_PC, register_read(cpu, REG_PC) + 1);
 }
 
+int is_negative(char *str)
+{
+	return(str[0] == "-");
+}
+
 void log_instruction(instruction *instr)
 {
 	if(!instr->exit)
