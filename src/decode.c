@@ -14,6 +14,20 @@ void build_instruction_bin(instruction_field *arr, size_t field_count, int *bin_
 	bin_arr_to_hex_arr(bin_arr, hex_arr);
 }
 
+int handle_sign(char *param, int *negative)
+{
+	int value;
+
+	if(is_negative(param))
+	{
+		negative = 1;
+		remove_sign(param);
+		value = atoi(param) * -1;
+	}
+
+	return(value);
+}
+
 instruction decode_instruction(int mode, FILE *fichier)
 {
 	char bloc[50], instructionHex[9], param1[20], param2[20], param3[20];
@@ -50,21 +64,15 @@ instruction decode_instruction(int mode, FILE *fichier)
 			else if(!strcmp(bloc, "ADDI"))
 			{
 				fscanf(in, " $%[^,] , $%[^,] , %s ", param1, param2, param3);
-				if(param3[0] == '-')
-				{
-					signe = 1;
-					remove_sign(param3);
-				}
 				instr.rt = register_string_to_int(param1);
 				instr.rs = register_string_to_int(param2);
-				instr.immediate = atoi(param3);
+				instr.immediate = handle_sign(param3, &signe);
 				instruction_field fields[] = {FIELD(0, 5, 8), FIELD(6, 10, instr.rs), FIELD(11, 15, instr.rt), FIELD(16, 31, instr.immediate)};
 				build_instruction_bin(fields, 4, instructionBin, instructionHex);
 				if(signe)
 				{
 					instr.immediate = instr.immediate * -1;
 					bin_twos_complement(16, 31, instructionBin);
-					signe = 0;
 				}
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = ADDI;
@@ -91,24 +99,18 @@ instruction decode_instruction(int mode, FILE *fichier)
 			else if(!strcmp(bloc, "BEQ"))
 			{
 				fscanf(in, " $%[^,] , $%[^,] , %s ", param1, param2, param3);
-				if(param3[0] == '-')
-				{
-					signe = 1;
-					remove_sign(param3);
-				}
 				bin_zero(instructionBin);
 				instr.rt = register_string_to_int(param1);
 				instr.rs = register_string_to_int(param2);
-				instr.offset = atoi(param3);
+				instr.offset = handle_sign(param3, &signe);
 				long_to_bin_arr(6, 10, instr.rt, instructionBin);
 				long_to_bin_arr(11, 15, instr.rs, instructionBin);
 				long_to_bin_arr(16, 31, instr.offset, instructionBin);
 				long_to_bin_arr(0, 5, 4, instructionBin);
 				if(signe)
 				{
-					instr.immediate = instr.immediate * -1;
+					instr.offset = instr.offset * -1;
 					bin_twos_complement(16, 31, instructionBin);
-					signe = 0;
 				}
 				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
@@ -119,14 +121,9 @@ instruction decode_instruction(int mode, FILE *fichier)
 			else if(!strcmp(bloc, "BGTZ"))
 			{
 				fscanf(in, " $%[^,]  , %s ", param1, param2);
-				if(param2[0] == '-')
-				{
-					signe = 1;
-					remove_sign(param2);
-				}
 				bin_zero(instructionBin);
 				instr.rs = register_string_to_int(param1);
-				instr.offset = atoi(param2);
+				instr.offset = handle_sign(param2, &signe);
 				long_to_bin_arr(6, 10, instr.rs, instructionBin);
 				long_to_bin_arr(16, 31, instr.offset, instructionBin);
 				long_to_bin_arr(0, 5, 7, instructionBin);
@@ -134,7 +131,6 @@ instruction decode_instruction(int mode, FILE *fichier)
 				{
 					instr.offset = instr.offset * -1;
 					bin_twos_complement(16, 31, instructionBin);
-					signe = 0;
 				}
 				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
@@ -145,14 +141,9 @@ instruction decode_instruction(int mode, FILE *fichier)
 			else if(!strcmp(bloc, "BLEZ"))
 			{
 				fscanf(in, " $%[^,]  , %s ", param1, param2);
-				if(param2[0] == '-')
-				{
-					signe = 1;
-					remove_sign(param2);
-				}
 				bin_zero(instructionBin);
 				instr.rs = register_string_to_int(param1);
-				instr.offset = atoi(param2);
+				instr.offset = handle_sign(param2, &signe);
 				long_to_bin_arr(6, 10, instr.rs, instructionBin);
 				long_to_bin_arr(16, 31, instr.offset, instructionBin);
 				long_to_bin_arr(0, 5, 6, instructionBin);
@@ -160,7 +151,6 @@ instruction decode_instruction(int mode, FILE *fichier)
 				{
 					instr.offset = instr.offset * -1;
 					bin_twos_complement(16, 31, instructionBin);
-					signe = 0;
 				}
 				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
@@ -171,15 +161,10 @@ instruction decode_instruction(int mode, FILE *fichier)
 			else if(!strcmp(bloc, "BNE"))
 			{
 				fscanf(in, " $%[^,] , $%[^,] , %s ", param1, param2, param3);
-				if(param3[0] == '-')
-				{
-					signe = 1;
-					remove_sign(param3);
-				}
 				bin_zero(instructionBin);
 				instr.rt = register_string_to_int(param1);
 				instr.rs = register_string_to_int(param2);
-				instr.offset = atoi(param3);
+				instr.offset = handle_sign(param3, &signe);
 				long_to_bin_arr(6, 10, instr.rt, instructionBin);
 				long_to_bin_arr(11, 15, instr.rs, instructionBin);
 				long_to_bin_arr(16, 31, instr.offset, instructionBin);
@@ -188,7 +173,6 @@ instruction decode_instruction(int mode, FILE *fichier)
 				{
 					instr.offset = instr.offset * -1;
 					bin_twos_complement(16, 31, instructionBin);
-					signe = 0;
 				}
 				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
@@ -217,7 +201,7 @@ instruction decode_instruction(int mode, FILE *fichier)
 			{
 				fscanf(in, " %s ", param1);
 				bin_zero(instructionBin);
-				instr.target = register_string_to_int(param1);
+				instr.target = atoi(param1);
 				long_to_bin_arr(6, 31, instr.target, instructionBin);
 				long_to_bin_arr(0, 5, 2, instructionBin);
 				bin_arr_to_hex_arr(instructionBin, instructionHex);
@@ -230,7 +214,7 @@ instruction decode_instruction(int mode, FILE *fichier)
 			{
 				fscanf(in, " %s ", param1);
 				bin_zero(instructionBin);
-				instr.target = register_string_to_int(param1);
+				instr.target = atoi(param1);
 				long_to_bin_arr(6, 31, instr.target, instructionBin);
 				long_to_bin_arr(0, 5, 3, instructionBin);
 				bin_arr_to_hex_arr(instructionBin, instructionHex);
@@ -257,7 +241,7 @@ instruction decode_instruction(int mode, FILE *fichier)
 				fscanf(in, " $%[^,] , %s ", param1, param2);
 				bin_zero(instructionBin);
 				instr.rt = register_string_to_int(param1);
-				instr.immediate = register_string_to_int(param2);
+				instr.immediate = atoi(param2);
 				long_to_bin_arr(11, 15, instr.rt, instructionBin);
 				long_to_bin_arr(16, 31, instr.immediate, instructionBin);
 				long_to_bin_arr(0, 5, 15, instructionBin);
@@ -270,14 +254,9 @@ instruction decode_instruction(int mode, FILE *fichier)
 			else if(!strcmp(bloc, "LW"))
 			{
 				fscanf(in, " $%[^,] , %[^(] ($%[^)]) ", param1, param2, param3);
-				if(param2[0] == '-')
-				{
-					signe = 1;
-					remove_sign(param2);
-				}
 				bin_zero(instructionBin);
 				instr.rt = register_string_to_int(param1);
-				instr.offset = register_string_to_int(param2);
+				instr.offset = handle_sign(param2, &signe);
 				instr.base = register_string_to_int(param3);
 				long_to_bin_arr(11, 15, instr.rt, instructionBin);
 				long_to_bin_arr(16, 31, instr.offset, instructionBin);
@@ -287,7 +266,6 @@ instruction decode_instruction(int mode, FILE *fichier)
 				{
 					instr.offset = instr.offset * -1;
 					bin_twos_complement(16, 31, instructionBin);
-					signe = 0;
 				}
 				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
@@ -368,7 +346,7 @@ instruction decode_instruction(int mode, FILE *fichier)
 				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				instr.rt = register_string_to_int(param2);
-				instr.sa = register_string_to_int(param3);
+				instr.sa = atoi(param3);
 				long_to_bin_arr(16, 20, instr.rd, instructionBin);
 				long_to_bin_arr(11, 15, instr.rt, instructionBin);
 				long_to_bin_arr(21, 25, instr.sa, instructionBin);
@@ -386,7 +364,7 @@ instruction decode_instruction(int mode, FILE *fichier)
 				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				instr.rt = register_string_to_int(param2);
-				instr.sa = register_string_to_int(param3);
+				instr.sa = atoi(param3);
 				long_to_bin_arr(16, 20, instr.rd, instructionBin);
 				long_to_bin_arr(11, 15, instr.rt, instructionBin);
 				long_to_bin_arr(21, 25, instr.sa, instructionBin);
@@ -402,7 +380,7 @@ instruction decode_instruction(int mode, FILE *fichier)
 				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				instr.rs = register_string_to_int(param2);
-				instr.rt = register_string_to_int(param3);
+				instr.rt = atoi(param3);
 				long_to_bin_arr(16, 20, instr.rd, instructionBin);
 				long_to_bin_arr(6, 10, instr.rs, instructionBin);
 				long_to_bin_arr(11, 15, instr.rt, instructionBin);
@@ -419,7 +397,7 @@ instruction decode_instruction(int mode, FILE *fichier)
 				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				instr.rt = register_string_to_int(param2);
-				instr.sa = register_string_to_int(param3);
+				instr.sa = atoi(param3);
 				long_to_bin_arr(16, 20, instr.rd, instructionBin);
 				long_to_bin_arr(11, 15, instr.rt, instructionBin);
 				long_to_bin_arr(21, 25, instr.sa, instructionBin);
@@ -450,14 +428,9 @@ instruction decode_instruction(int mode, FILE *fichier)
 			else if(!strcmp(bloc, "SW"))
 			{
 				fscanf(in, " $%[^,] , %[^(] ($%[^)]) ", param1, param2, param3);
-				if(param2[0] == '-')
-				{
-					signe = 1;
-					remove_sign(param2);
-				}
 				bin_zero(instructionBin);
 				instr.rt = register_string_to_int(param1);
-				instr.offset = register_string_to_int(param2);
+				instr.offset = handle_sign(param2, &signe);
 				instr.base = register_string_to_int(param3);
 				long_to_bin_arr(11, 15, instr.rt, instructionBin);
 				long_to_bin_arr(16, 31, instr.offset, instructionBin);
@@ -467,7 +440,6 @@ instruction decode_instruction(int mode, FILE *fichier)
 				{
 					instr.offset = instr.offset * -1;
 					bin_twos_complement(16, 31, instructionBin);
-					signe = 0;
 				}
 				bin_arr_to_hex_arr(instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
