@@ -3,7 +3,7 @@
 
 enum OPCODE
 {
-	ADD,
+	ADD = 1,
 	ADDI,
 	AND,
 	BEQ,

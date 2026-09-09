@@ -9,8 +9,8 @@
 
 void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 {
-	long address, res, res_HI, res_LO, shift_amount;
-
+	long address, res, res_HI, res_LO;
+	
 	switch(instr.opcode)
 	{
 		case ADD :
@@ -109,16 +109,14 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 			increment_pc(cpu);
 			break;
 		case ROTR :
-			shift_amount = register_read(cpu, instr.sa);
 			res = register_read(cpu, instr.rt);
-			res = res >> shift_amount | res << (32 - shift_amount);
+			res = res >> instr.sa | res << ((32 - instr.sa) & 31);
 			register_write(cpu, instr.rd, res);
 			increment_pc(cpu);
 			break;
 		case SLL :
-			shift_amount = register_read(cpu, instr.sa);
 			res = register_read(cpu, instr.rt);
-			for(int i = 0; i < shift_amount; i++)
+			for(int i = 0; i < instr.sa; i++)
 				res = (res * 2) & 8589934591;
 			register_write(cpu, instr.rd, res);
 			increment_pc(cpu);
@@ -131,9 +129,8 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 			increment_pc(cpu);
 			break;
 		case SRL :
-			shift_amount = register_read(cpu, instr.sa);
 			res = register_read(cpu, instr.rt);
-			for(int i = 0; i < shift_amount; i++)
+			for(int i = 0; i < instr.sa; i++)
 				res /= 2;
 			register_write(cpu, instr.rd, res);
 			increment_pc(cpu);

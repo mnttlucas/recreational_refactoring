@@ -16,16 +16,15 @@ void build_instruction_bin(instruction_field *arr, size_t field_count, int *bin_
 
 int handle_sign(char *param, int *negative)
 {
-	int value;
+	*negative = 0;
 
 	if(is_negative(param))
 	{
-		negative = 1;
+		*negative = 1;
 		remove_sign(param);
-		value = atoi(param) * -1;
 	}
 
-	return(value);
+	return(atoi(param));
 }
 
 instruction decode_instruction(int mode, FILE *fichier)
@@ -74,6 +73,7 @@ instruction decode_instruction(int mode, FILE *fichier)
 					instr.immediate = instr.immediate * -1;
 					bin_twos_complement(16, 31, instructionBin);
 				}
+				bin_arr_to_hex_arr(instructionBin, instructionHex); // TODO: to keep for now because if(signe) is after build_instruction_bin()
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = ADDI;
 				instr.type = 2;
@@ -82,15 +82,11 @@ instruction decode_instruction(int mode, FILE *fichier)
 			else if(!strcmp(bloc, "AND"))
 			{
 				fscanf(in, " $%[^,] , $%[^,] , $%s ", param1, param2, param3);
-				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				instr.rs = register_string_to_int(param2);
 				instr.rt = register_string_to_int(param3);
-				long_to_bin_arr(16, 20, instr.rd, instructionBin);
-				long_to_bin_arr(6, 10, instr.rs, instructionBin);
-				long_to_bin_arr(11, 15, instr.rt, instructionBin);
-				long_to_bin_arr(21, 31, 36, instructionBin);
-				bin_arr_to_hex_arr(instructionBin, instructionHex);
+				instruction_field fields[] = {FIELD(6, 10, instr.rs), FIELD(11, 15, instr.rt), FIELD(16, 20, instr.rd), FIELD(21, 31, 36)};
+				build_instruction_bin(fields, 4, instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = AND;
 				instr.type = 2;
@@ -99,20 +95,17 @@ instruction decode_instruction(int mode, FILE *fichier)
 			else if(!strcmp(bloc, "BEQ"))
 			{
 				fscanf(in, " $%[^,] , $%[^,] , %s ", param1, param2, param3);
-				bin_zero(instructionBin);
 				instr.rt = register_string_to_int(param1);
 				instr.rs = register_string_to_int(param2);
 				instr.offset = handle_sign(param3, &signe);
-				long_to_bin_arr(6, 10, instr.rt, instructionBin);
-				long_to_bin_arr(11, 15, instr.rs, instructionBin);
-				long_to_bin_arr(16, 31, instr.offset, instructionBin);
-				long_to_bin_arr(0, 5, 4, instructionBin);
+				instruction_field fields[] = {FIELD(0, 5, 4), FIELD(6, 10, instr.rt), FIELD(11, 15, instr.rs), FIELD(16, 31, instr.offset)};
+				build_instruction_bin(fields, 4, instructionBin, instructionHex);
 				if(signe)
 				{
 					instr.offset = instr.offset * -1;
 					bin_twos_complement(16, 31, instructionBin);
 				}
-				bin_arr_to_hex_arr(instructionBin, instructionHex);
+				bin_arr_to_hex_arr(instructionBin, instructionHex); // TODO: to keep for now because if(signe) is after build_instruction_bin()
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = BEQ;
 				instr.type = 2;
@@ -121,18 +114,16 @@ instruction decode_instruction(int mode, FILE *fichier)
 			else if(!strcmp(bloc, "BGTZ"))
 			{
 				fscanf(in, " $%[^,]  , %s ", param1, param2);
-				bin_zero(instructionBin);
 				instr.rs = register_string_to_int(param1);
 				instr.offset = handle_sign(param2, &signe);
-				long_to_bin_arr(6, 10, instr.rs, instructionBin);
-				long_to_bin_arr(16, 31, instr.offset, instructionBin);
-				long_to_bin_arr(0, 5, 7, instructionBin);
+				instruction_field fields[] = {FIELD(0, 5, 7), FIELD(6, 10, instr.rs), FIELD(16, 31, instr.offset)};
+				build_instruction_bin(fields, 3, instructionBin, instructionHex);
 				if(signe)
 				{
 					instr.offset = instr.offset * -1;
 					bin_twos_complement(16, 31, instructionBin);
 				}
-				bin_arr_to_hex_arr(instructionBin, instructionHex);
+				bin_arr_to_hex_arr(instructionBin, instructionHex); // TODO: to keep for now because if(signe) is after build_instruction_bin()
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = BGTZ;
 				instr.type = 2;
@@ -141,18 +132,16 @@ instruction decode_instruction(int mode, FILE *fichier)
 			else if(!strcmp(bloc, "BLEZ"))
 			{
 				fscanf(in, " $%[^,]  , %s ", param1, param2);
-				bin_zero(instructionBin);
 				instr.rs = register_string_to_int(param1);
 				instr.offset = handle_sign(param2, &signe);
-				long_to_bin_arr(6, 10, instr.rs, instructionBin);
-				long_to_bin_arr(16, 31, instr.offset, instructionBin);
-				long_to_bin_arr(0, 5, 6, instructionBin);
+				instruction_field fields[] = {FIELD(0, 5, 6), FIELD(6, 10, instr.rs), FIELD(16, 31, instr.offset)};
+				build_instruction_bin(fields, 3, instructionBin, instructionHex);
 				if(signe)
 				{
 					instr.offset = instr.offset * -1;
 					bin_twos_complement(16, 31, instructionBin);
 				}
-				bin_arr_to_hex_arr(instructionBin, instructionHex);
+				bin_arr_to_hex_arr(instructionBin, instructionHex); // TODO: to keep for now because if(signe) is after build_instruction_bin()
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = BLEZ;
 				instr.type = 2;
@@ -161,20 +150,17 @@ instruction decode_instruction(int mode, FILE *fichier)
 			else if(!strcmp(bloc, "BNE"))
 			{
 				fscanf(in, " $%[^,] , $%[^,] , %s ", param1, param2, param3);
-				bin_zero(instructionBin);
 				instr.rt = register_string_to_int(param1);
 				instr.rs = register_string_to_int(param2);
 				instr.offset = handle_sign(param3, &signe);
-				long_to_bin_arr(6, 10, instr.rt, instructionBin);
-				long_to_bin_arr(11, 15, instr.rs, instructionBin);
-				long_to_bin_arr(16, 31, instr.offset, instructionBin);
-				long_to_bin_arr(0, 5, 5, instructionBin);
+				instruction_field fields[] = {FIELD(0, 5, 5), FIELD(6, 10, instr.rt), FIELD(11, 15, instr.rs), FIELD(16, 31, instr.offset)};
+				build_instruction_bin(fields, 4, instructionBin, instructionHex);
 				if(signe)
 				{
 					instr.offset = instr.offset * -1;
 					bin_twos_complement(16, 31, instructionBin);
 				}
-				bin_arr_to_hex_arr(instructionBin, instructionHex);
+				bin_arr_to_hex_arr(instructionBin, instructionHex); // TODO: to keep for now because if(signe) is after build_instruction_bin()
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = BNE;
 				instr.type = 2;
@@ -183,13 +169,10 @@ instruction decode_instruction(int mode, FILE *fichier)
 			else if(!strcmp(bloc, "DIV"))
 			{
 				fscanf(in, " $%[^,] , $%s ", param1, param2);
-				bin_zero(instructionBin);
 				instr.rs = register_string_to_int(param1);
 				instr.rt = register_string_to_int(param2);
-				long_to_bin_arr(6, 10, instr.rs, instructionBin);
-				long_to_bin_arr(11, 15, instr.rt, instructionBin);
-				long_to_bin_arr(16, 31, 26, instructionBin);
-				bin_arr_to_hex_arr(instructionBin, instructionHex);
+				instruction_field fields[] = {FIELD(6, 10, instr.rs), FIELD(11, 15, instr.rt), FIELD(16, 31, 26)};
+				build_instruction_bin(fields, 3, instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = DIV;
 				instr.type = 2;
@@ -200,11 +183,9 @@ instruction decode_instruction(int mode, FILE *fichier)
 			else if(!strcmp(bloc, "J"))
 			{
 				fscanf(in, " %s ", param1);
-				bin_zero(instructionBin);
 				instr.target = atoi(param1);
-				long_to_bin_arr(6, 31, instr.target, instructionBin);
-				long_to_bin_arr(0, 5, 2, instructionBin);
-				bin_arr_to_hex_arr(instructionBin, instructionHex);
+				instruction_field fields[] = {FIELD(0, 5, 2), FIELD(6, 31, instr.target)};
+				build_instruction_bin(fields, 2, instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = J;
 				instr.type = 2;
@@ -213,11 +194,9 @@ instruction decode_instruction(int mode, FILE *fichier)
 			else if(!strcmp(bloc, "JAL"))
 			{
 				fscanf(in, " %s ", param1);
-				bin_zero(instructionBin);
 				instr.target = atoi(param1);
-				long_to_bin_arr(6, 31, instr.target, instructionBin);
-				long_to_bin_arr(0, 5, 3, instructionBin);
-				bin_arr_to_hex_arr(instructionBin, instructionHex);
+				instruction_field fields[] = {FIELD(0, 5, 3), FIELD(6, 31, instr.target)};
+				build_instruction_bin(fields, 2, instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = JAL;
 				instr.type = 2;
@@ -226,11 +205,9 @@ instruction decode_instruction(int mode, FILE *fichier)
 			else if(!strcmp(bloc, "JR"))
 			{
 				fscanf(in, " $%s ", param1);
-				bin_zero(instructionBin);
 				instr.rs = register_string_to_int(param1);
-				long_to_bin_arr(6, 10, instr.rs, instructionBin);
-				long_to_bin_arr(11, 31, 8, instructionBin);
-				bin_arr_to_hex_arr(instructionBin, instructionHex);
+				instruction_field fields[] = {FIELD(6, 10, instr.rs), FIELD(11, 31, 8)};
+				build_instruction_bin(fields, 2, instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = JR;
 				instr.type = 2;
@@ -239,13 +216,10 @@ instruction decode_instruction(int mode, FILE *fichier)
 			else if(!strcmp(bloc, "LUI"))
 			{
 				fscanf(in, " $%[^,] , %s ", param1, param2);
-				bin_zero(instructionBin);
 				instr.rt = register_string_to_int(param1);
 				instr.immediate = atoi(param2);
-				long_to_bin_arr(11, 15, instr.rt, instructionBin);
-				long_to_bin_arr(16, 31, instr.immediate, instructionBin);
-				long_to_bin_arr(0, 5, 15, instructionBin);
-				bin_arr_to_hex_arr(instructionBin, instructionHex);
+				instruction_field fields[] = {FIELD(0, 5, 15), FIELD(11, 15, instr.rt), FIELD(16, 31, instr.immediate)};
+				build_instruction_bin(fields, 3, instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = LUI;
 				instr.type = 2;
@@ -254,20 +228,17 @@ instruction decode_instruction(int mode, FILE *fichier)
 			else if(!strcmp(bloc, "LW"))
 			{
 				fscanf(in, " $%[^,] , %[^(] ($%[^)]) ", param1, param2, param3);
-				bin_zero(instructionBin);
 				instr.rt = register_string_to_int(param1);
 				instr.offset = handle_sign(param2, &signe);
 				instr.base = register_string_to_int(param3);
-				long_to_bin_arr(11, 15, instr.rt, instructionBin);
-				long_to_bin_arr(16, 31, instr.offset, instructionBin);
-				long_to_bin_arr(6, 10, instr.base, instructionBin);
-				long_to_bin_arr(0, 5, 35, instructionBin);
+				instruction_field fields[] = {FIELD(0, 5, 35), FIELD(6, 10, instr.base), FIELD(11, 15, instr.rt), FIELD(16, 31, instr.offset)};
+				build_instruction_bin(fields, 4, instructionBin, instructionHex);
 				if(signe)
 				{
 					instr.offset = instr.offset * -1;
 					bin_twos_complement(16, 31, instructionBin);
 				}
-				bin_arr_to_hex_arr(instructionBin, instructionHex);
+				bin_arr_to_hex_arr(instructionBin, instructionHex); // TODO: to keep for now because if(signe) is after build_instruction_bin()
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = LW;
 				instr.type = 2;
@@ -276,11 +247,9 @@ instruction decode_instruction(int mode, FILE *fichier)
 			else if(!strcmp(bloc, "MFHI"))
 			{
 				fscanf(in, " $%s ", param1);
-				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
-				long_to_bin_arr(16, 20, instr.rd, instructionBin);
-				long_to_bin_arr(21, 31, 16, instructionBin);
-				bin_arr_to_hex_arr(instructionBin, instructionHex);
+				instruction_field fields[] = {FIELD(16, 20, instr.rd), FIELD(21, 31, 16)};
+				build_instruction_bin(fields, 2, instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = MFHI;
 				instr.type = 2;
@@ -289,11 +258,9 @@ instruction decode_instruction(int mode, FILE *fichier)
 			else if(!strcmp(bloc, "MFLO"))
 			{
 				fscanf(in, " $%s ", param1);
-				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
-				long_to_bin_arr(16, 20, instr.rd, instructionBin);
-				long_to_bin_arr(21, 31, 18, instructionBin);
-				bin_arr_to_hex_arr(instructionBin, instructionHex);
+				instruction_field fields[] = {FIELD(16, 20, instr.rd), FIELD(21, 31, 18)};
+				build_instruction_bin(fields, 2, instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = MFLO;
 				instr.type = 2;
@@ -302,13 +269,10 @@ instruction decode_instruction(int mode, FILE *fichier)
 			else if(!strcmp(bloc, "MULT"))
 			{
 				fscanf(in, " $%[^,] , $%s ", param1, param2);
-				bin_zero(instructionBin);
 				instr.rs = register_string_to_int(param1);
 				instr.rt = register_string_to_int(param2);
-				long_to_bin_arr(6, 10, instr.rs, instructionBin);
-				long_to_bin_arr(11, 15, instr.rt, instructionBin);
-				long_to_bin_arr(16, 31, 24, instructionBin);
-				bin_arr_to_hex_arr(instructionBin, instructionHex);
+				instruction_field fields[] = {FIELD(6, 10, instr.rs), FIELD(11, 15, instr.rt), FIELD(16, 31, 24)};
+				build_instruction_bin(fields, 3, instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = MULT;
 				instr.type = 2;
@@ -326,15 +290,11 @@ instruction decode_instruction(int mode, FILE *fichier)
 			else if(!strcmp(bloc, "OR"))
 			{
 				fscanf(in, " $%[^,] , $%[^,] , $%s ", param1, param2, param3);
-				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				instr.rs = register_string_to_int(param2);
 				instr.rt = register_string_to_int(param3);
-				long_to_bin_arr(16, 20, instr.rd, instructionBin);
-				long_to_bin_arr(6, 10, instr.rs, instructionBin);
-				long_to_bin_arr(11, 15, instr.rt, instructionBin);
-				long_to_bin_arr(21, 31, 37, instructionBin);
-				bin_arr_to_hex_arr(instructionBin, instructionHex);
+				instruction_field fields[] = {FIELD(6, 10, instr.rs), FIELD(11, 15, instr.rt), FIELD(16, 20, instr.rd), FIELD(21, 31, 37)};
+				build_instruction_bin(fields, 4, instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = OR;
 				instr.type = 2;
@@ -343,16 +303,12 @@ instruction decode_instruction(int mode, FILE *fichier)
 			else if(!strcmp(bloc, "ROTR"))
 			{
 				fscanf(in, " $%[^,] , $%[^,] , %s ", param1, param2, param3);
-				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				instr.rt = register_string_to_int(param2);
 				instr.sa = atoi(param3);
-				long_to_bin_arr(16, 20, instr.rd, instructionBin);
-				long_to_bin_arr(11, 15, instr.rt, instructionBin);
-				long_to_bin_arr(21, 25, instr.sa, instructionBin);
-				long_to_bin_arr(10, 10, 1, instructionBin);
-				long_to_bin_arr(26, 31, 2, instructionBin);
-				bin_arr_to_hex_arr(instructionBin, instructionHex);
+				printf("dbg:%d\n", instr.sa);
+				instruction_field fields[] = {FIELD(10, 10, 1), FIELD(11, 15, instr.rt), FIELD(16, 20, instr.rd), FIELD(21, 25, instr.sa), FIELD(26, 31, 2)};
+				build_instruction_bin(fields, 5, instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = ROTR;
 				instr.type = 2;
@@ -361,14 +317,11 @@ instruction decode_instruction(int mode, FILE *fichier)
 			else if(!strcmp(bloc, "SLL"))
 			{
 				fscanf(in, " $%[^,] , $%[^,] , %s ", param1, param2, param3);
-				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				instr.rt = register_string_to_int(param2);
 				instr.sa = atoi(param3);
-				long_to_bin_arr(16, 20, instr.rd, instructionBin);
-				long_to_bin_arr(11, 15, instr.rt, instructionBin);
-				long_to_bin_arr(21, 25, instr.sa, instructionBin);
-				bin_arr_to_hex_arr(instructionBin, instructionHex);
+				instruction_field fields[] = {FIELD(11, 15, instr.rt), FIELD(16, 20, instr.rd), FIELD(21, 25, instr.sa)};
+				build_instruction_bin(fields, 3, instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = SLL;
 				instr.type = 2;
@@ -377,15 +330,11 @@ instruction decode_instruction(int mode, FILE *fichier)
 			else if(!strcmp(bloc, "SLT"))
 			{
 				fscanf(in, " $%[^,] , $%[^,] , $%s ", param1, param2, param3);
-				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				instr.rs = register_string_to_int(param2);
-				instr.rt = atoi(param3);
-				long_to_bin_arr(16, 20, instr.rd, instructionBin);
-				long_to_bin_arr(6, 10, instr.rs, instructionBin);
-				long_to_bin_arr(11, 15, instr.rt, instructionBin);
-				long_to_bin_arr(21, 31, 42, instructionBin);
-				bin_arr_to_hex_arr(instructionBin, instructionHex);
+				instr.rt = register_string_to_int(param3);
+				instruction_field fields[] = {FIELD(6, 10, instr.rs), FIELD(11, 15, instr.rt), FIELD(16, 20, instr.rd), FIELD(21, 31, 42)};
+				build_instruction_bin(fields, 4, instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = SLT;
 				instr.type = 2;
@@ -394,15 +343,11 @@ instruction decode_instruction(int mode, FILE *fichier)
 			else if(!strcmp(bloc, "SRL"))
 			{
 				fscanf(in, " $%[^,] , $%[^,] , %s ", param1, param2, param3);
-				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				instr.rt = register_string_to_int(param2);
 				instr.sa = atoi(param3);
-				long_to_bin_arr(16, 20, instr.rd, instructionBin);
-				long_to_bin_arr(11, 15, instr.rt, instructionBin);
-				long_to_bin_arr(21, 25, instr.sa, instructionBin);
-				long_to_bin_arr(26, 31, 2, instructionBin);
-				bin_arr_to_hex_arr(instructionBin, instructionHex);
+				instruction_field fields[] = {FIELD(11, 15, instr.rt), FIELD(16, 20, instr.rd), FIELD(21, 25, instr.sa), FIELD(26, 31, 2)};
+				build_instruction_bin(fields, 4, instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = SRL;
 				instr.type = 2;
@@ -411,15 +356,11 @@ instruction decode_instruction(int mode, FILE *fichier)
 			else if(!strcmp(bloc, "SUB"))
 			{
 				fscanf(in, " $%[^,] , $%[^,] , $%s ", param1, param2, param3);
-				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				instr.rs = register_string_to_int(param2);
 				instr.rt = register_string_to_int(param3);
-				long_to_bin_arr(16, 20, instr.rd, instructionBin);
-				long_to_bin_arr(6, 10, instr.rs, instructionBin);
-				long_to_bin_arr(11, 15, instr.rt, instructionBin);
-				long_to_bin_arr(21, 31, 34, instructionBin);
-				bin_arr_to_hex_arr(instructionBin, instructionHex);
+				instruction_field fields[] = {FIELD(6, 10, instr.rs), FIELD(11, 15, instr.rt), FIELD(16, 20, instr.rd), FIELD(21, 31, 34)};
+				build_instruction_bin(fields, 4, instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = SUB;
 				instr.type = 2;
@@ -428,20 +369,17 @@ instruction decode_instruction(int mode, FILE *fichier)
 			else if(!strcmp(bloc, "SW"))
 			{
 				fscanf(in, " $%[^,] , %[^(] ($%[^)]) ", param1, param2, param3);
-				bin_zero(instructionBin);
 				instr.rt = register_string_to_int(param1);
 				instr.offset = handle_sign(param2, &signe);
 				instr.base = register_string_to_int(param3);
-				long_to_bin_arr(11, 15, instr.rt, instructionBin);
-				long_to_bin_arr(16, 31, instr.offset, instructionBin);
-				long_to_bin_arr(6, 10, instr.base, instructionBin);
-				long_to_bin_arr(0, 5, 43, instructionBin);
+				instruction_field fields[] = {FIELD(0, 5, 43), FIELD(6, 10, instr.base), FIELD(11, 15, instr.rt), FIELD(16, 31, instr.offset)};
+				build_instruction_bin(fields, 4, instructionBin, instructionHex);
 				if(signe)
 				{
 					instr.offset = instr.offset * -1;
 					bin_twos_complement(16, 31, instructionBin);
 				}
-				bin_arr_to_hex_arr(instructionBin, instructionHex);
+				bin_arr_to_hex_arr(instructionBin, instructionHex); // TODO: to keep for now because if(signe) is after build_instruction_bin()
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = SW;
 				instr.type = 2;
@@ -450,15 +388,11 @@ instruction decode_instruction(int mode, FILE *fichier)
 			else if(!strcmp(bloc, "XOR"))
 			{
 				fscanf(in, " $%[^,] , $%[^,] , $%s ", param1, param2, param3);
-				bin_zero(instructionBin);
 				instr.rd = register_string_to_int(param1);
 				instr.rs = register_string_to_int(param2);
 				instr.rt = register_string_to_int(param3);
-				long_to_bin_arr(16, 20, instr.rd, instructionBin);
-				long_to_bin_arr(6, 10, instr.rs, instructionBin);
-				long_to_bin_arr(11, 15, instr.rt, instructionBin);
-				long_to_bin_arr(21, 31, 38, instructionBin);
-				bin_arr_to_hex_arr(instructionBin, instructionHex);
+				instruction_field fields[] = {FIELD(6, 10, instr.rs), FIELD(11, 15, instr.rt), FIELD(16, 20, instr.rd), FIELD(21, 31, 38)};
+				build_instruction_bin(fields, 4, instructionBin, instructionHex);
 				strcpy(instr.instrHex, instructionHex);
 				instr.opcode = XOR;
 				instr.type = 2;
