@@ -3,7 +3,11 @@
 
 enum OPCODE
 {
-	ADD = 1,
+	DUMMY_OPCODE,
+	/* instruction object will be initialized to 0, 
+	when line is fully skipped because of a comment, 
+	OPCODE field will be equal to this dummy value for now */
+	ADD,
 	ADDI,
 	AND,
 	BEQ,

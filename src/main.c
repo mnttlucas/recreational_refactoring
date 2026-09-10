@@ -57,7 +57,7 @@ void batch_mode(CPU *cpu, config *cfg, char *path_in, char *path_out_hex, char *
 		instructions_arr[i] = decode_instruction(1, in);
 		if(instructions_arr[i].exit)
 			break;
-		if(instructions_arr[i].opcode >= 1 && instructions_arr[i].opcode <= 24)
+		if(instructions_arr[i].opcode >= 1 && instructions_arr[i].opcode <= 25)
 			i++;
 	}
 
@@ -80,9 +80,9 @@ void batch_mode(CPU *cpu, config *cfg, char *path_in, char *path_out_hex, char *
 	{
 		cpu_dump(cpu, cfg);
 		for(i = 0; i < 32; i++)
-			fprintf(out_regs, "$%ld : %ld\n", i, register_read(cpu, (int) i));
-		fprintf(out_regs, "HI : %ld\n", register_read(cpu, REG_HI));
-		fprintf(out_regs, "LO : %ld\n", register_read(cpu, REG_LO));
+			fprintf(out_regs, "$%ld : %d\n", i, register_read(cpu, (int) i));
+		fprintf(out_regs, "HI : %d\n", register_read(cpu, REG_HI));
+		fprintf(out_regs, "LO : %d\n", register_read(cpu, REG_LO));
 	}
 
 	fclose(in);

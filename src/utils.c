@@ -68,10 +68,10 @@ void cpu_dump(CPU *cpu, config *cfg)
 	for(int i = 0; i < 8; i++)
 	{
 		for(int j = 0; j < 4; j++)
-			printf("$%s%d : %-10ld ", 4 * i + j <= 9 ? "0" : "", 4 * i + j, register_read(cpu, 4 * i + j));
+			printf("$%s%d : %-10d ", 4 * i + j <= 9 ? "0" : "", 4 * i + j, register_read(cpu, 4 * i + j));
 		printf("\n");
 	}
-	printf("                 HI  : %-10ld LO  : %-10ld\n", register_read(cpu, REG_HI), register_read(cpu, REG_LO));
+	printf("                 HI  : %-10d LO  : %-10d\n", register_read(cpu, REG_HI), register_read(cpu, REG_LO));
 
 	printf("\n------------------------------------ Memory status -----------------------------------\n");
 	for(int i = 0; i < 5; i++)

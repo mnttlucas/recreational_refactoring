@@ -8,8 +8,8 @@
 
 typedef struct
 {
-	int start_bit;
-	int end_bit;
+	int  start_bit;
+	int  end_bit;
 	long value;
 } instruction_field;
 
