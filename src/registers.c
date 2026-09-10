@@ -25,6 +25,7 @@ void register_write(CPU *cpu, int id, int32_t value)
 {
 	if(id > 0 && id < REGISTER_COUNT)
 		cpu->registers[id] = value;
+	else if(id == 0);
 	else
 		fprintf(stderr, "\n[!] register_write() : invalid register %d\n", id);
 }
