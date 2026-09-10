@@ -130,7 +130,7 @@ void long_to_bin_arr(int start, int end, long value, int *arr)
 
 int register_string_to_int(char *reg)
 {
-	int reg_int, reg_is_only_numbers = 1;
+	int reg_int = 0, reg_is_only_numbers = 1;
 	size_t reg_length = strlen(reg);
 
 	for(size_t i = 0; i < reg_length; i++)
@@ -159,20 +159,26 @@ int register_string_to_int(char *reg)
 		else if(!strcmp(reg, "ra"))
 			reg_int = 31;
 		else if(reg[0] == 'v')
-			reg_int = 2 + reg[1] - '0';
+			if(reg[1] == '0' || reg[1] == '1')
+				reg_int = 2 + reg[1] - '0';
 		else if(reg[0] == 'a')
-			reg_int = 4 + reg[1] - '0';
+			if('0' <= reg[1] && reg[1] <= '3')
+				reg_int = 4 + reg[1] - '0';
 		else if(reg[0] == 's')
-			reg_int = 16 + reg[1] - '0';
+			if('0' <= reg[1] && reg[1] <= '7')
+				reg_int = 16 + reg[1] - '0';
 		else if(reg[0] == 'k')
-			reg_int = 26 + reg[1] - '0';
+			if(reg[1] == '0' || reg[1] == '1')
+				reg_int = 26 + reg[1] - '0';
 		else if(reg[0] == 't')
 		{
-			if(reg[1] - '0' <= 7)
+			if('0' <= reg[1] && reg[1] <= '7')
 				reg_int = 8 + reg[1] - '0';
-			else
-				reg_int = 24 + reg[1] - '0';
+			else if(reg[1] == '8' || reg[1] == '9')
+				reg_int = 16 + reg[1] - '0';
 		}
+		else
+			fprintf(stderr, "[!] Unknown register, returned 0 to ignore\n");
 	}
 
 	return(reg_int);
