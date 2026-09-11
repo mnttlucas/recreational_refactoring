@@ -68,8 +68,8 @@ void cpu_dump(CPU *cpu, config *cfg)
 	printf("\n-------------------- Registers' status -------------------\n");
 	for(int i = 0; i <= (REGISTER_COUNT - 4) / DUMP_LINE_SIZE; i++)
 	{
-		for(int j = 0; (i * DUMP_LINE_SIZE + j) < (REGISTER_COUNT - 4) && j < DUMP_LINE_SIZE; j++)
-			printf("$%s%d : %-10d ", 4 * i + j <= 9 ? "0" : "", 4 * i + j, register_read(cpu, 4 * i + j));
+		for(int j = 0; (i * DUMP_LINE_SIZE + j) < (REGISTER_COUNT - 3) && j < DUMP_LINE_SIZE; j++)
+			printf("$%s%d : %-10d ", DUMP_LINE_SIZE * i + j <= 9 ? "0" : "", DUMP_LINE_SIZE * i + j, register_read(cpu, DUMP_LINE_SIZE * i + j));
 		printf("\n");
 	}
 	printf("                 HI  : %-10d LO  : %-10d\n", register_read(cpu, REG_HI), register_read(cpu, REG_LO));
@@ -183,7 +183,7 @@ int register_string_to_int(char *reg)
 			if('0' <= reg[1] && reg[1] <= '7')
 				reg_int = REG_T0 + reg_1;
 			else if(reg[1] == '8' || reg[1] == '9')
-				reg_int = REG_T8 + reg_1;
+				reg_int = REG_T8 + (reg_1 - '8');
 		}
 		else
 			fprintf(stderr, "[!] Unknown register, returned 0 to ignore\n");
