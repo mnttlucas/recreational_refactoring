@@ -65,14 +65,12 @@ void batch_mode(CPU *cpu, config *cfg, char *path_in, char *path_out_hex, char *
 	n = i;
 	if(!cfg->step)
 		for(i = 0; i < n; i++)
-		{
-			clear_output();
 			fprintf(out_hex, "%s\n", instructions_arr[i].instr_hex);
-		}
 
 	i = 0;
 	while(i < n)
 	{
+		clear_output();
 		execute_instruction(cpu, cfg, instructions_arr[i]);
 		if(cfg->step)
 			cpu_dump(cpu, cfg);

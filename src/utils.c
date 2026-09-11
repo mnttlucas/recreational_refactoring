@@ -72,9 +72,9 @@ void cpu_dump(CPU *cpu, config *cfg)
 	char hex_char[4] = {'0', '4', '8', 'C'};
 
 	printf("\n-------------------- Registers' status -------------------\n");
-	for(int i = 0; i <= (REGISTER_COUNT - 3) / DUMP_LINE_SIZE; i++)
+	for(int i = 0; i <= (REGISTER_COUNT - 4) / DUMP_LINE_SIZE; i++)
 	{
-		for(int j = 0; (i * DUMP_LINE_SIZE + j) < (REGISTER_COUNT - 3) && j < DUMP_LINE_SIZE; j++)
+		for(int j = 0; (i * DUMP_LINE_SIZE + j) < (REGISTER_COUNT - 4) && j < DUMP_LINE_SIZE; j++)
 			printf("$%s%d : %-10d ", 4 * i + j <= 9 ? "0" : "", 4 * i + j, register_read(cpu, 4 * i + j));
 		printf("\n");
 	}
@@ -87,7 +87,6 @@ void cpu_dump(CPU *cpu, config *cfg)
 			printf("@0000 00%d%c : %-10d ", i, hex_char[j], memory_read(cpu, DUMP_LINE_SIZE * i + j));
 		printf("\n");
 	}
-	printf("\n");
 
 	if(cfg->step)
 		wait_for_enter();
