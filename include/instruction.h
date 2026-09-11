@@ -1,7 +1,38 @@
 #ifndef	INSTRUCTION_H
 #define	INSTRUCTION_H
 
-enum OPCODE
+#define OPCODE_START   0
+#define OPCODE_END     5
+#define RS_START       6
+#define RS_END        10
+#define RT_START      11
+#define RT_END        15
+#define RD_START      16
+#define RD_END        20
+#define SHAMT_START   21
+#define SHAMT_END     25
+#define FUNCT_START   26
+#define FUNCT_END     31
+#define IMM_START     16
+#define IMM_END       31
+#define TARGET_START   6
+#define TARGET_END    31
+
+#define FUNCT_ADD    32
+#define FUNCT_SUB    34
+#define FUNCT_AND    36
+#define FUNCT_OR     37
+#define FUNCT_XOR    38
+#define FUNCT_SLT    42
+#define FUNCT_MULT   24
+#define FUNCT_DIV    26
+#define FUNCT_MFHI   16
+#define FUNCT_MFLO   18
+#define FUNCT_JR      8
+#define FUNCT_SLL     0
+#define FUNCT_SRL     2
+
+typedef enum
 {
 	DUMMY_OPCODE,
 	/* instruction object will be initialized to 0, 
@@ -32,12 +63,11 @@ enum OPCODE
 	SUB,
 	SW,
 	XOR
-};
+} opcode;
 
 typedef struct instruction
 {
-	enum OPCODE opcode;
-	int type;
+	opcode opcode;
 	int etiq;
 	int rs;
 	int rt;
@@ -47,7 +77,7 @@ typedef struct instruction
 	int base;
 	int immediate;
 	int target;
-	char instrHex[9];
+	char instr_hex[9];
 	char toString[200];
 	int exit;
 } instruction;

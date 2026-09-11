@@ -29,7 +29,7 @@ void interactive_mode(CPU *cpu, config *cfg)
 void batch_mode(CPU *cpu, config *cfg, char *path_in, char *path_out_hex, char *path_out_regs)
 {
 	long i = 0, n;
-	instruction instructions_arr[100];
+	instruction instructions_arr[100] = {0};
 	FILE *in, *out_hex, *out_regs;
 
 	if(cfg->step)
@@ -65,7 +65,10 @@ void batch_mode(CPU *cpu, config *cfg, char *path_in, char *path_out_hex, char *
 	n = i;
 	if(!cfg->step)
 		for(i = 0; i < n; i++)
-			fprintf(out_hex, "%s\n", instructions_arr[i].instrHex);
+		{
+			clear_output();
+			fprintf(out_hex, "%s\n", instructions_arr[i].instr_hex);
+		}
 
 	i = 0;
 	while(i < n)

@@ -7,6 +7,8 @@
 #include "registers.h"
 #include "utils.h"
 
+#define DUMP_LINE_SIZE 4
+
 void bin_arr_to_hex_arr(int *bin_arr, char *hex_arr)
 {
 	int bit_value, hex_value;
@@ -60,30 +62,35 @@ void bin_zero(int *arr)
 		arr[i] = 0;
 }
 
+void clear_output()
+{
+	printf("\033[2J\033[H");
+}
+
 void cpu_dump(CPU *cpu, config *cfg)
 {
-	char hex_char[4] = {'0', '4', '8', 'C'}, wait[2];
+	char hex_char[4] = {'0', '4', '8', 'C'};
 
-	printf("\033[2J\033[H\n-------------------- Registers' status -------------------\n");
-	for(int i = 0; i < 8; i++)
+	printf("\n-------------------- Registers' status -------------------\n");
+	for(int i = 0; i <= (REGISTER_COUNT - 3) / DUMP_LINE_SIZE; i++)
 	{
-		for(int j = 0; j < 4; j++)
+		for(int j = 0; (i * DUMP_LINE_SIZE + j) < (REGISTER_COUNT - 3) && j < DUMP_LINE_SIZE; j++)
 			printf("$%s%d : %-10d ", 4 * i + j <= 9 ? "0" : "", 4 * i + j, register_read(cpu, 4 * i + j));
 		printf("\n");
 	}
 	printf("                 HI  : %-10d LO  : %-10d\n", register_read(cpu, REG_HI), register_read(cpu, REG_LO));
 
 	printf("\n------------------------------------ Memory status -----------------------------------\n");
-	for(int i = 0; i < 5; i++)
+	for(int i = 0; i <= (MEMORY_SIZE - 1) / DUMP_LINE_SIZE; i++)
 	{
-		for(int j = 0; j < 4; j++)
-			printf("@0000 00%d%c : %-10d ", i, hex_char[j], memory_read(cpu, 4 * i + j));
+		for(int j = 0; (i * DUMP_LINE_SIZE + j) < MEMORY_SIZE && j < DUMP_LINE_SIZE; j++)
+			printf("@0000 00%d%c : %-10d ", i, hex_char[j], memory_read(cpu, DUMP_LINE_SIZE * i + j));
 		printf("\n");
 	}
 	printf("\n");
 
 	if(cfg->step)
-		fgets(wait, sizeof(wait), stdin);
+		wait_for_enter();
 }
 
 void increment_pc(CPU *cpu)
@@ -130,7 +137,7 @@ void long_to_bin_arr(int start, int end, long value, int *arr)
 
 int register_string_to_int(char *reg)
 {
-	int reg_int = 0, reg_is_only_numbers = 1;
+	int reg_1 = reg[1] - '0', reg_int = 0, reg_is_only_numbers = 1;
 	size_t reg_length = strlen(reg);
 
 	for(size_t i = 0; i < reg_length; i++)
@@ -147,35 +154,43 @@ int register_string_to_int(char *reg)
 	else
 	{
 		if(!strcmp(reg, "zero"))
-			reg_int = 0;
+			reg_int = REG_ZERO;
 		else if(!strcmp(reg, "at"))
-			reg_int = 1;
+			reg_int = REG_AT;
 		else if(!strcmp(reg, "gp"))
-			reg_int = 28;
+			reg_int = REG_GP;
 		else if(!strcmp(reg, "sp"))
-			reg_int = 29;
+			reg_int = REG_SP;
 		else if(!strcmp(reg, "fp"))
-			reg_int = 30;
+			reg_int = REG_FP;
 		else if(!strcmp(reg, "ra"))
-			reg_int = 31;
+			reg_int = REG_RA;
 		else if(reg[0] == 'v')
+		{
 			if(reg[1] == '0' || reg[1] == '1')
-				reg_int = 2 + reg[1] - '0';
+				reg_int = REG_V0 + reg_1;
+		}
 		else if(reg[0] == 'a')
+		{
 			if('0' <= reg[1] && reg[1] <= '3')
-				reg_int = 4 + reg[1] - '0';
+				reg_int = REG_A0 + reg_1;
+		}
 		else if(reg[0] == 's')
+		{
 			if('0' <= reg[1] && reg[1] <= '7')
-				reg_int = 16 + reg[1] - '0';
+				reg_int = REG_S0 + reg_1;
+		}
 		else if(reg[0] == 'k')
+		{
 			if(reg[1] == '0' || reg[1] == '1')
-				reg_int = 26 + reg[1] - '0';
+			reg_int = REG_K0 + reg_1;
+		}
 		else if(reg[0] == 't')
 		{
 			if('0' <= reg[1] && reg[1] <= '7')
-				reg_int = 8 + reg[1] - '0';
+				reg_int = REG_T0 + reg_1;
 			else if(reg[1] == '8' || reg[1] == '9')
-				reg_int = 16 + reg[1] - '0';
+				reg_int = REG_T8 + reg_1;
 		}
 		else
 			fprintf(stderr, "[!] Unknown register, returned 0 to ignore\n");
@@ -195,4 +210,18 @@ void remove_sign(char *str)
 	}
 
 	str[i] = '\0';
+}
+
+void wait_for_enter()
+{
+	int c;
+
+	printf("\n[#] Press Enter to execute the next instruction");
+
+	do
+	{
+		c = getchar();
+	}
+	while(c != '\n' && c != EOF);
+	
 }

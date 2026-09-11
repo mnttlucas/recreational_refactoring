@@ -54,11 +54,14 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 		case DIV :
 			dividend = register_read(cpu, instr.rs);
 			divisor = register_read(cpu, instr.rt);
+			/* Arbitrary choice, MIPS32 documentation :
+			'If the divisor in GPR rt is zero, the arithmetic result value is UNPREDICTABLE' */
 			if(divisor == 0)
 			{
 				res_HI = dividend;
 				res_LO = divisor;
 			}
+			/* Used to cover a C edge-case of integer overflow - not MIPS related */
 			else if(divisor == -1 && dividend == (int32_t) 0x80000000)
 			{
 				res_HI = 0;
@@ -77,7 +80,7 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 			auto_increment_pc = 0;
 			break;
 		case JAL :
-			register_write(cpu, 31, register_read(cpu, REG_PC) + 2);
+			register_write(cpu, REG_RA, register_read(cpu, REG_PC) + 2);
 			register_write(cpu, REG_PC, instr.target);
 			auto_increment_pc = 0;
 			break;
