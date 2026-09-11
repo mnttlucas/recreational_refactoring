@@ -8,7 +8,6 @@
 
 void build_instruction_bin(instruction_field *arr, size_t field_count, int *bin_arr, char *hex_arr)
 {
-	bin_zero(bin_arr);
 	for(size_t i = 0; i < field_count; i++)
 		long_to_bin_arr(arr[i].start_bit, arr[i].end_bit, arr[i].value, bin_arr);
 	bin_arr_to_hex_arr(bin_arr, hex_arr);
@@ -27,15 +26,85 @@ int handle_sign(char *param, int *negative)
 	return(atoi(param));
 }
 
-void build_r3_instruction(instruction *instr, int funct_code, int *bin_arr, char *hex_arr)
+void finalize_signed_value(int *value, int negative, int *bin_arr, char *hex_arr)
+{
+	if(negative)
+	{
+		*value *= -1;
+		bin_twos_complement(IMM_START, IMM_END, bin_arr);
+		bin_arr_to_hex_arr(bin_arr, hex_arr);
+	}
+}
+
+void build_branch_r1_instruction(instruction *instr, int op_code, int *bin_arr, int negative)
+{
+	instruction_field fields[] = {
+		FIELD(OPCODE_START, OPCODE_END, op_code),
+		FIELD(RS_START, RS_END, instr->rs),
+		FIELD(IMM_START, IMM_END, instr->offset)};
+	build_instruction_bin(fields, 3, bin_arr, instr->instr_hex);
+	finalize_signed_value(&instr->offset, negative, bin_arr, instr->instr_hex);
+}
+
+void build_branch_r2_instruction(instruction *instr, int op_code, int *bin_arr, int negative)
+{
+	instruction_field fields[] = {
+		FIELD(OPCODE_START, OPCODE_END, op_code),
+		FIELD(RS_START, RS_END, instr->rs),
+		FIELD(RT_START, RT_END, instr->rt),
+		FIELD(IMM_START, IMM_END, instr->offset)};
+	build_instruction_bin(fields, 4, bin_arr, instr->instr_hex);
+	finalize_signed_value(&instr->offset, negative, bin_arr, instr->instr_hex);
+}
+
+void build_memory_instruction(instruction *instr, int op_code, int *bin_arr, int negative)
+{
+	instruction_field fields[] = {
+		FIELD(OPCODE_START, OPCODE_END, op_code),
+		FIELD(RS_START, RS_END, instr->base),
+		FIELD(RT_START, RT_END, instr->rt),
+		FIELD(IMM_START, IMM_END, instr->offset)};
+	build_instruction_bin(fields, 4, bin_arr, instr->instr_hex);
+	finalize_signed_value(&instr->offset, negative, bin_arr, instr->instr_hex);
+}
+
+void build_r2_instruction(instruction *instr, int funct_code, int *bin_arr)
+{
+	instruction_field fields[] = {
+		FIELD(RS_START, RS_END, instr->rs),
+		FIELD(RT_START, RT_END, instr->rt),
+		FIELD(FUNCT_START, FUNCT_END, funct_code)};
+	build_instruction_bin(fields, 3, bin_arr, instr->instr_hex);
+}
+
+void build_r3_instruction(instruction *instr, int funct_code, int *bin_arr)
 {
 	instruction_field fields[] = {
 		FIELD(RS_START, RS_END, instr->rs),
 		FIELD(RT_START, RT_END, instr->rt),
 		FIELD(RD_START, RD_END, instr->rd),
 		FIELD(FUNCT_START, FUNCT_END, funct_code)};
-	build_instruction_bin(fields, 4, bin_arr, hex_arr);
-	strcpy(instr->instr_hex, hex_arr);
+	build_instruction_bin(fields, 4, bin_arr, instr->instr_hex);
+}
+
+void build_rd_instruction(instruction *instr, int funct_code, int *bin_arr)
+{
+	return; // TODO MFHI/MFLO
+}
+
+void build_shift_instruction(instruction *instr, int funct_code, int rotr, int *bin_arr)
+{
+	instruction_field fields[] = {
+		FIELD(RT_START, RT_END, instr->rt),
+		FIELD(RD_START, RD_END, instr->rd),
+		FIELD(SHAMT_START, SHAMT_END, instr->sa),
+		FIELD(FUNCT_START, FUNCT_END, funct_code)};
+	build_instruction_bin(fields, 4, bin_arr, instr->instr_hex);
+	if(rotr)
+	{
+		bin_arr[ROTR_BIT] = 1;
+		bin_arr_to_hex_arr(bin_arr, instr->instr_hex);
+	}
 }
 
 void decode_branch_r1_operands(FILE *in, instruction *instr, int *negative)
@@ -114,7 +183,7 @@ void decode_target_operands(FILE *in, instruction *instr)
 instruction decode_instruction(int mode, FILE *fichier)
 {
 	char chunk[50], instr_hex[9], param1[20], param2[20], param3[20];
-	int instr_bin[32], negative = 0;
+	int instr_bin[32] = {0}, negative = 0;
 	instruction instr = {0};
 
 	FILE *in = (!mode) ? stdin : fichier;
@@ -135,7 +204,7 @@ instruction decode_instruction(int mode, FILE *fichier)
 			{
 				instr.opcode = ADD;
 				decode_r3_operands(in, &instr);
-				build_r3_instruction(&instr, FUNCT_ADD, instr_bin, instr_hex);
+				build_r3_instruction(&instr, FUNCT_ADD, instr_bin);
 				sprintf(instr.toString, "ADD $%d,$%d,$%d -> 0x%s\n", instr.rd, instr.rs, instr.rt, instr_hex);
 			}
 			else if(!strcmp(chunk, "ADDI"))
@@ -160,76 +229,42 @@ instruction decode_instruction(int mode, FILE *fichier)
 			{
 				instr.opcode = AND;
 				decode_r3_operands(in, &instr);
-				build_r3_instruction(&instr, FUNCT_AND, instr_bin, instr_hex);
+				build_r3_instruction(&instr, FUNCT_AND, instr_bin);
 				sprintf(instr.toString, "AND $%d,$%d,$%d -> 0x%s\n", instr.rd, instr.rs, instr.rt, instr_hex);
 			}
 			else if(!strcmp(chunk, "BEQ"))
 			{
-				decode_branch_r2_operands(in, &instr, &negative);
-				instruction_field fields[] = {FIELD(0, 5, 4), FIELD(6, 10, instr.rt), FIELD(11, 15, instr.rs), FIELD(16, 31, instr.offset)};
-				build_instruction_bin(fields, 4, instr_bin, instr_hex);
-				if(negative)
-				{
-					instr.offset *= -1;
-					bin_twos_complement(16, 31, instr_bin);
-				}
-				bin_arr_to_hex_arr(instr_bin, instr_hex); // TODO: to keep for now because if(negative) is after build_instruction_bin()
-				strcpy(instr.instr_hex, instr_hex);
 				instr.opcode = BEQ;
+				decode_branch_r2_operands(in, &instr, &negative);
+				build_branch_r2_instruction(&instr, OPCODE_BEQ, instr_bin, negative);
 				sprintf(instr.toString, "BEQ $%d,$%d,%d -> 0x%s\n", instr.rs, instr.rt, instr.offset, instr_hex);
 			}
 			else if(!strcmp(chunk, "BGTZ"))
 			{
-				decode_branch_r1_operands(in, &instr, &negative);
-				instruction_field fields[] = {FIELD(0, 5, 7), FIELD(6, 10, instr.rs), FIELD(16, 31, instr.offset)};
-				build_instruction_bin(fields, 3, instr_bin, instr_hex);
-				if(negative)
-				{
-					instr.offset *= -1;
-					bin_twos_complement(16, 31, instr_bin);
-				}
-				bin_arr_to_hex_arr(instr_bin, instr_hex); // TODO: to keep for now because if(negative) is after build_instruction_bin()
-				strcpy(instr.instr_hex, instr_hex);
 				instr.opcode = BGTZ;
+				decode_branch_r1_operands(in, &instr, &negative);
+				build_branch_r1_instruction(&instr, OPCODE_BGTZ, instr_bin, negative);
 				sprintf(instr.toString, "BGTZ $%d,%d -> 0x%s\n", instr.rs, instr.offset, instr_hex);
 			}
 			else if(!strcmp(chunk, "BLEZ"))
 			{
-				decode_branch_r1_operands(in, &instr, &negative);
-				instruction_field fields[] = {FIELD(0, 5, 6), FIELD(6, 10, instr.rs), FIELD(16, 31, instr.offset)};
-				build_instruction_bin(fields, 3, instr_bin, instr_hex);
-				if(negative)
-				{
-					instr.offset *= -1;
-					bin_twos_complement(16, 31, instr_bin);
-				}
-				bin_arr_to_hex_arr(instr_bin, instr_hex); // TODO: to keep for now because if(negative) is after build_instruction_bin()
-				strcpy(instr.instr_hex, instr_hex);
 				instr.opcode = BLEZ;
+				decode_branch_r1_operands(in, &instr, &negative);
+				build_branch_r1_instruction(&instr, OPCODE_BLEZ, instr_bin, negative);
 				sprintf(instr.toString, "BLEZ $%d,%d -> 0x%s\n", instr.rs, instr.offset, instr_hex);
 			}
 			else if(!strcmp(chunk, "BNE"))
 			{
-				decode_branch_r2_operands(in, &instr, &negative);
-				instruction_field fields[] = {FIELD(0, 5, 5), FIELD(6, 10, instr.rt), FIELD(11, 15, instr.rs), FIELD(16, 31, instr.offset)};
-				build_instruction_bin(fields, 4, instr_bin, instr_hex);
-				if(negative)
-				{
-					instr.offset *= -1;
-					bin_twos_complement(16, 31, instr_bin);
-				}
-				bin_arr_to_hex_arr(instr_bin, instr_hex); // TODO: to keep for now because if(negative) is after build_instruction_bin()
-				strcpy(instr.instr_hex, instr_hex);
 				instr.opcode = BNE;
+				decode_branch_r2_operands(in, &instr, &negative);
+				build_branch_r2_instruction(&instr, OPCODE_BNE, instr_bin, negative);
 				sprintf(instr.toString, "BNE $%d,$%d,%d -> 0x%s\n", instr.rs, instr.rt, instr.offset, instr_hex);
 			}
 			else if(!strcmp(chunk, "DIV"))
 			{
-				decode_r2_operands(in, &instr);
-				instruction_field fields[] = {FIELD(6, 10, instr.rs), FIELD(11, 15, instr.rt), FIELD(16, 31, 26)};
-				build_instruction_bin(fields, 3, instr_bin, instr_hex);
-				strcpy(instr.instr_hex, instr_hex);
 				instr.opcode = DIV;
+				decode_r2_operands(in, &instr);
+				build_r2_instruction(&instr, FUNCT_DIV, instr_bin);
 				sprintf(instr.toString, "DIV $%d,$%d -> 0x%s\n", instr.rs, instr.rt, instr_hex);
 			}
 			else if(!strcmp(chunk, "EXIT"))
@@ -280,17 +315,9 @@ instruction decode_instruction(int mode, FILE *fichier)
 			}
 			else if(!strcmp(chunk, "LW"))
 			{
-				decode_memory_operands(in, &instr, &negative);
-				instruction_field fields[] = {FIELD(0, 5, 35), FIELD(6, 10, instr.base), FIELD(11, 15, instr.rt), FIELD(16, 31, instr.offset)};
-				build_instruction_bin(fields, 4, instr_bin, instr_hex);
-				if(negative)
-				{
-					instr.offset *= -1;
-					bin_twos_complement(16, 31, instr_bin);
-				}
-				bin_arr_to_hex_arr(instr_bin, instr_hex); // TODO: to keep for now because if(negative) is after build_instruction_bin()
-				strcpy(instr.instr_hex, instr_hex);
 				instr.opcode = LW;
+				decode_memory_operands(in, &instr, &negative);
+				build_memory_instruction(&instr, OPCODE_LW, instr_bin, negative);
 				sprintf(instr.toString, "LW $%d,%d($%d) -> 0x%s\n", instr.rt, instr.offset, instr.base, instr_hex);
 			}
 			else if(!strcmp(chunk, "MFHI"))
@@ -313,89 +340,71 @@ instruction decode_instruction(int mode, FILE *fichier)
 			}
 			else if(!strcmp(chunk, "MULT"))
 			{
-				decode_r2_operands(in, &instr);
-				instruction_field fields[] = {FIELD(6, 10, instr.rs), FIELD(11, 15, instr.rt), FIELD(16, 31, 24)};
-				build_instruction_bin(fields, 3, instr_bin, instr_hex);
-				strcpy(instr.instr_hex, instr_hex);
 				instr.opcode = MULT;
+				decode_r2_operands(in, &instr);
+				build_r2_instruction(&instr, FUNCT_MULT, instr_bin);
 				sprintf(instr.toString, "MULT $%d,$%d -> 0x%s\n", instr.rs, instr.rt, instr_hex);
 			}
 			else if(!strcmp(chunk, "NOP"))
 			{
-				bin_zero(instr_bin);
-				bin_arr_to_hex_arr(instr_bin, instr_hex);
-				strcpy(instr.instr_hex, instr_hex);
 				instr.opcode = NOP;
+				bin_arr_to_hex_arr(instr_bin, instr.instr_hex);
 				sprintf(instr.toString, "NOP -> 0x%s\n", instr_hex);
 			}
 			else if(!strcmp(chunk, "OR"))
 			{
 				instr.opcode = OR;
 				decode_r3_operands(in, &instr);
-				build_r3_instruction(&instr, FUNCT_OR, instr_bin, instr_hex);
+				build_r3_instruction(&instr, FUNCT_OR, instr_bin);
 				sprintf(instr.toString, "OR $%d,$%d,$%d -> 0x%s\n", instr.rd, instr.rs, instr.rt, instr_hex);
 			}
 			else if(!strcmp(chunk, "ROTR"))
 			{
-				decode_shift_operands(in, &instr);
-				instruction_field fields[] = {FIELD(10, 10, 1), FIELD(11, 15, instr.rt), FIELD(16, 20, instr.rd), FIELD(21, 25, instr.sa), FIELD(26, 31, 2)};
-				build_instruction_bin(fields, 5, instr_bin, instr_hex);
-				strcpy(instr.instr_hex, instr_hex);
 				instr.opcode = ROTR;
+				decode_shift_operands(in, &instr);
+				build_shift_instruction(&instr, FUNCT_SRL, 1, instr_bin);
 				sprintf(instr.toString, "ROTR $%d,$%d,%d -> 0x%s\n", instr.rd, instr.rt, instr.sa, instr_hex);
 			}
 			else if(!strcmp(chunk, "SLL"))
 			{
-				decode_shift_operands(in, &instr);
-				instruction_field fields[] = {FIELD(11, 15, instr.rt), FIELD(16, 20, instr.rd), FIELD(21, 25, instr.sa)};
-				build_instruction_bin(fields, 3, instr_bin, instr_hex);
-				strcpy(instr.instr_hex, instr_hex);
 				instr.opcode = SLL;
+				decode_shift_operands(in, &instr);
+				build_shift_instruction(&instr, FUNCT_SLL, 0, instr_bin);
 				sprintf(instr.toString, "SLL $%d,$%d,%d -> 0x%s\n", instr.rd, instr.rt, instr.sa, instr_hex);
 			}
 			else if(!strcmp(chunk, "SLT"))
 			{
 				instr.opcode = SLT;
 				decode_r3_operands(in, &instr);
-				build_r3_instruction(&instr, FUNCT_SLT, instr_bin, instr_hex);
+				build_r3_instruction(&instr, FUNCT_SLT, instr_bin);
 				sprintf(instr.toString, "SLT $%d,$%d,$%d -> 0x%s\n", instr.rd, instr.rs, instr.rt, instr_hex);
 			}
 			else if(!strcmp(chunk, "SRL"))
 			{
-				decode_shift_operands(in, &instr);
-				instruction_field fields[] = {FIELD(11, 15, instr.rt), FIELD(16, 20, instr.rd), FIELD(21, 25, instr.sa), FIELD(26, 31, 2)};
-				build_instruction_bin(fields, 4, instr_bin, instr_hex);
-				strcpy(instr.instr_hex, instr_hex);
 				instr.opcode = SRL;
+				decode_shift_operands(in, &instr);
+				build_shift_instruction(&instr, FUNCT_SRL, 0, instr_bin);
 				sprintf(instr.toString, "SRL $%d,$%d,%d -> 0x%s\n", instr.rd, instr.rt, instr.sa, instr_hex);
 			}
 			else if(!strcmp(chunk, "SUB"))
 			{
 				instr.opcode = SUB;
 				decode_r3_operands(in, &instr);
-				build_r3_instruction(&instr, FUNCT_SUB, instr_bin, instr_hex);
+				build_r3_instruction(&instr, FUNCT_SUB, instr_bin);
 				sprintf(instr.toString, "SUB $%d,$%d,$%d -> 0x%s\n", instr.rd, instr.rs, instr.rt, instr_hex);
 			}
 			else if(!strcmp(chunk, "SW"))
 			{
-				decode_memory_operands(in, &instr, &negative);
-				instruction_field fields[] = {FIELD(0, 5, 43), FIELD(6, 10, instr.base), FIELD(11, 15, instr.rt), FIELD(16, 31, instr.offset)};
-				build_instruction_bin(fields, 4, instr_bin, instr_hex);
-				if(negative)
-				{
-					instr.offset *= -1;
-					bin_twos_complement(16, 31, instr_bin);
-				}
-				bin_arr_to_hex_arr(instr_bin, instr_hex); // TODO: to keep for now because if(negative) is after build_instruction_bin()
-				strcpy(instr.instr_hex, instr_hex);
 				instr.opcode = SW;
+				decode_memory_operands(in, &instr, &negative);
+				build_memory_instruction(&instr, OPCODE_SW, instr_bin, negative);
 				sprintf(instr.toString, "SW $%d,%d($%d) -> 0x%s\n", instr.rt, instr.offset, instr.base, instr_hex);
 			}
 			else if(!strcmp(chunk, "XOR"))
 			{
 				instr.opcode = XOR;
 				decode_r3_operands(in, &instr);
-				build_r3_instruction(&instr, FUNCT_XOR, instr_bin, instr_hex);
+				build_r3_instruction(&instr, FUNCT_XOR, instr_bin);
 				sprintf(instr.toString, "XOR $%d,$%d,$%d -> 0x%s\n", instr.rd, instr.rs, instr.rt, instr_hex);
 			}
 		log_instruction(&instr);

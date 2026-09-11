@@ -32,6 +32,19 @@
 #define FUNCT_SLL     0
 #define FUNCT_SRL     2
 
+#define OPCODE_J      2
+#define OPCODE_JAL    3
+#define OPCODE_BEQ    4
+#define OPCODE_BNE    5
+#define OPCODE_BLEZ   6
+#define OPCODE_BGTZ   7
+#define OPCODE_ADDI   8
+#define OPCODE_LUI   15
+#define OPCODE_LW    35
+#define OPCODE_SW    43
+
+#define ROTR_BIT 10
+
 typedef enum
 {
 	DUMMY_OPCODE,

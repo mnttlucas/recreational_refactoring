@@ -70,7 +70,8 @@ void batch_mode(CPU *cpu, config *cfg, char *path_in, char *path_out_hex, char *
 	i = 0;
 	while(i < n)
 	{
-		clear_output();
+		if(cfg->step)
+			clear_output();
 		execute_instruction(cpu, cfg, instructions_arr[i]);
 		if(cfg->step)
 			cpu_dump(cpu, cfg);

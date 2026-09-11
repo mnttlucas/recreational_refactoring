@@ -15,17 +15,24 @@ typedef struct
 
 int handle_sign(char *param, int *negative);
 void build_instruction_bin(instruction_field *arr, size_t field_count, int *bin_arr, char *hex_arr);
+void finalize_signed_value(int *value, int negative, int *bin_arr, char *hex_arr)
 
-void build_r3_instruction(instruction *instr, int funct, int *bin_arr, char *hex_arr);
+void build_branch_r1_instruction(instruction *instr, int op_code, int *bin_arr, int negative);
+void build_branch_r2_instruction(instruction *instr, int op_code, int *bin_arr, int negative);
+void build_memory_instruction(instruction *instr, int op_code, int *bin_arr, int negative);
+void build_r2_instruction(instruction *instr, int funct_code, int *bin_arr);
+void build_r3_instruction(instruction *instr, int funct, int *bin_arr);
+void build_rd_instruction(instruction *instr, int funct_code, int *bin_arr);
+void build_shift_instruction(instruction *instr, int funct_code, int rotr, int *bin_arr)
 
-void decode_r2_operands(FILE *in, instruction *instr);
-void decode_r3_operands(FILE *in, instruction *instr);
-void decode_shift_operands(FILE *in, instruction *instr);
-void decode_memory_operands(FILE *in, instruction *instr, int *negative);
 void decode_branch_r1_operands(FILE *in, instruction *instr, int *negative);
 void decode_branch_r2_operands(FILE *in, instruction *instr, int *negative);
-void decode_target_operands(FILE *in, instruction *instr);
+void decode_memory_operands(FILE *in, instruction *instr, int *negative);
+void decode_r2_operands(FILE *in, instruction *instr);
+void decode_r3_operands(FILE *in, instruction *instr);
 void decode_rd_operand(FILE *in, instruction *instr);
+void decode_shift_operands(FILE *in, instruction *instr);
+void decode_target_operands(FILE *in, instruction *instr);
 
 instruction	decode_instruction(int mode, FILE *fichier);
 

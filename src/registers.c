@@ -16,7 +16,7 @@ int32_t register_read(CPU *cpu, int id)
 	if(id >= 0 && id < REGISTER_COUNT)
 		value = cpu->registers[id];
 	else
-		fprintf(stderr, "\n[!] register_read() : invalid register %d\n", id);
+		fprintf(stderr, "[!] register_read() : invalid register %d\n", id);
 	
 	return(value);
 }
@@ -27,5 +27,5 @@ void register_write(CPU *cpu, int id, int32_t value)
 		cpu->registers[id] = value;
 	else if(id == 0);
 	else
-		fprintf(stderr, "\n[!] register_write() : invalid register %d\n", id);
+		fprintf(stderr, "[!] register_write() : invalid register %d\n", id);
 }

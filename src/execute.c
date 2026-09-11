@@ -163,5 +163,5 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 		increment_pc(cpu);
 
 	if(cfg->verbose)
-		printf("\n\n%s", instr.toString);
+		printf("%s", instr.toString);
 }

@@ -56,15 +56,9 @@ void bin_twos_complement(int start, int end, int *arr)
 	}
 }
 
-void bin_zero(int *arr)
-{
-	for(int i = 0; i < 32; i++)
-		arr[i] = 0;
-}
-
 void clear_output()
 {
-	printf("\033[2J\033[H");
+	printf("\033[2J\033[H\n\n");
 }
 
 void cpu_dump(CPU *cpu, config *cfg)
