@@ -89,7 +89,10 @@ void build_r3_instruction(instruction *instr, int funct_code, int *bin_arr)
 
 void build_rd_instruction(instruction *instr, int funct_code, int *bin_arr)
 {
-	return; // TODO MFHI/MFLO
+	instruction_field fields[] = {
+		FIELD(RD_START, RD_END, instr->rd),
+		FIELD(FUNCT_START, FUNCT_END, funct_code)};
+	build_instruction_bin(fields, 2, bin_arr, instr->instr_hex);
 }
 
 void build_shift_instruction(instruction *instr, int funct_code, int rotr, int *bin_arr)
@@ -105,6 +108,14 @@ void build_shift_instruction(instruction *instr, int funct_code, int rotr, int *
 		bin_arr[ROTR_BIT] = 1;
 		bin_arr_to_hex_arr(bin_arr, instr->instr_hex);
 	}
+}
+
+void build_target_instruction(instruction *instr, int op_code, int *bin_arr)
+{
+	instruction_field fields[] = {
+		FIELD(OPCODE_START, OPCODE_END, op_code),
+		FIELD(TARGET_START, TARGET_END, instr->target)};
+	build_instruction_bin(fields, 2, bin_arr, instr->instr_hex);
 }
 
 void decode_branch_r1_operands(FILE *in, instruction *instr, int *negative)
@@ -271,20 +282,16 @@ instruction decode_instruction(int mode, FILE *fichier)
 				instr.exit = 1;
 			else if(!strcmp(chunk, "J"))
 			{
-				decode_target_operands(in, &instr);
-				instruction_field fields[] = {FIELD(0, 5, 2), FIELD(6, 31, instr.target)};
-				build_instruction_bin(fields, 2, instr_bin, instr_hex);
-				strcpy(instr.instr_hex, instr_hex);
 				instr.opcode = J;
+				decode_target_operands(in, &instr);
+				build_target_instruction(&instr, OPCODE_J, instr_bin);
 				sprintf(instr.toString, "J %d -> 0x%s\n", instr.target, instr_hex);
 			}
 			else if(!strcmp(chunk, "JAL"))
 			{
-				decode_target_operands(in, &instr);
-				instruction_field fields[] = {FIELD(0, 5, 3), FIELD(6, 31, instr.target)};
-				build_instruction_bin(fields, 2, instr_bin, instr_hex);
-				strcpy(instr.instr_hex, instr_hex);
 				instr.opcode = JAL;
+				decode_target_operands(in, &instr);
+				build_target_instruction(&instr, OPCODE_JAL, instr_bin);
 				sprintf(instr.toString, "JAL %d -> 0x%s\n", instr.target, instr_hex);
 			}
 			else if(!strcmp(chunk, "JR"))
@@ -322,20 +329,16 @@ instruction decode_instruction(int mode, FILE *fichier)
 			}
 			else if(!strcmp(chunk, "MFHI"))
 			{
-				decode_rd_operand(in, &instr);
-				instruction_field fields[] = {FIELD(16, 20, instr.rd), FIELD(21, 31, 16)};
-				build_instruction_bin(fields, 2, instr_bin, instr_hex);
-				strcpy(instr.instr_hex, instr_hex);
 				instr.opcode = MFHI;
+				decode_rd_operand(in, &instr);
+				build_rd_instruction(&instr, FUNCT_MFHI, instr_bin);
 				sprintf(instr.toString, "MFHI $%d -> 0x%s\n", instr.rd, instr_hex);
 			}
 			else if(!strcmp(chunk, "MFLO"))
 			{
-				decode_rd_operand(in, &instr);
-				instruction_field fields[] = {FIELD(16, 20, instr.rd), FIELD(21, 31, 18)};
-				build_instruction_bin(fields, 2, instr_bin, instr_hex);
-				strcpy(instr.instr_hex, instr_hex);
 				instr.opcode = MFLO;
+				decode_rd_operand(in, &instr);
+				build_rd_instruction(&instr, FUNCT_MFLO, instr_bin);
 				sprintf(instr.toString, "MFLO $%d -> 0x%s\n", instr.rd, instr_hex);
 			}
 			else if(!strcmp(chunk, "MULT"))
