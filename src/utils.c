@@ -99,7 +99,7 @@ int is_negative(char *str)
 void log_instruction(instruction *instr)
 {
 	if(!instr->exit)
-		printf("%s", instr->toString);
+		printf("%s", instr->to_string);
 }
 
 void log_usage(char *prog_name)

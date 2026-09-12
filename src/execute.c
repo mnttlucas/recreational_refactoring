@@ -164,5 +164,5 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 		register_write(cpu, REG_PC, pending_PC);
 
 	if(cfg->verbose)
-		printf("%s", instr.toString);
+		printf("%s", instr.to_string);
 }

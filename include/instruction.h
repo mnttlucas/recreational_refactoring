@@ -47,7 +47,7 @@
 
 typedef enum
 {
-	DUMMY_OPCODE,
+	OPCODE_MIN,
 	/* instruction object will be initialized to 0, 
 	when line is fully skipped because of a comment, 
 	OPCODE field will be equal to this dummy value for now */
@@ -75,19 +75,37 @@ typedef enum
 	SRL,
 	SUB,
 	SW,
-	XOR
+	XOR,
+	OPCODE_MAX
 } opcode;
+
+typedef enum
+{
+	BRANCH_R1,
+	BRANCH_R2,
+	MEMORY,
+	R2,
+	R3_IMMEDIATE,
+	R3,
+	RD,
+	RS,
+	SHIFT,
+	TARGET
+} format;
 
 typedef struct
 {
 	const char *mnemonic;
 	opcode op;
-	int funct;
+	int code;
+	format format;
 } instruction_desc;
 
 typedef struct
 {
-	opcode opcode;
+	int instr_bin[32];
+	char instr_hex[9];
+	char to_string[200];
 	int etiq;
 	int rs;
 	int rt;
@@ -96,10 +114,10 @@ typedef struct
 	int offset;
 	int base;
 	int immediate;
+	int negative;
 	int target;
-	char instr_hex[9];
-	char toString[200];
 	int exit;
+	opcode opcode;
 } instruction;
 
 #endif	/* INSTRUCTION_H */

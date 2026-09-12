@@ -57,7 +57,7 @@ void batch_mode(CPU *cpu, config *cfg, char *path_in, char *path_out_hex, char *
 		instructions_arr[i] = decode_instruction(1, in);
 		if(instructions_arr[i].exit)
 			break;
-		if(instructions_arr[i].opcode >= 1 && instructions_arr[i].opcode <= 25)
+		if(instructions_arr[i].opcode > OPCODE_MIN && instructions_arr[i].opcode < OPCODE_MAX)
 			i++;
 	}
 
