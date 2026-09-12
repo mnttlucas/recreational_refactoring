@@ -281,7 +281,7 @@ instruction decode_instruction(int mode, FILE *fichier)
 				case R2 :
 					decode_r2_operands(in, &instr);
 					build_r2_instruction(&instr, id->code);
-					sprintf(instr.to_string, "%s $%d, $%d, %d -> 0x%s\n", id->mnemonic, instr.rs, instr.rt, instr.offset, instr.instr_hex);
+					sprintf(instr.to_string, "%s $%d, $%d -> 0x%s\n", id->mnemonic, instr.rs, instr.rt, instr.instr_hex);
 					break;
 				case R3_IMMEDIATE :
 					decode_r3_immediate_operands(in, &instr);
