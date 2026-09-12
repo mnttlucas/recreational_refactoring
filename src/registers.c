@@ -1,12 +1,14 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "cpu.h"
 #include "registers.h"
 
 void registers_init(CPU *cpu)
 {
 	for(int i = 0; i < REGISTER_COUNT; i++)
 		cpu->registers[i] = 0;
+	cpu->next_PC = -1;
 }
 
 int32_t register_read(CPU *cpu, int id)

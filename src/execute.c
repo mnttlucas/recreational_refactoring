@@ -10,10 +10,12 @@
 
 void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 {
-	int8_t auto_increment_pc = 1;
-	int32_t address, dividend, divisor, res_32, res_HI, res_LO;
+	int32_t address, dividend, divisor, pending_PC, res_32, res_HI, res_LO;
 	int64_t res_64;
 	uint32_t raw_32;
+
+	pending_PC = cpu->next_PC;
+	cpu->next_PC = -1;
 	
 	switch(instr.opcode)
 	{
@@ -37,19 +39,19 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 			break;
 		case BEQ :
 			if(register_read(cpu, instr.rs) == register_read(cpu, instr.rt))
-				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + instr.offset);
+				cpu->next_PC = register_read(cpu, REG_PC) + instr.offset + 1;
 			break;
 		case BGTZ :
 			if(register_read(cpu, instr.rs) > 0)
-				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + instr.offset);
+				cpu->next_PC = register_read(cpu, REG_PC) + instr.offset + 1;
 			break;
 		case BLEZ :
 			if(register_read(cpu, instr.rs) <= 0)
-				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + instr.offset);
+				cpu->next_PC = register_read(cpu, REG_PC) + instr.offset + 1;
 			break;
 		case BNE :
 			if(register_read(cpu, instr.rs) != register_read(cpu, instr.rt))
-				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + instr.offset);
+				cpu->next_PC = register_read(cpu, REG_PC) + instr.offset + 1;
 			break;
 		case DIV :
 			dividend = register_read(cpu, instr.rs);
@@ -76,17 +78,14 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 			register_write(cpu, REG_HI, res_HI);
 			break;
 		case J :
-			register_write(cpu, REG_PC, instr.target);
-			auto_increment_pc = 0;
+			cpu->next_PC = instr.target;
 			break;
 		case JAL :
 			register_write(cpu, REG_RA, register_read(cpu, REG_PC) + 2);
-			register_write(cpu, REG_PC, instr.target);
-			auto_increment_pc = 0;
+			cpu->next_PC = instr.target;
 			break;
 		case JR :
-			register_write(cpu, REG_PC, register_read(cpu, instr.rs));
-			auto_increment_pc = 0;
+			cpu->next_PC = register_read(cpu, instr.rs);
 			break;
 		case LUI :
 			res_32 = instr.immediate << 16;
@@ -159,8 +158,10 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 			break;
 	}
 
-	if(auto_increment_pc)
-		increment_pc(cpu);
+	increment_pc(cpu);
+
+	if(pending_PC != -1)
+		register_write(cpu, REG_PC, pending_PC);
 
 	if(cfg->verbose)
 		printf("%s", instr.toString);
