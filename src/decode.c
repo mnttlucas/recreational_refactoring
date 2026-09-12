@@ -9,7 +9,7 @@
 instruction_desc instruction_table[] =
 {
 	{"ADD", ADD, FUNCT_ADD, R3},
-	{"SUB", SUB, FUNCT_SUB, R3_IMMEDIATE},
+	{"SUB", SUB, FUNCT_SUB, R3},
 	{"AND", AND, FUNCT_AND, R3},
 	{"OR", OR, FUNCT_OR, R3},
 	{"XOR", XOR, FUNCT_XOR, R3},
