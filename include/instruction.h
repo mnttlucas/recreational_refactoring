@@ -78,7 +78,14 @@ typedef enum
 	XOR
 } opcode;
 
-typedef struct instruction
+typedef struct
+{
+	const char *mnemonic;
+	opcode op;
+	int funct;
+} instruction_desc;
+
+typedef struct
 {
 	opcode opcode;
 	int etiq;

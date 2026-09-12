@@ -6,6 +6,31 @@
 #include "instruction.h"
 #include "utils.h"
 
+const instruction_desc instruction_table[] =
+{
+	{"ADD", ADD, FUNCT_ADD},
+	{"SUB", SUB, FUNCT_SUB},
+	{"AND", AND, FUNCT_AND},
+	{"OR", OR, FUNCT_OR},
+	{"XOR", XOR, FUNCT_XOR},
+	{"SLT", SLT, FUNCT_SLT},
+	{"MULT", MULT, FUNCT_MULT},
+	{"DIV", DIV, FUNCT_DIV},
+	{"MFHI", MFHI, FUNCT_MFHI},
+	{"MFLO", MFLO, FUNCT_MFLO},
+	{"JR", JR, FUNCT_JR}
+};
+
+const instruction_desc *find_instruction(const char *mnemonic)
+{
+	for(size_t i = 0; i < ARR_SIZE(instruction_table); i++)
+	{
+		if(!strcmp(mnemonic, instruction_table[i].mnemonic))
+			return(&instruction_table[i]);
+	}
+	return(NULL);
+}
+
 void build_instruction_bin(instruction_field *arr, size_t field_count, int *bin_arr, char *hex_arr)
 {
 	for(size_t i = 0; i < field_count; i++)
@@ -42,7 +67,7 @@ void build_branch_r1_instruction(instruction *instr, int op_code, int *bin_arr, 
 		FIELD(OPCODE_START, OPCODE_END, op_code),
 		FIELD(RS_START, RS_END, instr->rs),
 		FIELD(IMM_START, IMM_END, instr->offset)};
-	build_instruction_bin(fields, 3, bin_arr, instr->instr_hex);
+	build_instruction_bin(fields, ARR_SIZE(fields), bin_arr, instr->instr_hex);
 	finalize_signed_value(&instr->offset, negative, bin_arr, instr->instr_hex);
 }
 
@@ -53,7 +78,7 @@ void build_branch_r2_instruction(instruction *instr, int op_code, int *bin_arr, 
 		FIELD(RS_START, RS_END, instr->rs),
 		FIELD(RT_START, RT_END, instr->rt),
 		FIELD(IMM_START, IMM_END, instr->offset)};
-	build_instruction_bin(fields, 4, bin_arr, instr->instr_hex);
+	build_instruction_bin(fields, ARR_SIZE(fields), bin_arr, instr->instr_hex);
 	finalize_signed_value(&instr->offset, negative, bin_arr, instr->instr_hex);
 }
 
@@ -64,7 +89,7 @@ void build_memory_instruction(instruction *instr, int op_code, int *bin_arr, int
 		FIELD(RS_START, RS_END, instr->base),
 		FIELD(RT_START, RT_END, instr->rt),
 		FIELD(IMM_START, IMM_END, instr->offset)};
-	build_instruction_bin(fields, 4, bin_arr, instr->instr_hex);
+	build_instruction_bin(fields, ARR_SIZE(fields), bin_arr, instr->instr_hex);
 	finalize_signed_value(&instr->offset, negative, bin_arr, instr->instr_hex);
 }
 
@@ -74,7 +99,7 @@ void build_r2_instruction(instruction *instr, int funct_code, int *bin_arr)
 		FIELD(RS_START, RS_END, instr->rs),
 		FIELD(RT_START, RT_END, instr->rt),
 		FIELD(FUNCT_START, FUNCT_END, funct_code)};
-	build_instruction_bin(fields, 3, bin_arr, instr->instr_hex);
+	build_instruction_bin(fields, ARR_SIZE(fields), bin_arr, instr->instr_hex);
 }
 
 void build_r3_instruction(instruction *instr, int funct_code, int *bin_arr)
@@ -84,7 +109,7 @@ void build_r3_instruction(instruction *instr, int funct_code, int *bin_arr)
 		FIELD(RT_START, RT_END, instr->rt),
 		FIELD(RD_START, RD_END, instr->rd),
 		FIELD(FUNCT_START, FUNCT_END, funct_code)};
-	build_instruction_bin(fields, 4, bin_arr, instr->instr_hex);
+	build_instruction_bin(fields, ARR_SIZE(fields), bin_arr, instr->instr_hex);
 }
 
 void build_rd_instruction(instruction *instr, int funct_code, int *bin_arr)
@@ -92,7 +117,15 @@ void build_rd_instruction(instruction *instr, int funct_code, int *bin_arr)
 	instruction_field fields[] = {
 		FIELD(RD_START, RD_END, instr->rd),
 		FIELD(FUNCT_START, FUNCT_END, funct_code)};
-	build_instruction_bin(fields, 2, bin_arr, instr->instr_hex);
+	build_instruction_bin(fields, ARR_SIZE(fields), bin_arr, instr->instr_hex);
+}
+
+void build_rs_instruction(instruction *instr, int funct_code, int *bin_arr)
+{
+	instruction_field fields[] = {
+		FIELD(RS_START, RS_END, instr->rs),
+		FIELD(FUNCT_START, FUNCT_END, funct_code)};
+	build_instruction_bin(fields, ARR_SIZE(fields), bin_arr, instr->instr_hex);
 }
 
 void build_shift_instruction(instruction *instr, int funct_code, int rotr, int *bin_arr)
@@ -102,7 +135,7 @@ void build_shift_instruction(instruction *instr, int funct_code, int rotr, int *
 		FIELD(RD_START, RD_END, instr->rd),
 		FIELD(SHAMT_START, SHAMT_END, instr->sa),
 		FIELD(FUNCT_START, FUNCT_END, funct_code)};
-	build_instruction_bin(fields, 4, bin_arr, instr->instr_hex);
+	build_instruction_bin(fields, ARR_SIZE(fields), bin_arr, instr->instr_hex);
 	if(rotr)
 	{
 		bin_arr[ROTR_BIT] = 1;
@@ -115,7 +148,7 @@ void build_target_instruction(instruction *instr, int op_code, int *bin_arr)
 	instruction_field fields[] = {
 		FIELD(OPCODE_START, OPCODE_END, op_code),
 		FIELD(TARGET_START, TARGET_END, instr->target)};
-	build_instruction_bin(fields, 2, bin_arr, instr->instr_hex);
+	build_instruction_bin(fields, ARR_SIZE(fields), bin_arr, instr->instr_hex);
 }
 
 void decode_branch_r1_operands(FILE *in, instruction *instr, int *negative)
@@ -194,6 +227,7 @@ void decode_target_operands(FILE *in, instruction *instr)
 instruction decode_instruction(int mode, FILE *fichier)
 {
 	char chunk[50], param1[20], param2[20], param3[20];
+	const instruction_desc *id;
 	int instr_bin[32] = {0}, negative = 0;
 	instruction instr = {0};
 
@@ -204,6 +238,8 @@ instruction decode_instruction(int mode, FILE *fichier)
 		instr.exit = 1;
 		return instr;
 	}
+
+	id = find_instruction(chunk);
 	
 	if(chunk[0] != '#')
 	{
@@ -295,11 +331,10 @@ instruction decode_instruction(int mode, FILE *fichier)
 			}
 			else if(!strcmp(chunk, "JR"))
 			{
-				decode_rs_operand(in, &instr);
-				instruction_field fields[] = {FIELD(6, 10, instr.rs), FIELD(11, 31, 8)};
-				build_instruction_bin(fields, 2, instr_bin, instr.instr_hex);
 				instr.opcode = JR;
-				sprintf(instr.toString, "JR $%s -> 0x%s\n", param1, instr.instr_hex);
+				decode_rs_operand(in, &instr);
+				build_rs_instruction(&instr, FUNCT_JR, instr_bin);
+				sprintf(instr.toString, "JR $%d -> 0x%s\n", instr.rs, instr.instr_hex);
 			}
 			else if(!strcmp(chunk, "LUI"))
 			{

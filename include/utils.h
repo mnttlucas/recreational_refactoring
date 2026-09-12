@@ -5,6 +5,9 @@
 #include "cpu.h"
 #include "instruction.h"
 
+#define ARR_SIZE(arr) \
+    (sizeof(arr) / sizeof((arr)[0]))
+
 void	bin_arr_to_hex_arr(int *bin_arr, char *hex_arr);
 void	bin_twos_complement(int debut, int fin, int *tab);
 void	clear_output();
