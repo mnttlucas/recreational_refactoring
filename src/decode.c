@@ -314,6 +314,7 @@ instruction decode_instruction(int mode, FILE *fichier)
 					sprintf(instr.to_string, "%s %d -> 0x%s\n", id->mnemonic, instr.target, instr.instr_hex);
 					break;
 			}
+   log_instruction(&instr);
 		}
 		else
 		{
