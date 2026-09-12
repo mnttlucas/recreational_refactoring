@@ -37,6 +37,10 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 			res_32 = register_read(cpu, instr.rs) & register_read(cpu, instr.rt);
 			register_write(cpu, instr.rd, res_32);
 			break;
+		case AUI :
+			res_32 = register_read(cpu, instr.rs) + instr.immediate << 16;
+			register_write(cpu, instr.rt, res_32);
+			break;
 		case BEQ :
 			if(register_read(cpu, instr.rs) == register_read(cpu, instr.rt))
 				cpu->next_PC = register_read(cpu, REG_PC) + instr.offset + 1;

@@ -15,7 +15,7 @@ typedef struct
 
 int handle_sign(char *param, instruction *instr);
 void build_instruction_bin(instruction_field *arr, size_t field_count, int *bin_arr, char *hex_arr);
-void finalize_signed_value(int *value, int negative, int *bin_arr, char *hex_arr);
+void finalize_signed_value(int *value, instruction *instr);
 
 void build_branch_r1_instruction(instruction *instr, int op_code);
 void build_branch_r2_instruction(instruction *instr, int op_code);
