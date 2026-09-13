@@ -127,7 +127,7 @@ void batch_mode(CPU *cpu, config *cfg, char *path_in, char *path_out_hex, char *
 	free(instructions_arr);
 }
 
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
 	config cfg = {0};
 	CPU cpu;

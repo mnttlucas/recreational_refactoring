@@ -33,12 +33,20 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 			else
 				register_write(cpu, instr.rt, (int32_t) res_64);
 			break;
+		case ADDIU :
+			res_32 = register_read(cpu, instr.rs) + instr.immediate;
+			register_write(cpu, instr.rt, res_32);
+			break;
+		case ADDU :
+			res_32 = register_read(cpu, instr.rs) + register_read(cpu, instr.rt);
+			register_write(cpu, instr.rd, res_32);
+			break;
 		case AND :
 			res_32 = register_read(cpu, instr.rs) & register_read(cpu, instr.rt);
 			register_write(cpu, instr.rd, res_32);
 			break;
 		case ANDI :
-			res_32 = register_read(cpu, instr.rs) & instr.immediate;
+			res_32 = register_read(cpu, instr.rs) & (instr.immediate & 0xFFFF);
 			register_write(cpu, instr.rt, res_32);
 			break;
 		case AUI :
