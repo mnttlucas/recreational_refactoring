@@ -20,7 +20,7 @@ instruction_desc instruction_table[] =
 	{"DIV", DIV, FUNCT_DIV, R2},
 	{"EXIT", 0, 0, CMD_EXIT},
 	{"J", J, OPCODE_J, TARGET},
-	{"J", JAL, OPCODE_JAL, TARGET},
+	{"JAL", JAL, OPCODE_JAL, TARGET},
 	{"JR", JR, FUNCT_JR, RS},
 	{"LUI", AUI, OPCODE_AUI, RT_IMMEDIATE},
 	{"LW", LW, OPCODE_LW, MEMORY},
@@ -366,7 +366,7 @@ instruction decode_instruction(int mode, FILE *fichier)
 		}
 	}
 	else
-		fscanf(in, " %[^\n]\n", chunk);
+		fscanf(in, " %255[^\n]", chunk);
 
 	return(instr);
 }

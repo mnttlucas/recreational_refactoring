@@ -65,7 +65,7 @@ void batch_mode(CPU *cpu, config *cfg, char *path_in, char *path_out_hex, char *
 		{
 			printf("\n[!] batch_mode : fopen() error\n");
 			fclose(in);
-			fclose(out_regs);
+			fclose(out_hex);
 			return;
 		}
 	}
