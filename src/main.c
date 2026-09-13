@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "config.h"
@@ -28,13 +29,20 @@ void interactive_mode(CPU *cpu, config *cfg)
 
 void batch_mode(CPU *cpu, config *cfg, char *path_in, char *path_out_hex, char *path_out_regs)
 {
-	long i = 0, n;
-	instruction instructions_arr[100] = {0};
+	int i = 0, n;
+	unsigned long capacity = 64;
+	instruction *instructions_arr = malloc(capacity * sizeof(instruction));
 	FILE *in, *out_hex, *out_regs;
+
+	if(!instructions_arr)
+	{
+		printf("\n[!] batch_mode : malloc() error\n");
+		return;
+	}
 
 	if(cfg->step)
 	{
-		if(((in = fopen(path_in, "r")) == NULL))
+		if(!(in = fopen(path_in, "r")))
 		{
 			printf("\n[!] batch_mode : fopen() error\n");
 			return;
@@ -42,11 +50,22 @@ void batch_mode(CPU *cpu, config *cfg, char *path_in, char *path_out_hex, char *
 	}
 	else
 	{
-		if(((in = fopen(path_in, "r")) == NULL) || 
-			((out_hex = fopen(path_out_hex, "w")) == NULL) ||
-			((out_regs = fopen(path_out_regs, "w")) == NULL))
+		if(!(in = fopen(path_in, "r")))
 		{
 			printf("\n[!] batch_mode : fopen() error\n");
+			return;
+		}
+		if(!(out_hex = fopen(path_out_hex, "w")))
+		{
+			printf("\n[!] batch_mode : fopen() error\n");
+			fclose(in);
+			return;
+		}
+		if(!(out_regs = fopen(path_out_regs, "w")))
+		{
+			printf("\n[!] batch_mode : fopen() error\n");
+			fclose(in);
+			fclose(out_regs);
 			return;
 		}
 	}
@@ -54,6 +73,18 @@ void batch_mode(CPU *cpu, config *cfg, char *path_in, char *path_out_hex, char *
 	printf("\n--- Instruction decode ---\n");
 	while(1)
 	{
+		if(i >= (int) capacity)
+		{
+			capacity *= 2;
+			instruction *tmp = realloc(instructions_arr, capacity * sizeof(instruction));
+			if(tmp)
+				instructions_arr = tmp;
+			else
+			{
+				printf("\n[!] batch_mode : realloc() error\n");
+				return;
+			}
+		}
 		instructions_arr[i] = decode_instruction(1, in);
 		if(instructions_arr[i].exit)
 			break;
@@ -82,7 +113,7 @@ void batch_mode(CPU *cpu, config *cfg, char *path_in, char *path_out_hex, char *
 	{
 		cpu_dump(cpu, cfg);
 		for(i = 0; i < 32; i++)
-			fprintf(out_regs, "$%ld : %d\n", i, register_read(cpu, (int) i));
+			fprintf(out_regs, "$%d : %d\n", i, register_read(cpu, i));
 		fprintf(out_regs, "HI : %d\n", register_read(cpu, REG_HI));
 		fprintf(out_regs, "LO : %d\n", register_read(cpu, REG_LO));
 	}
@@ -93,6 +124,7 @@ void batch_mode(CPU *cpu, config *cfg, char *path_in, char *path_out_hex, char *
 		fclose(out_hex);
 		fclose(out_regs);
 	}
+	free(instructions_arr);
 }
 
 int main(int argc, char *argv[])

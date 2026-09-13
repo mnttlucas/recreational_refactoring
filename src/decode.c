@@ -11,6 +11,7 @@ instruction_desc instruction_table[] =
 	{"ADD", ADD, FUNCT_ADD, R3},
 	{"ADDI", ADDI, OPCODE_ADDI, R3_IMMEDIATE},
 	{"AND", AND, FUNCT_AND, R3},
+	{"ANDI", ANDI, OPCODE_ANDI, R3_IMMEDIATE},
 	{"AUI", AUI, OPCODE_AUI, R3_IMMEDIATE},
 	{"BEQ", BEQ, OPCODE_BEQ, BRANCH_R2},
 	{"BGTZ", BGTZ, OPCODE_BGTZ, BRANCH_R1},
@@ -21,10 +22,9 @@ instruction_desc instruction_table[] =
 	{"J", J, OPCODE_J, TARGET},
 	{"J", JAL, OPCODE_JAL, TARGET},
 	{"JR", JR, FUNCT_JR, RS},
-	{"LUI", LUI, OPCODE_AUI, RT_IMMEDIATE}, 
-	// TODO : In Release 6, LUI is an assembly idiom of AUI with rs=0. Maybe delete LUI & implement AUI
-	// Think about something for alisases
+	{"LUI", AUI, OPCODE_AUI, RT_IMMEDIATE},
 	{"LW", LW, OPCODE_LW, MEMORY},
+	{"NOR", NOR, FUNCT_NOR, R3},
 	{"MFHI", MFHI, FUNCT_MFHI, RD},
 	{"MFLO", MFLO, FUNCT_MFLO, RD},
 	{"MULT", MULT, FUNCT_MULT, R2},
@@ -278,11 +278,11 @@ void decode_target_operands(FILE *in, instruction *instr)
 
 instruction decode_instruction(int mode, FILE *fichier)
 {
-	char chunk[50];
+	char chunk[256];
 	FILE *in = (!mode) ? stdin : fichier;
 	instruction instr = {0};
 
-	if(fscanf(in, "%49s", chunk) != 1)
+	if(fscanf(in, "%255s", chunk) != 1)
 	{
 		instr.exit = 1;
 		return instr;
@@ -349,7 +349,7 @@ instruction decode_instruction(int mode, FILE *fichier)
 				case RT_IMMEDIATE :
 					decode_rt_immediate_operand(in, &instr);
 					build_rt_immediate_instruction(&instr, id->code);
-					sprintf(instr.to_string, "%s $%d,%d -> 0x%s\n", id->mnemonic, instr.rt, instr.immediate, instr.instr_hex);
+					sprintf(instr.to_string, "%s $%d, %d -> 0x%s\n", id->mnemonic, instr.rt, instr.immediate, instr.instr_hex);
 					break;
 				case SHIFT :
 					decode_shift_operands(in, &instr);

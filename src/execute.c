@@ -37,8 +37,12 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 			res_32 = register_read(cpu, instr.rs) & register_read(cpu, instr.rt);
 			register_write(cpu, instr.rd, res_32);
 			break;
+		case ANDI :
+			res_32 = register_read(cpu, instr.rs) & instr.immediate;
+			register_write(cpu, instr.rt, res_32);
+			break;
 		case AUI :
-			res_32 = register_read(cpu, instr.rs) + instr.immediate << 16;
+			res_32 = register_read(cpu, instr.rs) + (instr.immediate << 16);
 			register_write(cpu, instr.rt, res_32);
 			break;
 		case BEQ :
@@ -91,10 +95,6 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 		case JR :
 			cpu->next_PC = register_read(cpu, instr.rs);
 			break;
-		case LUI :
-			res_32 = instr.immediate << 16;
-			register_write(cpu, instr.rt, res_32);
-			break;
 		case LW :
 			address = register_read(cpu, instr.base) + instr.offset;
 			res_32 = memory_read(cpu, (int) address);
@@ -116,6 +116,10 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 			register_write(cpu, REG_LO, res_LO);
 			break;
 		case NOP :
+			break;
+		case NOR :
+			res_32 = ~(register_read(cpu, instr.rs) | register_read(cpu, instr.rt));
+			register_write(cpu, instr.rd, res_32);
 			break;
 		case OR :
 			res_32 = register_read(cpu, instr.rs) | register_read(cpu, instr.rt);

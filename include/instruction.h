@@ -1,6 +1,7 @@
 #ifndef	INSTRUCTION_H
 #define	INSTRUCTION_H
 
+/* MIPS bit fields */
 #define OPCODE_START  0
 #define OPCODE_END    5
 #define RS_START      6
@@ -18,6 +19,7 @@
 #define TARGET_START  6
 #define TARGET_END   31
 
+/* Function codes */
 #define FUNCT_ADD  32
 #define FUNCT_AND  36
 #define FUNCT_DIV  26
@@ -25,6 +27,7 @@
 #define FUNCT_MFHI 16
 #define FUNCT_MFLO 18
 #define FUNCT_MULT 24
+#define FUNCT_NOR  39
 #define FUNCT_OR   37
 #define FUNCT_SLL   0
 #define FUNCT_SLT  42
@@ -32,17 +35,18 @@
 #define FUNCT_SUB  34
 #define FUNCT_XOR  38
 
-#define OPCODE_ADDI   8
-#define OPCODE_AUI   15
-#define OPCODE_BEQ    4
-#define OPCODE_BGTZ   7
-#define OPCODE_BLEZ   6
-#define OPCODE_BNE    5
-#define OPCODE_J      2
-#define OPCODE_JAL    3
-#define OPCODE_LUI   15
-#define OPCODE_LW    35
-#define OPCODE_SW    43
+/* Operation codes */
+#define OPCODE_ADDI  8
+#define OPCODE_ANDI 12
+#define OPCODE_AUI  15
+#define OPCODE_BEQ   4
+#define OPCODE_BGTZ  7
+#define OPCODE_BLEZ  6
+#define OPCODE_BNE   5
+#define OPCODE_J     2
+#define OPCODE_JAL   3
+#define OPCODE_LW   35
+#define OPCODE_SW   43
 
 #define ROTR_BIT 10
 
@@ -55,6 +59,7 @@ typedef enum
 	ADD,
 	ADDI,
 	AND,
+	ANDI,
 	AUI,
 	BEQ,
 	BGTZ,
@@ -64,12 +69,12 @@ typedef enum
 	J,
 	JAL,
 	JR,
-	LUI,
 	LW,
 	MFHI,
 	MFLO,
 	MULT,
 	NOP,
+	NOR,
 	OR,
 	ROTR,
 	SLL,
