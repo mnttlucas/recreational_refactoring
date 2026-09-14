@@ -45,6 +45,7 @@ void batch_mode(CPU *cpu, config *cfg, char *path_in, char *path_out_hex, char *
 		if(!(in = fopen(path_in, "r")))
 		{
 			printf("\n[!] batch_mode : fopen() error\n");
+			free(instructions_arr);
 			return;
 		}
 	}
@@ -53,12 +54,14 @@ void batch_mode(CPU *cpu, config *cfg, char *path_in, char *path_out_hex, char *
 		if(!(in = fopen(path_in, "r")))
 		{
 			printf("\n[!] batch_mode : fopen() error\n");
+			free(instructions_arr);
 			return;
 		}
 		if(!(out_hex = fopen(path_out_hex, "w")))
 		{
 			printf("\n[!] batch_mode : fopen() error\n");
 			fclose(in);
+			free(instructions_arr);
 			return;
 		}
 		if(!(out_regs = fopen(path_out_regs, "w")))
@@ -66,6 +69,7 @@ void batch_mode(CPU *cpu, config *cfg, char *path_in, char *path_out_hex, char *
 			printf("\n[!] batch_mode : fopen() error\n");
 			fclose(in);
 			fclose(out_hex);
+			free(instructions_arr);
 			return;
 		}
 	}

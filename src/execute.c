@@ -151,16 +151,16 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 			register_write(cpu, instr.rd, res_32);
 			break;
 		case SLT :
-			if(register_read(cpu, instr.rs) < register_read(cpu, instr.rt))
-				register_write(cpu, instr.rd, 1);
-			else
-				register_write(cpu, instr.rd, 0);
+			register_write(cpu, instr.rd, register_read(cpu, instr.rs) < register_read(cpu, instr.rt));
+			break;
+		case SLTI :
+			register_write(cpu, instr.rt, register_read(cpu, instr.rs) < (int32_t) instr.immediate);
+			break;
+		case SLTIU :
+			register_write(cpu, instr.rt, (uint32_t) register_read(cpu, instr.rs) < (uint32_t) ((int32_t) instr.immediate));
 			break;
 		case SLTU :
-			if((uint32_t) register_read(cpu, instr.rs) < (uint32_t) register_read(cpu, instr.rt))
-				register_write(cpu, instr.rd, 1);
-			else
-				register_write(cpu, instr.rd, 0);
+			register_write(cpu, instr.rd, (uint32_t) register_read(cpu, instr.rs) < (uint32_t) register_read(cpu, instr.rt));
 			break;
 		case SRA :
 			res_32 = register_read(cpu, instr.rt) >> instr.sa;

@@ -53,6 +53,8 @@
 #define OPCODE_JAL    3
 #define OPCODE_LW    35
 #define OPCODE_ORI   13
+#define OPCODE_SLTI  10
+#define OPCODE_SLTIU 11
 #define OPCODE_SW    43
 #define OPCODE_XORI  14
 
@@ -92,6 +94,8 @@ typedef enum
 	ROTR,
 	SLL,
 	SLT,
+	SLTI,
+	SLTIU,
 	SLTU,
 	SRA,
 	SRL,
