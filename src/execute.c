@@ -34,11 +34,11 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 				register_write(cpu, instr.rt, (int32_t) res_64);
 			break;
 		case ADDIU :
-			res_32 = register_read(cpu, instr.rs) + instr.immediate;
+			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rs) + (uint32_t) instr.immediate);
 			register_write(cpu, instr.rt, res_32);
 			break;
 		case ADDU :
-			res_32 = register_read(cpu, instr.rs) + register_read(cpu, instr.rt);
+			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rs) + (uint32_t) register_read(cpu, instr.rt));
 			register_write(cpu, instr.rd, res_32);
 			break;
 		case AND :
@@ -46,11 +46,11 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 			register_write(cpu, instr.rd, res_32);
 			break;
 		case ANDI :
-			res_32 = register_read(cpu, instr.rs) & ((uint32_t) instr.immediate & 0xFFFF);
+			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rs) & ((uint32_t) instr.immediate & 0xFFFFu));
 			register_write(cpu, instr.rt, res_32);
 			break;
 		case AUI :
-			res_32 = register_read(cpu, instr.rs) + (instr.immediate << 16);
+			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rs) + ((uint32_t) instr.immediate << 16));
 			register_write(cpu, instr.rt, res_32);
 			break;
 		case BEQ :
@@ -138,7 +138,7 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 			register_write(cpu, instr.rd, res_32);
 			break;
 		case ORI :
-			res_32 = register_read(cpu, instr.rs) | ((uint32_t) instr.immediate & 0xFFFF);
+			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rs) | ((uint32_t) instr.immediate & 0xFFFF));
 			register_write(cpu, instr.rt, res_32);
 			break;
 		case ROTR :
@@ -147,7 +147,7 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 			register_write(cpu, instr.rd, res_32);
 			break;
 		case SLL :
-			res_32 = register_read(cpu, instr.rt) << instr.sa;
+			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rt) << instr.sa);
 			register_write(cpu, instr.rd, res_32);
 			break;
 		case SLT :
@@ -163,6 +163,8 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 				register_write(cpu, instr.rd, 0);
 			break;
 		case SRA :
+			/* Implementation-defined for arithmetic shift :
+			guaranteed by gcc/clang, not C itself */
 			res_32 = register_read(cpu, instr.rt) >> instr.sa;
 			register_write(cpu, instr.rd, res_32);
 			break;
@@ -185,10 +187,10 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 			break;
 		case XOR :
 			res_32 = register_read(cpu, instr.rs) ^ register_read(cpu, instr.rt);
-			register_write(cpu, instr.rd, (int32_t) res_32);
+			register_write(cpu, instr.rd, res_32);
 			break;
 		case XORI :
-			res_32 = register_read(cpu, instr.rs) ^ ((uint32_t) instr.immediate & 0xFFFF);
+			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rs) ^ ((uint32_t) instr.immediate & 0xFFFF));
 			register_write(cpu, instr.rt, res_32);
 			break;
 		default :

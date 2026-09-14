@@ -10,6 +10,7 @@ CFLAGS = -Wall -Wextra -Wpedantic \
 TARGET = emul-mips
 
 SRC = src/main.c \
+      src/modes.c \
       src/decode.c \
       src/execute.c \
       src/instruction.c \
