@@ -27,6 +27,8 @@
 #define FUNCT_JR    8
 #define FUNCT_MFHI 16
 #define FUNCT_MFLO 18
+#define FUNCT_MTHI 17
+#define FUNCT_MTLO 19
 #define FUNCT_MULT 24
 #define FUNCT_NOR  39
 #define FUNCT_OR   37
@@ -50,7 +52,9 @@
 #define OPCODE_J      2
 #define OPCODE_JAL    3
 #define OPCODE_LW    35
+#define OPCODE_ORI   13
 #define OPCODE_SW    43
+#define OPCODE_XORI  14
 
 #define ROTR_BIT 10
 
@@ -79,9 +83,12 @@ typedef enum
 	MFHI,
 	MFLO,
 	MULT,
+	MTHI,
+	MTLO,
 	NOP,
 	NOR,
 	OR,
+	ORI,
 	ROTR,
 	SLL,
 	SLT,
@@ -91,6 +98,7 @@ typedef enum
 	SUB,
 	SW,
 	XOR,
+	XORI,
 	OPCODE_MAX
 } opcode;
 

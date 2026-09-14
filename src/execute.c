@@ -46,7 +46,7 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 			register_write(cpu, instr.rd, res_32);
 			break;
 		case ANDI :
-			res_32 = register_read(cpu, instr.rs) & (instr.immediate & 0xFFFF);
+			res_32 = register_read(cpu, instr.rs) & ((uint32_t) instr.immediate & 0xFFFF);
 			register_write(cpu, instr.rt, res_32);
 			break;
 		case AUI :
@@ -109,12 +109,16 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 			register_write(cpu, instr.rt, res_32);
 			break;
 		case MFHI :
-			res_32 = register_read(cpu, REG_HI);
-			register_write(cpu, instr.rd, res_32);
+			register_write(cpu, instr.rd, register_read(cpu, REG_HI));
 			break;
 		case MFLO :
-			res_32 = register_read(cpu, REG_LO);
-			register_write(cpu, instr.rd, res_32);
+			register_write(cpu, instr.rd, register_read(cpu, REG_LO));
+			break;
+		case MTHI :
+			register_write(cpu, REG_HI, register_read(cpu, instr.rs));
+			break;
+		case MTLO :
+			register_write(cpu, REG_LO, register_read(cpu, instr.rs));
 			break;
 		case MULT :
 			res_64 = (int64_t) register_read(cpu, instr.rs) * (int64_t) register_read(cpu, instr.rt);
@@ -132,6 +136,10 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 		case OR :
 			res_32 = register_read(cpu, instr.rs) | register_read(cpu, instr.rt);
 			register_write(cpu, instr.rd, res_32);
+			break;
+		case ORI :
+			res_32 = register_read(cpu, instr.rs) | ((uint32_t) instr.immediate & 0xFFFF);
+			register_write(cpu, instr.rt, res_32);
 			break;
 		case ROTR :
 			raw_32 = (uint32_t) register_read(cpu, instr.rt);
@@ -178,6 +186,10 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 		case XOR :
 			res_32 = register_read(cpu, instr.rs) ^ register_read(cpu, instr.rt);
 			register_write(cpu, instr.rd, (int32_t) res_32);
+			break;
+		case XORI :
+			res_32 = register_read(cpu, instr.rs) ^ ((uint32_t) instr.immediate & 0xFFFF);
+			register_write(cpu, instr.rt, res_32);
 			break;
 		default :
 			fprintf(stderr, "[!] This line was either a comment or an unknown command\n");

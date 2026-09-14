@@ -26,12 +26,15 @@ instruction_desc instruction_table[] =
 	{"JR", JR, FUNCT_JR, RS},
 	{"LUI", AUI, OPCODE_AUI, RT_IMMEDIATE},
 	{"LW", LW, OPCODE_LW, MEMORY},
-	{"NOR", NOR, FUNCT_NOR, R3},
 	{"MFHI", MFHI, FUNCT_MFHI, RD},
 	{"MFLO", MFLO, FUNCT_MFLO, RD},
+	{"MTHI", MTHI, FUNCT_MTHI, RS},
+	{"MTLO", MTLO, FUNCT_MTLO, RS},
 	{"MULT", MULT, FUNCT_MULT, R2},
 	{"NOP", NOP, 0, CMD_NOP},
+	{"NOR", NOR, FUNCT_NOR, R3},
 	{"OR", OR, FUNCT_OR, R3},
+	{"ORI", ORI, OPCODE_ORI, R3_IMMEDIATE},
 	{"ROTR", ROTR, FUNCT_SRL, SHIFT},
 	{"SLL", SLL, FUNCT_SLL, SHIFT},
 	{"SLT", SLT, FUNCT_SLT, R3},
@@ -41,6 +44,7 @@ instruction_desc instruction_table[] =
 	{"SUB", SUB, FUNCT_SUB, R3},
 	{"SW", SW, OPCODE_SW, MEMORY},
 	{"XOR", XOR, FUNCT_XOR, R3},
+	{"XORI", XORI, OPCODE_XORI, R3_IMMEDIATE}
 };
 
 instruction_desc *find_instruction(const char *mnemonic)
