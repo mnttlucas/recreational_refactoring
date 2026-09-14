@@ -150,6 +150,10 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rt) << instr.sa);
 			register_write(cpu, instr.rd, res_32);
 			break;
+		case SLLV :
+			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rt) << (uint8_t) (register_read(cpu, instr.rs) & 0x1F));
+			register_write(cpu, instr.rd, res_32);
+			break;
 		case SLT :
 			register_write(cpu, instr.rd, register_read(cpu, instr.rs) < register_read(cpu, instr.rt));
 			break;
@@ -169,8 +173,11 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 			register_write(cpu, instr.rd, res_32);
 			break;
 		case SRL :
-			raw_32 = (uint32_t) register_read(cpu, instr.rt);
-			res_32 = (int32_t) (raw_32 >> instr.sa);
+			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rt) >> instr.sa);
+			register_write(cpu, instr.rd, res_32);
+			break;
+		case SRLV :
+			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rt) >> (uint8_t) (register_read(cpu, instr.rs) & 0x1F));
 			register_write(cpu, instr.rd, res_32);
 			break;
 		case SUB :

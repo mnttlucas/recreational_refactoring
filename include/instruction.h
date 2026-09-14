@@ -33,10 +33,12 @@
 #define FUNCT_NOR  39
 #define FUNCT_OR   37
 #define FUNCT_SLL   0
+#define FUNCT_SLLV  4
 #define FUNCT_SLT  42
 #define FUNCT_SLTU 43
 #define FUNCT_SRA   3
 #define FUNCT_SRL   2
+#define FUNCT_SRLV  6
 #define FUNCT_SUB  34
 #define FUNCT_XOR  38
 
@@ -93,12 +95,14 @@ typedef enum
 	ORI,
 	ROTR,
 	SLL,
+	SLLV,
 	SLT,
 	SLTI,
 	SLTIU,
 	SLTU,
 	SRA,
 	SRL,
+	SRLV,
 	SUB,
 	SW,
 	XOR,
