@@ -35,6 +35,8 @@ instruction_desc instruction_table[] =
 	{"ROTR", ROTR, FUNCT_SRL, SHIFT},
 	{"SLL", SLL, FUNCT_SLL, SHIFT},
 	{"SLT", SLT, FUNCT_SLT, R3},
+	{"SLTU", SLTU, FUNCT_SLTU, R3},
+	{"SRA", SRA, FUNCT_SRA, SHIFT},
 	{"SRL", SRL, FUNCT_SRL, SHIFT},
 	{"SUB", SUB, FUNCT_SUB, R3},
 	{"SW", SW, OPCODE_SW, MEMORY},

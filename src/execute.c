@@ -148,6 +148,16 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 			else
 				register_write(cpu, instr.rd, 0);
 			break;
+		case SLTU :
+			if((uint32_t) register_read(cpu, instr.rs) < (uint32_t) register_read(cpu, instr.rt))
+				register_write(cpu, instr.rd, 1);
+			else
+				register_write(cpu, instr.rd, 0);
+			break;
+		case SRA :
+			res_32 = register_read(cpu, instr.rt) >> instr.sa;
+			register_write(cpu, instr.rd, res_32);
+			break;
 		case SRL :
 			raw_32 = (uint32_t) register_read(cpu, instr.rt);
 			res_32 = (int32_t) (raw_32 >> instr.sa);
