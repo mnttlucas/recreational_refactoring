@@ -31,6 +31,7 @@ void build_rs_instruction(instruction *instr, int funct_code);
 void build_rt_immediate_instruction(instruction *instr, int op_code);
 void build_shift_instruction(instruction *instr, int funct_code, int rotr);
 void build_target_instruction(instruction *instr, int op_code);
+void build_variable_shift_instruction(instruction *instr, int funct_code);
 
 void decode_branch_r1_operands(FILE *in, instruction *instr);
 void decode_branch_r2_operands(FILE *in, instruction *instr);
@@ -43,6 +44,7 @@ void decode_rs_operand(FILE *in, instruction *instr);
 void decode_rt_immediate_operand(FILE *in, instruction *instr);
 void decode_shift_operands(FILE *in, instruction *instr);
 void decode_target_operands(FILE *in, instruction *instr);
+void decode_variable_shift_operands(FILE *in, instruction *instr);
 
 instruction	decode_instruction(int mode, FILE *fichier);
 

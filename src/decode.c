@@ -37,15 +37,15 @@ instruction_desc instruction_table[] =
 	{"ORI", ORI, OPCODE_ORI, R3_IMMEDIATE},
 	{"ROTR", ROTR, FUNCT_SRL, SHIFT},
 	{"SLL", SLL, FUNCT_SLL, SHIFT},
-	{"SLLV", SLLV, FUNCT_SLLV, R3},
+	{"SLLV", SLLV, FUNCT_SLLV, VARIABLE_SHIFT},
 	{"SLT", SLT, FUNCT_SLT, R3},
 	{"SLTI", SLTI, OPCODE_SLTI, R3_IMMEDIATE},
 	{"SLTIU", SLTIU, OPCODE_SLTIU, R3_IMMEDIATE},
 	{"SLTU", SLTU, FUNCT_SLTU, R3},
 	{"SRA", SRA, FUNCT_SRA, SHIFT},
-	{"SRAV", SRAV, FUNCT_SRAV, R3},
+	{"SRAV", SRAV, FUNCT_SRAV, VARIABLE_SHIFT},
 	{"SRL", SRL, FUNCT_SRL, SHIFT},
-	{"SRLV", SRLV, FUNCT_SRLV, R3},
+	{"SRLV", SRLV, FUNCT_SRLV, VARIABLE_SHIFT},
 	{"SUB", SUB, FUNCT_SUB, R3},
 	{"SUBU", SUBU, FUNCT_SUBU, R3},
 	{"SW", SW, OPCODE_SW, MEMORY},
@@ -200,6 +200,16 @@ void build_target_instruction(instruction *instr, int op_code)
 	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
 }
 
+void build_variable_shift_instruction(instruction *instr, int funct_code)
+{
+	instruction_field fields[] = {
+		FIELD(RS_START, RS_END, instr->rs),
+		FIELD(RT_START, RT_END, instr->rt),
+		FIELD(RD_START, RD_END, instr->rd),
+		FIELD(FUNCT_START, FUNCT_END, funct_code)};
+	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
+}
+
 void decode_branch_r1_operands(FILE *in, instruction *instr)
 {
 	char offset[16], rs[8];
@@ -290,6 +300,15 @@ void decode_target_operands(FILE *in, instruction *instr)
 	instr->target = atoi(target);
 }
 
+void decode_variable_shift_operands(FILE *in, instruction *instr)
+{
+	char rd[8], rs[8], rt[8];
+	fscanf(in, " $%[^,] , $%[^,] , $%s ", rd, rt, rs);
+	instr->rd = register_string_to_int(rd);
+	instr->rs = register_string_to_int(rs);
+	instr->rt = register_string_to_int(rt);
+}
+
 instruction decode_instruction(int mode, FILE *fichier)
 {
 	char chunk[256];
@@ -374,6 +393,11 @@ instruction decode_instruction(int mode, FILE *fichier)
 					decode_target_operands(in, &instr);
 					build_target_instruction(&instr, id->code);
 					sprintf(instr.to_string, "%s %d -> 0x%s\n", id->mnemonic, instr.target, instr.instr_hex);
+					break;
+				case VARIABLE_SHIFT :
+					decode_variable_shift_operands(in, &instr);
+					build_variable_shift_instruction(&instr, id->code);
+					sprintf(instr.to_string, "%s $%d, $%d, $%d -> 0x%s\n", id->mnemonic, instr.rd, instr.rt, instr.rs, instr.instr_hex);
 					break;
 			}
 			log_instruction(&instr);

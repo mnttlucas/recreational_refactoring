@@ -128,7 +128,8 @@ typedef enum
 	RS,
 	RT_IMMEDIATE,
 	SHIFT,
-	TARGET
+	TARGET,
+	VARIABLE_SHIFT
 } format;
 
 typedef struct
