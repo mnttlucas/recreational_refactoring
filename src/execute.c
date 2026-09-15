@@ -172,6 +172,10 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 			res_32 = register_read(cpu, instr.rt) >> instr.sa;
 			register_write(cpu, instr.rd, res_32);
 			break;
+		case SRAV :
+			res_32 = register_read(cpu, instr.rt) >> (uint8_t) (register_read(cpu, instr.rs) & 0x1F);
+			register_write(cpu, instr.rd, res_32);
+			break;
 		case SRL :
 			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rt) >> instr.sa);
 			register_write(cpu, instr.rd, res_32);
@@ -186,6 +190,10 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 				fprintf(stderr, "[!] Exception : Integer Overflow\n");
 			else
 				register_write(cpu, instr.rd, (int32_t) res_64);
+			break;
+		case SUBU :
+			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rs) - (uint32_t) register_read(cpu, instr.rt));
+			register_write(cpu, instr.rd, res_32);
 			break;
 		case SW :
 			res_32 = register_read(cpu, instr.rt);

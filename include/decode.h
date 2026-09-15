@@ -1,6 +1,8 @@
 #ifndef	DECODE_H
 #define	DECODE_H
 
+#include <stdio.h>
+
 #include "instruction.h"
 
 #define FIELD(start, end, value) \

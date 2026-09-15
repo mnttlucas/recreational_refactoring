@@ -85,7 +85,7 @@ void batch_mode(CPU *cpu, config *cfg, char *path_in, char *path_out_hex, char *
 			{
 				printf("\n[!] batch_mode : realloc() error\n");
 				fclose(in);
-				if(cfg->step)
+				if(!cfg->step)
 				{
 					fclose(out_hex);
 					fclose(out_regs);

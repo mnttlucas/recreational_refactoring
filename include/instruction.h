@@ -37,9 +37,11 @@
 #define FUNCT_SLT  42
 #define FUNCT_SLTU 43
 #define FUNCT_SRA   3
+#define FUNCT_SRAV  7
 #define FUNCT_SRL   2
 #define FUNCT_SRLV  6
 #define FUNCT_SUB  34
+#define FUNCT_SUBU 35
 #define FUNCT_XOR  38
 
 /* Operation codes */
@@ -101,9 +103,11 @@ typedef enum
 	SLTIU,
 	SLTU,
 	SRA,
+	SRAV,
 	SRL,
 	SRLV,
 	SUB,
+	SUBU,
 	SW,
 	XOR,
 	XORI,
