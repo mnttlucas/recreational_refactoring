@@ -222,7 +222,7 @@ void build_variable_shift_instruction(instruction *instr, int funct_code)
 void decode_branch_r1_operands(FILE *in, instruction *instr)
 {
 	char offset[16], rs[8];
-	fscanf(in, " $%[^,]  , %s ", rs, offset);
+	fscanf(in, " $%7[^,]  , %15s ", rs, offset);
 	instr->offset = handle_sign(offset, instr);
 	instr->rs = register_string_to_int(rs);
 }
@@ -230,7 +230,7 @@ void decode_branch_r1_operands(FILE *in, instruction *instr)
 void decode_branch_r2_operands(FILE *in, instruction *instr)
 {
 	char offset[16], rs[8], rt[8];
-	fscanf(in, " $%[^,] , $%[^,] , %s ", rs, rt, offset);
+	fscanf(in, " $%7[^,] , $%7[^,] , %15s ", rs, rt, offset);
 	instr->offset = handle_sign(offset, instr);
 	instr->rs = register_string_to_int(rs);
 	instr->rt = register_string_to_int(rt);
@@ -239,7 +239,7 @@ void decode_branch_r2_operands(FILE *in, instruction *instr)
 void decode_memory_operands(FILE *in, instruction *instr)
 {
 	char base[8], offset[16], rt[8];
-	fscanf(in, " $%[^,] , %[^(] ($%[^)]) ", rt, offset, base);
+	fscanf(in, " $%7[^,] , %15[^(] ($%7[^)]) ", rt, offset, base);
 	instr->base = register_string_to_int(base);
 	instr->offset = handle_sign(offset, instr);
 	instr->rt = register_string_to_int(rt);
@@ -248,7 +248,7 @@ void decode_memory_operands(FILE *in, instruction *instr)
 void decode_r2_operands(FILE *in, instruction *instr)
 {
 	char rs[8], rt[8];
-	fscanf(in, " $%[^,] , $%s ", rs, rt);
+	fscanf(in, " $%7[^,] , $%7s ", rs, rt);
 	instr->rs = register_string_to_int(rs);
 	instr->rt = register_string_to_int(rt);
 }
@@ -256,7 +256,7 @@ void decode_r2_operands(FILE *in, instruction *instr)
 void decode_r3_immediate_operands(FILE *in, instruction *instr)
 {
 	char imm[16], rs[8], rt[8];
-	fscanf(in, " $%[^,] , $%[^,] , %s ", rt, rs, imm);
+	fscanf(in, " $%7[^,] , $%7[^,] , %15s ", rt, rs, imm);
 	instr->immediate = handle_sign(imm, instr);
 	instr->rs = register_string_to_int(rs);
 	instr->rt = register_string_to_int(rt);
@@ -265,7 +265,7 @@ void decode_r3_immediate_operands(FILE *in, instruction *instr)
 void decode_r3_operands(FILE *in, instruction *instr)
 {
 	char rd[8], rs[8], rt[8];
-	fscanf(in, " $%[^,] , $%[^,] , $%s ", rd, rs, rt);
+	fscanf(in, " $%7[^,] , $%7[^,] , $%7s ", rd, rs, rt);
 	instr->rd = register_string_to_int(rd);
 	instr->rs = register_string_to_int(rs);
 	instr->rt = register_string_to_int(rt);
@@ -274,21 +274,21 @@ void decode_r3_operands(FILE *in, instruction *instr)
 void decode_rd_operand(FILE *in, instruction *instr)
 {
 	char rd[8];
-	fscanf(in, " $%s ", rd);
+	fscanf(in, " $%7s ", rd);
 	instr->rd = register_string_to_int(rd);
 }
 
 void decode_rs_operand(FILE *in, instruction *instr)
 {
 	char rs[8];
-	fscanf(in, " $%s ", rs);
+	fscanf(in, " $%7s ", rs);
 	instr->rs = register_string_to_int(rs);
 }
 
 void decode_rt_immediate_operand(FILE *in, instruction *instr)
 {
 	char imm[16], rt[8];
-	fscanf(in, " $%[^,] , %s ", rt, imm);
+	fscanf(in, " $%7[^,] , %15s ", rt, imm);
 	instr->immediate = handle_sign(imm, instr);
 	instr->rt = register_string_to_int(rt);
 }
@@ -296,7 +296,7 @@ void decode_rt_immediate_operand(FILE *in, instruction *instr)
 void decode_shift_operands(FILE *in, instruction *instr)
 {
 	char rd[8], rt[8], sa[16];
-	fscanf(in, " $%[^,] , $%[^,] , %s ", rd, rt, sa);
+	fscanf(in, " $%7[^,] , $%7[^,] , %15s ", rd, rt, sa);
 	instr->rd = register_string_to_int(rd);
 	instr->rt = register_string_to_int(rt);
 	instr->sa = atoi(sa);
@@ -305,14 +305,14 @@ void decode_shift_operands(FILE *in, instruction *instr)
 void decode_target_operands(FILE *in, instruction *instr)
 {
 	char target[16];
-	fscanf(in, " %s ", target);
+	fscanf(in, " %15s ", target);
 	instr->target = atoi(target);
 }
 
 void decode_variable_shift_operands(FILE *in, instruction *instr)
 {
 	char rd[8], rs[8], rt[8];
-	fscanf(in, " $%[^,] , $%[^,] , $%s ", rd, rt, rs);
+	fscanf(in, " $%7[^,] , $%7[^,] , $%7s ", rd, rt, rs);
 	instr->rd = register_string_to_int(rd);
 	instr->rs = register_string_to_int(rs);
 	instr->rt = register_string_to_int(rt);
@@ -320,7 +320,7 @@ void decode_variable_shift_operands(FILE *in, instruction *instr)
 
 instruction decode_instruction(int mode, FILE *fichier)
 {
-	char chunk[256];
+	char chunk[256], dump;
 	FILE *in = (!mode) ? stdin : fichier;
 	instruction instr = {0};
 
@@ -344,76 +344,76 @@ instruction decode_instruction(int mode, FILE *fichier)
 				case BRANCH_R1 :
 					decode_branch_r1_operands(in, &instr);
 					build_branch_r1_instruction(&instr, id->code);
-					sprintf(instr.to_string, "%s $%d, %d -> 0x%s\n", id->mnemonic, instr.rs, instr.offset, instr.instr_hex);
+					snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%s\n", id->mnemonic, instr.rs, instr.offset, instr.instr_hex);
 					break;
 				case BRANCH_R2 :
 					decode_branch_r2_operands(in, &instr);
 					build_branch_r2_instruction(&instr, id->code);
-					sprintf(instr.to_string, "%s $%d, $%d, %d -> 0x%s\n", id->mnemonic, instr.rs, instr.rt, instr.offset, instr.instr_hex);
+					snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, %d -> 0x%s\n", id->mnemonic, instr.rs, instr.rt, instr.offset, instr.instr_hex);
 					break;
 				case CMD_EXIT :
 					instr.exit = 1;
 					break;
 				case CMD_NOP :
 					bin_arr_to_hex_arr(instr.instr_bin, instr.instr_hex);
-					sprintf(instr.to_string, "NOP -> 0x%s\n", instr.instr_hex);
+					snprintf(instr.to_string, sizeof(instr.to_string), "NOP -> 0x%s\n", instr.instr_hex);
 					break;
 				case MEMORY :
 					decode_memory_operands(in, &instr);
 					build_memory_instruction(&instr, id->code);
-					sprintf(instr.to_string, "%s $%d, %d($%d) -> 0x%s\n", id->mnemonic, instr.rt, instr.offset, instr.base, instr.instr_hex);
+					snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d($%d) -> 0x%s\n", id->mnemonic, instr.rt, instr.offset, instr.base, instr.instr_hex);
 					break;
 				case R2 :
 					decode_r2_operands(in, &instr);
 					build_r2_instruction(&instr, id->code);
-					sprintf(instr.to_string, "%s $%d, $%d -> 0x%s\n", id->mnemonic, instr.rs, instr.rt, instr.instr_hex);
+					snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d -> 0x%s\n", id->mnemonic, instr.rs, instr.rt, instr.instr_hex);
 					break;
 				case R3_IMMEDIATE :
 					decode_r3_immediate_operands(in, &instr);
 					build_r3_immediate_instruction(&instr, id->code);
-					sprintf(instr.to_string, "%s $%d, $%d, %d -> 0x%s\n", id->mnemonic, instr.rt, instr.rs, instr.immediate, instr.instr_hex);
+					snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, %d -> 0x%s\n", id->mnemonic, instr.rt, instr.rs, instr.immediate, instr.instr_hex);
 					break;
 				case R3 :
 					decode_r3_operands(in, &instr);
 					build_r3_instruction(&instr, id->code);
-					sprintf(instr.to_string, "%s $%d, $%d, $%d -> 0x%s\n", id->mnemonic, instr.rd, instr.rs, instr.rt, instr.instr_hex);
+					snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, $%d -> 0x%s\n", id->mnemonic, instr.rd, instr.rs, instr.rt, instr.instr_hex);
 					break;
 				case RD :
 					decode_rd_operand(in, &instr);
 					build_rd_instruction(&instr, id->code);
-					sprintf(instr.to_string, "%s $%d -> 0x%s\n", id->mnemonic, instr.rd, instr.instr_hex);
+					snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d -> 0x%s\n", id->mnemonic, instr.rd, instr.instr_hex);
 					break;
 				case RS :
 					decode_rs_operand(in, &instr);
 					build_rs_instruction(&instr, id->code);
-					sprintf(instr.to_string, "%s $%d -> 0x%s\n", id->mnemonic, instr.rs, instr.instr_hex);
+					snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d -> 0x%s\n", id->mnemonic, instr.rs, instr.instr_hex);
 					break;
 				case RT_IMMEDIATE :
 					decode_rt_immediate_operand(in, &instr);
 					build_rt_immediate_instruction(&instr, id->code);
-					sprintf(instr.to_string, "%s $%d, %d -> 0x%s\n", id->mnemonic, instr.rt, instr.immediate, instr.instr_hex);
+					snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%s\n", id->mnemonic, instr.rt, instr.immediate, instr.instr_hex);
 					break;
 				case SHIFT :
 					decode_shift_operands(in, &instr);
 					build_shift_instruction(&instr, id->code);
-					sprintf(instr.to_string, "%s $%d, $%d, %d -> 0x%s\n", id->mnemonic, instr.rd, instr.rt, instr.sa, instr.instr_hex);
+					snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, %d -> 0x%s\n", id->mnemonic, instr.rd, instr.rt, instr.sa, instr.instr_hex);
 					break;
 				case TARGET :
 					decode_target_operands(in, &instr);
 					build_target_instruction(&instr, id->code);
-					sprintf(instr.to_string, "%s %d -> 0x%s\n", id->mnemonic, instr.target, instr.instr_hex);
+					snprintf(instr.to_string, sizeof(instr.to_string), "%s %d -> 0x%s\n", id->mnemonic, instr.target, instr.instr_hex);
 					break;
 				case VARIABLE_SHIFT :
 					decode_variable_shift_operands(in, &instr);
 					build_variable_shift_instruction(&instr, id->code);
-					sprintf(instr.to_string, "%s $%d, $%d, $%d -> 0x%s\n", id->mnemonic, instr.rd, instr.rt, instr.rs, instr.instr_hex);
+					snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, $%d -> 0x%s\n", id->mnemonic, instr.rd, instr.rt, instr.rs, instr.instr_hex);
 					break;
 			}
 			log_instruction(&instr);
 		}
 	}
 	else
-		fscanf(in, " %255[^\n]", chunk);
+		while((dump = fgetc(in)) != '\n' && dump != EOF);
 
 	return(instr);
 }

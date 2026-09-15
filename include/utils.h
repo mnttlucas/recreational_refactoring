@@ -11,7 +11,7 @@
 void	bin_arr_to_hex_arr(int *bin_arr, char *hex_arr);
 void	bin_twos_complement(int debut, int fin, int *tab);
 void	clear_output();
-void	cpu_dump(CPU *cpu, config *cfg);
+void	cpu_dump(CPU *cpu, Config *cfg);
 void	increment_pc(CPU *cpu);
 int 	is_negative(char *str);
 void	log_instruction(instruction *instr);

@@ -8,7 +8,7 @@
 #include "registers.h"
 #include "utils.h"
 
-void execute_instruction(CPU *cpu, config *cfg, instruction instr)
+void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 {
 	int32_t address, dividend, divisor, pending_PC, res_32, res_HI, res_LO;
 	int64_t res_64;

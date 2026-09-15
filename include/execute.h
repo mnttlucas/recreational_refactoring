@@ -5,6 +5,6 @@
 #include "cpu.h"
 #include "instruction.h"
 
-void	execute_instruction(CPU *cpu, config *cfg, instruction instr);
+void	execute_instruction(CPU *cpu, Config *cfg, instruction instr);
 
 #endif	/* EXECUTE_H */

@@ -151,7 +151,7 @@ typedef struct
 	int instr_bin[32];
 	char instr_hex[9];
 	char to_string[200];
-	int etiq;
+	int label;
 	int rs;
 	int rt;
 	int rd;

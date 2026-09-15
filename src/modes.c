@@ -9,7 +9,7 @@
 #include "registers.h"
 #include "utils.h"
 
-void interactive_mode(CPU *cpu, config *cfg)
+void interactive_mode(CPU *cpu, Config *cfg)
 {
 	instruction current_instr = {0};
 
@@ -25,7 +25,7 @@ void interactive_mode(CPU *cpu, config *cfg)
 	}
 }
 
-void batch_mode(CPU *cpu, config *cfg, char *path_in, char *path_out_hex, char *path_out_regs)
+void batch_mode(CPU *cpu, Config *cfg, char *path_in, char *path_out_hex, char *path_out_regs)
 {
 	int i = 0, n;
 	unsigned long capacity = 64;

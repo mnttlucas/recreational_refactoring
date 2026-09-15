@@ -9,7 +9,7 @@
 
 int main(int argc, char **argv)
 {
-	config cfg = {0};
+	Config cfg = {0};
 	CPU cpu;
 
 	memory_init(&cpu);

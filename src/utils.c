@@ -61,7 +61,7 @@ void clear_output()
 	printf("\033[2J\033[H\n\n");
 }
 
-void cpu_dump(CPU *cpu, config *cfg)
+void cpu_dump(CPU *cpu, Config *cfg)
 {
 	char hex_char[4] = {'0', '4', '8', 'C'};
 

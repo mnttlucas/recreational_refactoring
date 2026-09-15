@@ -5,6 +5,6 @@ typedef struct
 {
 	int step;
 	int verbose;
-} config;
+} Config;
 
 #endif	/* CONFIG_H */
