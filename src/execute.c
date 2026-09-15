@@ -13,6 +13,7 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 	int32_t address, dividend, divisor, pending_PC, res_32, res_HI, res_LO;
 	int64_t res_64;
 	uint32_t raw_32;
+	uint8_t shift_8;
 
 	pending_PC = cpu->next_PC;
 	cpu->next_PC = -1;
@@ -147,8 +148,9 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			register_write(cpu, instr.rd, res_32);
 			break;
 		case ROTRV :
+			shift_8 = (uint8_t) (register_read(cpu, instr.rs) & 0x1F);
 			raw_32 = (uint32_t) register_read(cpu, instr.rt);
-			res_32 = (int32_t) (raw_32 >> ((uint8_t) register_read(cpu, instr.rs)) | raw_32 << ((32 - ((uint8_t) register_read(cpu, instr.rs))) & 31));
+			res_32 = (int32_t) (raw_32 >> shift_8 | raw_32 << ((32 - shift_8) & 31));
 			register_write(cpu, instr.rd, res_32);
 			break;
 		case SLL :
@@ -156,7 +158,8 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			register_write(cpu, instr.rd, res_32);
 			break;
 		case SLLV :
-			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rt) << (uint8_t) (register_read(cpu, instr.rs) & 0x1F));
+			shift_8 = (uint8_t) (register_read(cpu, instr.rs) & 0x1F);
+			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rt) << shift_8);
 			register_write(cpu, instr.rd, res_32);
 			break;
 		case SLT :
@@ -178,7 +181,8 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			register_write(cpu, instr.rd, res_32);
 			break;
 		case SRAV :
-			res_32 = register_read(cpu, instr.rt) >> (uint8_t) (register_read(cpu, instr.rs) & 0x1F);
+			shift_8 = (uint8_t) (register_read(cpu, instr.rs) & 0x1F);
+			res_32 = register_read(cpu, instr.rt) >> shift_8;
 			register_write(cpu, instr.rd, res_32);
 			break;
 		case SRL :
@@ -186,7 +190,8 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			register_write(cpu, instr.rd, res_32);
 			break;
 		case SRLV :
-			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rt) >> (uint8_t) (register_read(cpu, instr.rs) & 0x1F));
+			shift_8 = (uint8_t) (register_read(cpu, instr.rs) & 0x1F);
+			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rt) >> shift_8);
 			register_write(cpu, instr.rd, res_32);
 			break;
 		case SUB :

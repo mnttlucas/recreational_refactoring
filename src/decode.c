@@ -191,8 +191,6 @@ void build_shift_instruction(instruction *instr, int funct_code)
 	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
 	if(instr->opcode == ROTR)
 		instr->instr_bin[ROTR_BIT] = 1;
-	else if(instr->opcode == ROTRV)
-		instr->instr_bin[ROTRV_BIT] = 1;
 	bin_arr_to_hex_arr(instr->instr_bin, instr->instr_hex);
 }
 
@@ -212,9 +210,7 @@ void build_variable_shift_instruction(instruction *instr, int funct_code)
 		FIELD(RD_START, RD_END, instr->rd),
 		FIELD(FUNCT_START, FUNCT_END, funct_code)};
 	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
-	if(instr->opcode == ROTR)
-		instr->instr_bin[ROTR_BIT] = 1;
-	else if(instr->opcode == ROTRV)
+	if(instr->opcode == ROTRV)
 		instr->instr_bin[ROTRV_BIT] = 1;
 	bin_arr_to_hex_arr(instr->instr_bin, instr->instr_hex);
 }
@@ -320,9 +316,10 @@ void decode_variable_shift_operands(FILE *in, instruction *instr)
 
 instruction decode_instruction(int mode, FILE *fichier)
 {
-	char chunk[256], dump;
+	char chunk[256];
 	FILE *in = (!mode) ? stdin : fichier;
 	instruction instr = {0};
+	int dump;
 
 	if(fscanf(in, "%255s", chunk) != 1)
 	{
