@@ -29,7 +29,7 @@ void build_r3_instruction(instruction *instr, int funct);
 void build_rd_instruction(instruction *instr, int funct_code);
 void build_rs_instruction(instruction *instr, int funct_code);
 void build_rt_immediate_instruction(instruction *instr, int op_code);
-void build_shift_instruction(instruction *instr, int funct_code, int rotr);
+void build_shift_instruction(instruction *instr, int funct_code);
 void build_target_instruction(instruction *instr, int op_code);
 void build_variable_shift_instruction(instruction *instr, int funct_code);
 

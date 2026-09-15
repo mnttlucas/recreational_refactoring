@@ -143,7 +143,12 @@ void execute_instruction(CPU *cpu, config *cfg, instruction instr)
 			break;
 		case ROTR :
 			raw_32 = (uint32_t) register_read(cpu, instr.rt);
-			res_32 = (int32_t) (raw_32 >> instr.sa | raw_32 << ((32 - instr.sa) & 31));
+			res_32 = (int32_t) ((raw_32 >> instr.sa) | (raw_32 << ((32 - instr.sa) & 31)));
+			register_write(cpu, instr.rd, res_32);
+			break;
+		case ROTRV :
+			raw_32 = (uint32_t) register_read(cpu, instr.rt);
+			res_32 = (int32_t) (raw_32 >> ((uint8_t) register_read(cpu, instr.rs)) | raw_32 << ((32 - ((uint8_t) register_read(cpu, instr.rs))) & 31));
 			register_write(cpu, instr.rd, res_32);
 			break;
 		case SLL :

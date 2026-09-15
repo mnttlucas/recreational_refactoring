@@ -23,6 +23,8 @@
 #define FUNCT_ADD  32
 #define FUNCT_ADDU 33
 #define FUNCT_AND  36
+#define FUNCT_CLO  17
+#define FUNCT_CLZ  16
 #define FUNCT_DIV  26
 #define FUNCT_JR    8
 #define FUNCT_MFHI 16
@@ -62,7 +64,8 @@
 #define OPCODE_SW    43
 #define OPCODE_XORI  14
 
-#define ROTR_BIT 10
+#define ROTR_BIT  10
+#define ROTRV_BIT 25
 
 typedef enum
 {
@@ -81,6 +84,8 @@ typedef enum
 	BGTZ,
 	BLEZ,
 	BNE,
+	CLO,
+	CLZ,
 	DIV,
 	J,
 	JAL,
@@ -96,6 +101,7 @@ typedef enum
 	OR,
 	ORI,
 	ROTR,
+	ROTRV,
 	SLL,
 	SLLV,
 	SLT,

@@ -19,6 +19,9 @@ instruction_desc instruction_table[] =
 	{"BGTZ", BGTZ, OPCODE_BGTZ, BRANCH_R1},
 	{"BLEZ", BLEZ, OPCODE_BLEZ, BRANCH_R1},
 	{"BNE", BNE, OPCODE_BNE, BRANCH_R2},
+	// CLO/CLZ rd, rs (no helper yet)
+	// {"CLO", CLO, FUNCT_CLO, }, 
+	// {"CLZ", CLZ, FUNCT_CLZ, },
 	{"DIV", DIV, FUNCT_DIV, R2},
 	{"EXIT", 0, 0, CMD_EXIT},
 	{"J", J, OPCODE_J, TARGET},
@@ -36,6 +39,7 @@ instruction_desc instruction_table[] =
 	{"OR", OR, FUNCT_OR, R3},
 	{"ORI", ORI, OPCODE_ORI, R3_IMMEDIATE},
 	{"ROTR", ROTR, FUNCT_SRL, SHIFT},
+	{"ROTRV", ROTRV, FUNCT_SRLV, VARIABLE_SHIFT},
 	{"SLL", SLL, FUNCT_SLL, SHIFT},
 	{"SLLV", SLLV, FUNCT_SLLV, VARIABLE_SHIFT},
 	{"SLT", SLT, FUNCT_SLT, R3},
@@ -177,7 +181,7 @@ void build_rt_immediate_instruction(instruction *instr, int op_code)
 	finalize_signed_value(&instr->immediate, instr);
 }
 
-void build_shift_instruction(instruction *instr, int funct_code, int rotr)
+void build_shift_instruction(instruction *instr, int funct_code)
 {
 	instruction_field fields[] = {
 		FIELD(RT_START, RT_END, instr->rt),
@@ -185,11 +189,11 @@ void build_shift_instruction(instruction *instr, int funct_code, int rotr)
 		FIELD(SHAMT_START, SHAMT_END, instr->sa),
 		FIELD(FUNCT_START, FUNCT_END, funct_code)};
 	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
-	if(rotr)
-	{
+	if(instr->opcode == ROTR)
 		instr->instr_bin[ROTR_BIT] = 1;
-		bin_arr_to_hex_arr(instr->instr_bin, instr->instr_hex);
-	}
+	else if(instr->opcode == ROTRV)
+		instr->instr_bin[ROTRV_BIT] = 1;
+	bin_arr_to_hex_arr(instr->instr_bin, instr->instr_hex);
 }
 
 void build_target_instruction(instruction *instr, int op_code)
@@ -208,6 +212,11 @@ void build_variable_shift_instruction(instruction *instr, int funct_code)
 		FIELD(RD_START, RD_END, instr->rd),
 		FIELD(FUNCT_START, FUNCT_END, funct_code)};
 	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
+	if(instr->opcode == ROTR)
+		instr->instr_bin[ROTR_BIT] = 1;
+	else if(instr->opcode == ROTRV)
+		instr->instr_bin[ROTRV_BIT] = 1;
+	bin_arr_to_hex_arr(instr->instr_bin, instr->instr_hex);
 }
 
 void decode_branch_r1_operands(FILE *in, instruction *instr)
@@ -386,7 +395,7 @@ instruction decode_instruction(int mode, FILE *fichier)
 					break;
 				case SHIFT :
 					decode_shift_operands(in, &instr);
-					build_shift_instruction(&instr, id->code, id->op == ROTR);
+					build_shift_instruction(&instr, id->code);
 					sprintf(instr.to_string, "%s $%d, $%d, %d -> 0x%s\n", id->mnemonic, instr.rd, instr.rt, instr.sa, instr.instr_hex);
 					break;
 				case TARGET :
