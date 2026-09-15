@@ -65,16 +65,14 @@
 #define OPCODE_SW      43
 #define OPCODE_XORI    14
 
-/* Regimm codes */
-#define REGIMM_BLTZ    1
-#define REGIMM_BGEZ    0
-
 /* Special bit locations */
 #define ROTR_BIT    10
 #define ROTRV_BIT   25
 
 /* Special register values for some operations 
 Even if some values are zeros, this exists to match MIPS32 R6 specification */
+#define BGEZ_RT        1
+#define BLTZ_RT        0
 #define CLO_CLZ_RT     0
 
 typedef enum
