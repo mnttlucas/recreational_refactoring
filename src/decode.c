@@ -19,9 +19,8 @@ instruction_desc instruction_table[] =
 	{"BGTZ", BGTZ, OPCODE_BGTZ, BRANCH_R1},
 	{"BLEZ", BLEZ, OPCODE_BLEZ, BRANCH_R1},
 	{"BNE", BNE, OPCODE_BNE, BRANCH_R2},
-	// CLO/CLZ rd, rs (no helper yet)
-	// {"CLO", CLO, FUNCT_CLO, }, 
-	// {"CLZ", CLZ, FUNCT_CLZ, },
+	{"CLO", CLO, FUNCT_CLO, RD_RS}, 
+	{"CLZ", CLZ, FUNCT_CLZ, RD_RS},
 	{"DIV", DIV, FUNCT_DIV, R2},
 	{"EXIT", 0, 0, CMD_EXIT},
 	{"J", J, OPCODE_J, TARGET},
@@ -163,6 +162,16 @@ void build_rd_instruction(instruction *instr, int funct_code)
 	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
 }
 
+void build_rd_rs_instruction(instruction *instr, int funct_code)
+{
+	instruction_field fields[] = {
+		FIELD(RS_START, RS_END, instr->rs),
+		FIELD(RT_START, RT_END, CLO_CLZ_RT),
+		FIELD(RD_START, RD_END, instr->rd),
+		FIELD(FUNCT_START, FUNCT_END, funct_code)};
+	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
+}
+
 void build_rs_instruction(instruction *instr, int funct_code)
 {
 	instruction_field fields[] = {
@@ -274,6 +283,14 @@ void decode_rd_operand(FILE *in, instruction *instr)
 	instr->rd = register_string_to_int(rd);
 }
 
+void decode_rd_rs_operands(FILE *in, instruction *instr)
+{
+	char rd[8], rs[8];
+	fscanf(in, " $%7[^,] , $%7s ", rd, rs);
+	instr->rd = register_string_to_int(rd);
+	instr->rs = register_string_to_int(rs);
+}
+
 void decode_rs_operand(FILE *in, instruction *instr)
 {
 	char rs[8];
@@ -281,7 +298,7 @@ void decode_rs_operand(FILE *in, instruction *instr)
 	instr->rs = register_string_to_int(rs);
 }
 
-void decode_rt_immediate_operand(FILE *in, instruction *instr)
+void decode_rt_immediate_operands(FILE *in, instruction *instr)
 {
 	char imm[16], rt[8];
 	fscanf(in, " $%7[^,] , %15s ", rt, imm);
@@ -380,13 +397,18 @@ instruction decode_instruction(int mode, FILE *fichier)
 					build_rd_instruction(&instr, id->code);
 					snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d -> 0x%s\n", id->mnemonic, instr.rd, instr.instr_hex);
 					break;
+				case RD_RS :
+					decode_rd_rs_operands(in, &instr);
+					build_rd_rs_instruction(&instr, id->code);
+					snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d -> 0x%s\n", id->mnemonic, instr.rd, instr.rs, instr.instr_hex);
+					break;
 				case RS :
 					decode_rs_operand(in, &instr);
 					build_rs_instruction(&instr, id->code);
 					snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d -> 0x%s\n", id->mnemonic, instr.rs, instr.instr_hex);
 					break;
 				case RT_IMMEDIATE :
-					decode_rt_immediate_operand(in, &instr);
+					decode_rt_immediate_operands(in, &instr);
 					build_rt_immediate_instruction(&instr, id->code);
 					snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%s\n", id->mnemonic, instr.rt, instr.immediate, instr.instr_hex);
 					break;

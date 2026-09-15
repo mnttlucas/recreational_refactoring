@@ -13,7 +13,7 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 	int32_t address, dividend, divisor, pending_PC, res_32, res_HI, res_LO;
 	int64_t res_64;
 	uint32_t raw_32;
-	uint8_t shift_8;
+	uint8_t count, shift_8;
 
 	pending_PC = cpu->next_PC;
 	cpu->next_PC = -1;
@@ -69,6 +69,38 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 		case BNE :
 			if(register_read(cpu, instr.rs) != register_read(cpu, instr.rt))
 				cpu->next_PC = register_read(cpu, REG_PC) + instr.offset + 1;
+			break;
+		case CLO :
+			/* Naive CLO/Z implementation, didn't want to just
+			use C __builtin_clz/popcount */
+			if((uint32_t) register_read(cpu, instr.rs) == 0xFFFFFFFFu)
+				register_write(cpu, instr.rd, 32);
+			else
+			{
+				count = 0;
+				raw_32 = (uint32_t) register_read(cpu, instr.rs);
+				while(raw_32 & 0x80000000)
+				{
+					raw_32 <<= 1;
+					count++; 
+				}
+				register_write(cpu, instr.rd, (int32_t) count);
+			}
+			break;
+		case CLZ :
+			if((uint32_t) register_read(cpu, instr.rs) == 0u)
+				register_write(cpu, instr.rd, 32);
+			else
+			{
+				count = 0;
+				raw_32 = (uint32_t) register_read(cpu, instr.rs);
+				while(!(raw_32 & 0x80000000))
+				{
+					raw_32 <<= 1;
+					count++; 
+				}
+				register_write(cpu, instr.rd, (int32_t) count);
+			}
 			break;
 		case DIV :
 			dividend = register_read(cpu, instr.rs);

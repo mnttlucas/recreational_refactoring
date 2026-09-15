@@ -20,52 +20,62 @@
 #define TARGET_END   31
 
 /* Function codes */
-#define FUNCT_ADD  32
-#define FUNCT_ADDU 33
-#define FUNCT_AND  36
-#define FUNCT_CLO  17
-#define FUNCT_CLZ  16
-#define FUNCT_DIV  26
-#define FUNCT_JR    8
-#define FUNCT_MFHI 16
-#define FUNCT_MFLO 18
-#define FUNCT_MTHI 17
-#define FUNCT_MTLO 19
-#define FUNCT_MULT 24
-#define FUNCT_NOR  39
-#define FUNCT_OR   37
-#define FUNCT_SLL   0
-#define FUNCT_SLLV  4
-#define FUNCT_SLT  42
-#define FUNCT_SLTU 43
-#define FUNCT_SRA   3
-#define FUNCT_SRAV  7
-#define FUNCT_SRL   2
-#define FUNCT_SRLV  6
-#define FUNCT_SUB  34
-#define FUNCT_SUBU 35
-#define FUNCT_XOR  38
+#define FUNCT_ADD    32
+#define FUNCT_ADDU   33
+#define FUNCT_AND    36
+#define FUNCT_CLO    17
+#define FUNCT_CLZ    16
+#define FUNCT_DIV    26
+#define FUNCT_JR      8
+#define FUNCT_MFHI   16
+#define FUNCT_MFLO   18
+#define FUNCT_MTHI   17
+#define FUNCT_MTLO   19
+#define FUNCT_MULT   24
+#define FUNCT_NOR    39
+#define FUNCT_OR     37
+#define FUNCT_SLL     0
+#define FUNCT_SLLV    4
+#define FUNCT_SLT    42
+#define FUNCT_SLTU   43
+#define FUNCT_SRA     3
+#define FUNCT_SRAV    7
+#define FUNCT_SRL     2
+#define FUNCT_SRLV    6
+#define FUNCT_SUB    34
+#define FUNCT_SUBU   35
+#define FUNCT_XOR    38
 
 /* Operation codes */
-#define OPCODE_ADDI   8
-#define OPCODE_ADDIU  9
-#define OPCODE_ANDI  12
-#define OPCODE_AUI   15
-#define OPCODE_BEQ    4
-#define OPCODE_BGTZ   7
-#define OPCODE_BLEZ   6
-#define OPCODE_BNE    5
-#define OPCODE_J      2
-#define OPCODE_JAL    3
-#define OPCODE_LW    35
-#define OPCODE_ORI   13
-#define OPCODE_SLTI  10
-#define OPCODE_SLTIU 11
-#define OPCODE_SW    43
-#define OPCODE_XORI  14
+#define OPCODE_ADDI     8
+#define OPCODE_ADDIU    9
+#define OPCODE_ANDI    12
+#define OPCODE_AUI     15
+#define OPCODE_BEQ      4
+#define OPCODE_BGTZ     7
+#define OPCODE_BLEZ     6
+#define OPCODE_BNE      5
+#define OPCODE_J        2
+#define OPCODE_JAL      3
+#define OPCODE_LW      35
+#define OPCODE_ORI     13
+#define OPCODE_REGIMM   1
+#define OPCODE_SLTI    10
+#define OPCODE_SLTIU   11
+#define OPCODE_SW      43
+#define OPCODE_XORI    14
 
-#define ROTR_BIT  10
-#define ROTRV_BIT 25
+/* Regimm codes */
+#define REGIMM_BLTZ    1
+#define REGIMM_BGEZ    0
+
+/* Special bit locations */
+#define ROTR_BIT    10
+#define ROTRV_BIT   25
+
+/* Special register values for some operations 
+Even if some values are zeros, this exists to match MIPS32 R6 specification */
+#define CLO_CLZ_RT     0
 
 typedef enum
 {
@@ -131,6 +141,7 @@ typedef enum
 	R3_IMMEDIATE,
 	R3,
 	RD,
+	RD_RS,
 	RS,
 	RT_IMMEDIATE,
 	SHIFT,
