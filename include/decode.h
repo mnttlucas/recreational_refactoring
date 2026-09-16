@@ -7,7 +7,7 @@
 #include "instruction.h"
 
 #define FIELD(start, end, value) \
-	(instruction_field) {start, end, value}
+	(instruction_field) {end, start, value}
 
 typedef struct
 {
