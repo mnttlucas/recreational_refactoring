@@ -105,12 +105,22 @@ void build_rd_instruction(instruction *instr, int funct_code)
 void build_rd_rs_instruction(instruction *instr, int funct_code)
 {
 	int rt_value = 0;
-	if(instr->opcode == CLO) rt_value = CLO_RT;
-	else if(instr->opcode == CLZ) rt_value = CLZ_RT;
+	int sa_value = 0;
+	if(instr->opcode == CLO)
+	{
+		rt_value = CLO_RT;
+		sa_value = CLO_SA;
+	}
+	else if(instr->opcode == CLZ)
+	{
+		rt_value = CLZ_RT;
+		sa_value = CLZ_SA;
+	}
 	instruction_field fields[] = {
 		FIELD(RS_START, RS_END, instr->rs),
 		FIELD(RT_START, RT_END, rt_value),
 		FIELD(RD_START, RD_END, instr->rd),
+		FIELD(SHAMT_START, SHAMT_END, sa_value),
 		FIELD(FUNCT_START, FUNCT_END, funct_code)};
 	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
 }
