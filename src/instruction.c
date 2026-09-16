@@ -1,4 +1,8 @@
+#include <stdio.h>
+#include <string.h>
+
 #include "instruction.h"
+#include "utils.h"
 
 static const instruction_desc instruction_table[] =
 {
@@ -49,3 +53,10 @@ static const instruction_desc instruction_table[] =
 	{"XOR", XOR, FUNCT_XOR, R3},
 	{"XORI", XORI, OPCODE_XORI, R3_IMMEDIATE}
 };
+
+const instruction_desc *find_instruction(const char *mnemonic)
+{
+	for(size_t i = 0; i < ARR_SIZE(instruction_table); i++)
+		if(!strcmp(mnemonic, instruction_table[i].mnemonic)) return(&instruction_table[i]);
+	return(NULL);
+}

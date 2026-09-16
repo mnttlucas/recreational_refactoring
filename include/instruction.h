@@ -175,4 +175,6 @@ typedef struct
 	opcode opcode;
 } instruction;
 
+const instruction_desc *find_instruction(const char *mnemonic);
+
 #endif	/* INSTRUCTION_H */

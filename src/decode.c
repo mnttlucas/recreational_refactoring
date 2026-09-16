@@ -1,17 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 #include "decode.h"
 #include "instruction.h"
 #include "utils.h"
-
-static const instruction_desc *find_instruction(const char *mnemonic)
-{
-	for(size_t i = 0; i < ARR_SIZE(instruction_table); i++)
-		if(!strcmp(mnemonic, instruction_table[i].mnemonic)) return(&instruction_table[i]);
-	return(NULL);
-}
 
 void build_instruction_bin(instruction_field *arr, size_t field_count, int *bin_arr, char *hex_arr)
 {
@@ -293,7 +285,7 @@ instruction decode_instruction(int mode, FILE *fichier)
 		return instr;
 	}
 
-	instruction_desc *id = find_instruction(chunk);
+	const instruction_desc *id = find_instruction(chunk);
 	
 	if(chunk[0] != '#')
 	{
