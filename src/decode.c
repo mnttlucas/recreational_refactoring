@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -5,7 +6,7 @@
 #include "instruction.h"
 #include "utils.h"
 
-void build_instruction_bin(instruction_field *arr, size_t field_count, int *bin_arr, char *hex_arr)
+void build_instruction_bin(instruction_field *arr, size_t field_count, uint8_t *bin_arr, char *hex_arr)
 {
 	for(size_t i = 0; i < field_count; i++) long_to_bin_arr(arr[i].start_bit, arr[i].end_bit, arr[i].value, bin_arr);
 	bin_arr_to_hex_arr(bin_arr, hex_arr);

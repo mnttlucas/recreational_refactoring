@@ -9,7 +9,7 @@
 
 #define DUMP_LINE_SIZE 4
 
-void bin_arr_to_hex_arr(int *bin_arr, char *hex_arr)
+void bin_arr_to_hex_arr(uint8_t *bin_arr, char *hex_arr)
 {
 	int bit_value, hex_value;
 
@@ -29,7 +29,7 @@ void bin_arr_to_hex_arr(int *bin_arr, char *hex_arr)
 	hex_arr[8] = '\0';
 }
 
-void bin_twos_complement(int start, int end, int *arr)
+void bin_twos_complement(int start, int end, uint8_t *arr)
 {
 	int found_one = 0;
 
@@ -95,7 +95,7 @@ fprintf(stderr, "\n[!] Usage:\n \
 prog_name, prog_name, prog_name);
 }
 
-void long_to_bin_arr(int start, int end, long value, int *arr)
+void long_to_bin_arr(int start, int end, long value, uint8_t *arr)
 {
 	long bin = 1;
 

@@ -1,6 +1,8 @@
 #ifndef	INSTRUCTION_H
 #define	INSTRUCTION_H
 
+#include <stdint.h>
+
 /* MIPS bit fields */
 #define OPCODE_START  0
 #define OPCODE_END    5
@@ -131,7 +133,7 @@ typedef enum
 	XOR,
 	XORI,
 	OPCODE_MAX
-} opcode;
+} Opcode;
 
 typedef enum
 {
@@ -155,28 +157,28 @@ typedef enum
 typedef struct
 {
 	const char *mnemonic;
-	opcode op;
-	int code;
 	format format;
+	int code;
+	Opcode op;
 } instruction_desc;
 
 typedef struct
 {
-	int instr_bin[32];
 	char instr_hex[9];
 	char to_string[200];
-	int label;
-	int rs;
-	int rt;
-	int rd;
-	int sa;
-	int offset;
 	int base;
 	int immediate;
-	int negative;
+	int label;
+	int offset;
+	int rd;
+	int rs;
+	int rt;
+	int sa;
 	int target;
-	int exit;
-	opcode opcode;
+	Opcode opcode;
+	uint8_t exit;
+	uint8_t instr_bin[32];
+	uint8_t negative;
 } instruction;
 
 const instruction_desc *find_instruction(const char *mnemonic);
