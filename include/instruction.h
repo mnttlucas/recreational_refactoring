@@ -70,10 +70,11 @@
 #define ROTRV_BIT   25
 
 /* Special register values for some operations 
-Even if some values are zeros, this exists to match MIPS32 R6 specification */
-#define BGEZ_RT        1
-#define BLTZ_RT        0
-#define CLO_CLZ_RT     0
+Even if some values are zeros, this exists for clarity and to match MIPS32 R6 specification */
+#define BGEZ_RT    1
+#define BLTZ_RT    0
+#define CLO_RT     0
+#define CLZ_RT     0
 
 typedef enum
 {

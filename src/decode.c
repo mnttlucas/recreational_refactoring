@@ -59,15 +59,13 @@ instruction_desc instruction_table[] =
 instruction_desc *find_instruction(const char *mnemonic)
 {
 	for(size_t i = 0; i < ARR_SIZE(instruction_table); i++)
-		if(!strcmp(mnemonic, instruction_table[i].mnemonic))
-			return(&instruction_table[i]);
+		if(!strcmp(mnemonic, instruction_table[i].mnemonic)) return(&instruction_table[i]);
 	return(NULL);
 }
 
 void build_instruction_bin(instruction_field *arr, size_t field_count, int *bin_arr, char *hex_arr)
 {
-	for(size_t i = 0; i < field_count; i++)
-		long_to_bin_arr(arr[i].start_bit, arr[i].end_bit, arr[i].value, bin_arr);
+	for(size_t i = 0; i < field_count; i++) long_to_bin_arr(arr[i].start_bit, arr[i].end_bit, arr[i].value, bin_arr);
 	bin_arr_to_hex_arr(bin_arr, hex_arr);
 }
 
@@ -164,9 +162,12 @@ void build_rd_instruction(instruction *instr, int funct_code)
 
 void build_rd_rs_instruction(instruction *instr, int funct_code)
 {
+	int rt_value = 0;
+	if(instr->opcode == CLO) rt_value = CLO_RT;
+	else if(instr->opcode == CLZ) rt_value = CLZ_RT;
 	instruction_field fields[] = {
 		FIELD(RS_START, RS_END, instr->rs),
-		FIELD(RT_START, RT_END, CLO_CLZ_RT),
+		FIELD(RT_START, RT_END, rt_value),
 		FIELD(RD_START, RD_END, instr->rd),
 		FIELD(FUNCT_START, FUNCT_END, funct_code)};
 	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
@@ -198,8 +199,7 @@ void build_shift_instruction(instruction *instr, int funct_code)
 		FIELD(SHAMT_START, SHAMT_END, instr->sa),
 		FIELD(FUNCT_START, FUNCT_END, funct_code)};
 	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
-	if(instr->opcode == ROTR)
-		instr->instr_bin[ROTR_BIT] = 1;
+	if(instr->opcode == ROTR) instr->instr_bin[ROTR_BIT] = 1;
 	bin_arr_to_hex_arr(instr->instr_bin, instr->instr_hex);
 }
 
@@ -219,8 +219,7 @@ void build_variable_shift_instruction(instruction *instr, int funct_code)
 		FIELD(RD_START, RD_END, instr->rd),
 		FIELD(FUNCT_START, FUNCT_END, funct_code)};
 	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
-	if(instr->opcode == ROTRV)
-		instr->instr_bin[ROTRV_BIT] = 1;
+	if(instr->opcode == ROTRV) instr->instr_bin[ROTRV_BIT] = 1;
 	bin_arr_to_hex_arr(instr->instr_bin, instr->instr_hex);
 }
 
@@ -348,8 +347,7 @@ instruction decode_instruction(int mode, FILE *fichier)
 	
 	if(chunk[0] != '#')
 	{
-		if(chunk[0] == '.')
-			printf("[!] Directives are currently not supported.\n");
+		if(chunk[0] == '.') printf("[!] Directives are currently not supported.\n");
 		else if(id)
 		{
 			instr.opcode = id->op;

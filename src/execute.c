@@ -4,8 +4,8 @@
 #include "config.h"
 #include "cpu.h"
 #include "execute.h"
-#include "memory.h"
-#include "registers.h"
+#include "mips_memory.h"
+#include "mips_registers.h"
 #include "utils.h"
 
 void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
@@ -22,17 +22,13 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 	{
 		case ADD :
 			res_64 = (int64_t) register_read(cpu, instr.rs) + (int64_t) register_read(cpu, instr.rt);
-			if(res_64 > INT32_MAX || res_64 < INT32_MIN)
-				fprintf(stderr, "[!] Exception : Integer Overflow\n");
-			else
-				register_write(cpu, instr.rd, (int32_t) res_64);
+			if(res_64 > INT32_MAX || res_64 < INT32_MIN) fprintf(stderr, "[!] Exception : Integer Overflow\n");
+			else register_write(cpu, instr.rd, (int32_t) res_64);
 			break;
 		case ADDI :
 			res_64 = (int64_t) register_read(cpu, instr.rs) + (int64_t) instr.immediate;
-			if(res_64 > INT32_MAX || res_64 < INT32_MIN)
-				fprintf(stderr, "[!] Exception : Integer Overflow\n");
-			else
-				register_write(cpu, instr.rt, (int32_t) res_64);
+			if(res_64 > INT32_MAX || res_64 < INT32_MIN) fprintf(stderr, "[!] Exception : Integer Overflow\n");
+			else register_write(cpu, instr.rt, (int32_t) res_64);
 			break;
 		case ADDIU :
 			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rs) + (uint32_t) instr.immediate);
@@ -73,8 +69,7 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 		case CLO :
 			/* Naive CLO/Z implementation, didn't want to just
 			use C __builtin_clz/popcount */
-			if((uint32_t) register_read(cpu, instr.rs) == 0xFFFFFFFFu)
-				register_write(cpu, instr.rd, 32);
+			if((uint32_t) register_read(cpu, instr.rs) == 0xFFFFFFFFu) register_write(cpu, instr.rd, 32);
 			else
 			{
 				count = 0;
@@ -88,8 +83,7 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			}
 			break;
 		case CLZ :
-			if((uint32_t) register_read(cpu, instr.rs) == 0u)
-				register_write(cpu, instr.rd, 32);
+			if((uint32_t) register_read(cpu, instr.rs) == 0u) register_write(cpu, instr.rd, 32);
 			else
 			{
 				count = 0;
@@ -228,10 +222,8 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			break;
 		case SUB :
 			res_64 = (int64_t) register_read(cpu, instr.rs) - (int64_t) register_read(cpu, instr.rt);
-			if(res_64 > INT32_MAX || res_64 < INT32_MIN)
-				fprintf(stderr, "[!] Exception : Integer Overflow\n");
-			else
-				register_write(cpu, instr.rd, (int32_t) res_64);
+			if(res_64 > INT32_MAX || res_64 < INT32_MIN) fprintf(stderr, "[!] Exception : Integer Overflow\n");
+			else register_write(cpu, instr.rd, (int32_t) res_64);
 			break;
 		case SUBU :
 			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rs) - (uint32_t) register_read(cpu, instr.rt));
@@ -257,9 +249,7 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 
 	increment_pc(cpu);
 
-	if(pending_PC != -1)
-		register_write(cpu, REG_PC, pending_PC);
+	if(pending_PC != -1) register_write(cpu, REG_PC, pending_PC);
 
-	if(cfg->verbose)
-		printf("%s", instr.to_string);
+	if(cfg->verbose) printf("%s", instr.to_string);
 }

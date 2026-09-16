@@ -6,7 +6,7 @@
 #include "decode.h"
 #include "execute.h"
 #include "instruction.h"
-#include "registers.h"
+#include "mips_registers.h"
 #include "utils.h"
 
 void interactive_mode(CPU *cpu, Config *cfg)
@@ -79,8 +79,7 @@ void batch_mode(CPU *cpu, Config *cfg, char *path_in, char *path_out_hex, char *
 		{
 			capacity *= 2;
 			instruction *tmp = realloc(instructions_arr, capacity * sizeof(instruction));
-			if(tmp)
-				instructions_arr = tmp;
+			if(tmp) instructions_arr = tmp;
 			else
 			{
 				printf("\n[!] batch_mode : realloc() error\n");
@@ -94,34 +93,28 @@ void batch_mode(CPU *cpu, Config *cfg, char *path_in, char *path_out_hex, char *
 			}
 		}
 		instructions_arr[i] = decode_instruction(1, in);
-		if(instructions_arr[i].exit)
-			break;
-		if(instructions_arr[i].opcode > OPCODE_MIN && instructions_arr[i].opcode < OPCODE_MAX)
-			i++;
+		if(instructions_arr[i].exit) break;
+		if(instructions_arr[i].opcode > OPCODE_MIN && instructions_arr[i].opcode < OPCODE_MAX) i++;
 	}
 
 	printf("\n-- Instruction  execute --\n");
 	n = i;
 	if(!cfg->step)
-		for(i = 0; i < n; i++)
-			fprintf(out_hex, "%s\n", instructions_arr[i].instr_hex);
+		for(i = 0; i < n; i++) fprintf(out_hex, "%s\n", instructions_arr[i].instr_hex);
 
 	i = 0;
 	while(i < n)
 	{
-		if(cfg->step)
-			clear_output();
+		if(cfg->step) clear_output();
 		execute_instruction(cpu, cfg, instructions_arr[i]);
-		if(cfg->step)
-			cpu_dump(cpu, cfg);
+		if(cfg->step) cpu_dump(cpu, cfg);
 		i = register_read(cpu, REG_PC);
 	}
 
 	if(!cfg->step)
 	{
 		cpu_dump(cpu, cfg);
-		for(i = 0; i < 32; i++)
-			fprintf(out_regs, "$%d : %d\n", i, register_read(cpu, i));
+		for(i = 0; i < 32; i++) fprintf(out_regs, "$%d : %d\n", i, register_read(cpu, i));
 		fprintf(out_regs, "HI : %d\n", register_read(cpu, REG_HI));
 		fprintf(out_regs, "LO : %d\n", register_read(cpu, REG_LO));
 	}
