@@ -52,11 +52,8 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
-# debug information files
+# Debug information files
 *.dwo
-
-# TODO list
-TODO.md
 
 # Test files
 test/*

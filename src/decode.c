@@ -6,57 +6,7 @@
 #include "instruction.h"
 #include "utils.h"
 
-instruction_desc instruction_table[] =
-{
-	{"ADD", ADD, FUNCT_ADD, R3},
-	{"ADDI", ADDI, OPCODE_ADDI, R3_IMMEDIATE},
-	{"ADDIU", ADDIU, OPCODE_ADDIU, R3_IMMEDIATE},
-	{"ADDU", ADDU, FUNCT_ADDU, R3},
-	{"AND", AND, FUNCT_AND, R3},
-	{"ANDI", ANDI, OPCODE_ANDI, R3_IMMEDIATE},
-	{"AUI", AUI, OPCODE_AUI, R3_IMMEDIATE},
-	{"BEQ", BEQ, OPCODE_BEQ, BRANCH_R2},
-	{"BGTZ", BGTZ, OPCODE_BGTZ, BRANCH_R1},
-	{"BLEZ", BLEZ, OPCODE_BLEZ, BRANCH_R1},
-	{"BNE", BNE, OPCODE_BNE, BRANCH_R2},
-	{"CLO", CLO, FUNCT_CLO, RD_RS}, 
-	{"CLZ", CLZ, FUNCT_CLZ, RD_RS},
-	{"DIV", DIV, FUNCT_DIV, R2},
-	{"EXIT", 0, 0, CMD_EXIT},
-	{"J", J, OPCODE_J, TARGET},
-	{"JAL", JAL, OPCODE_JAL, TARGET},
-	{"JR", JR, FUNCT_JR, RS},
-	{"LUI", AUI, OPCODE_AUI, RT_IMMEDIATE},
-	{"LW", LW, OPCODE_LW, MEMORY},
-	{"MFHI", MFHI, FUNCT_MFHI, RD},
-	{"MFLO", MFLO, FUNCT_MFLO, RD},
-	{"MTHI", MTHI, FUNCT_MTHI, RS},
-	{"MTLO", MTLO, FUNCT_MTLO, RS},
-	{"MULT", MULT, FUNCT_MULT, R2},
-	{"NOP", NOP, 0, CMD_NOP},
-	{"NOR", NOR, FUNCT_NOR, R3},
-	{"OR", OR, FUNCT_OR, R3},
-	{"ORI", ORI, OPCODE_ORI, R3_IMMEDIATE},
-	{"ROTR", ROTR, FUNCT_SRL, SHIFT},
-	{"ROTRV", ROTRV, FUNCT_SRLV, VARIABLE_SHIFT},
-	{"SLL", SLL, FUNCT_SLL, SHIFT},
-	{"SLLV", SLLV, FUNCT_SLLV, VARIABLE_SHIFT},
-	{"SLT", SLT, FUNCT_SLT, R3},
-	{"SLTI", SLTI, OPCODE_SLTI, R3_IMMEDIATE},
-	{"SLTIU", SLTIU, OPCODE_SLTIU, R3_IMMEDIATE},
-	{"SLTU", SLTU, FUNCT_SLTU, R3},
-	{"SRA", SRA, FUNCT_SRA, SHIFT},
-	{"SRAV", SRAV, FUNCT_SRAV, VARIABLE_SHIFT},
-	{"SRL", SRL, FUNCT_SRL, SHIFT},
-	{"SRLV", SRLV, FUNCT_SRLV, VARIABLE_SHIFT},
-	{"SUB", SUB, FUNCT_SUB, R3},
-	{"SUBU", SUBU, FUNCT_SUBU, R3},
-	{"SW", SW, OPCODE_SW, MEMORY},
-	{"XOR", XOR, FUNCT_XOR, R3},
-	{"XORI", XORI, OPCODE_XORI, R3_IMMEDIATE}
-};
-
-instruction_desc *find_instruction(const char *mnemonic)
+static const instruction_desc *find_instruction(const char *mnemonic)
 {
 	for(size_t i = 0; i < ARR_SIZE(instruction_table); i++)
 		if(!strcmp(mnemonic, instruction_table[i].mnemonic)) return(&instruction_table[i]);
