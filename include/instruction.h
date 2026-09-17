@@ -6,6 +6,8 @@
 /* MIPS bit fields */
 #define OPCODE_START  0
 #define OPCODE_END    5
+#define BASE_START    RS_START
+#define BASE_END      RS_END
 #define RS_START      6
 #define RS_END       10
 #define RT_START     11

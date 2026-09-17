@@ -58,7 +58,7 @@ void build_memory_instruction(instruction *instr, int op_code)
 {
 	instruction_field fields[] = {
 		FIELD(OPCODE_START, OPCODE_END, op_code),
-		FIELD(RS_START, RS_END, instr->base),
+		FIELD(BASE_START, BASE_END, instr->base),
 		FIELD(RT_START, RT_END, instr->rt),
 		FIELD(IMM_START, IMM_END, instr->offset)};
 	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
