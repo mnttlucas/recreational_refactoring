@@ -7,13 +7,13 @@
 #include "instruction.h"
 
 #define FIELD(start, end, value) \
-	(instruction_field) {end, start, value}
+	(instruction_field) {value, end, start}
 
 typedef struct
 {
-	int  end_bit;
-	int  start_bit;
-	long value;
+	int32_t	value;
+	uint8_t	end_bit;
+	uint8_t	start_bit;
 } instruction_field;
 
 int16_t handle_sign(char *param, instruction *instr);
