@@ -17,7 +17,7 @@ int 	is_negative(char *str);
 void	log_instruction(instruction *instr);
 void	log_usage(char *prog_name);
 void	long_to_bin_arr(int start, int end, long value, uint8_t *arr);
-int 	register_string_to_int(char *str);
+uint8_t	register_string_to_int(char *str);
 void	remove_sign(char *str);
 void	wait_for_enter();
 

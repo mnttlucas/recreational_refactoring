@@ -168,19 +168,19 @@ typedef struct
 {
 	char instr_hex[9];
 	char to_string[200];
-	int base;
-	int immediate;
 	int label;
-	int offset;
-	int rd;
-	int rs;
-	int rt;
-	int sa;
 	int target;
+	int16_t immediate;
+	int16_t offset;
 	Opcode opcode;
+	uint8_t base;
 	uint8_t exit;
 	uint8_t instr_bin[32];
 	uint8_t negative;
+	uint8_t rd;
+	uint8_t rs;
+	uint8_t rt;
+	uint8_t sa;
 } instruction;
 
 const instruction_desc *find_instruction(const char *mnemonic);

@@ -12,7 +12,7 @@ void build_instruction_bin(instruction_field *arr, size_t field_count, uint8_t *
 	bin_arr_to_hex_arr(bin_arr, hex_arr);
 }
 
-int handle_sign(char *param, instruction *instr)
+int16_t handle_sign(char *param, instruction *instr)
 {
 	if(is_negative(param))
 	{
@@ -20,10 +20,10 @@ int handle_sign(char *param, instruction *instr)
 		remove_sign(param);
 	}
 
-	return(atoi(param));
+	return((int16_t) atoi(param));
 }
 
-void finalize_signed_value(int *value, instruction *instr)
+void finalize_signed_value(int16_t *value, instruction *instr)
 {
 	if(instr->negative)
 	{
@@ -264,7 +264,7 @@ void decode_shift_operands(FILE *in, instruction *instr)
 	fscanf(in, " $%7[^,] , $%7[^,] , %15s ", rd, rt, sa);
 	instr->rd = register_string_to_int(rd);
 	instr->rt = register_string_to_int(rt);
-	instr->sa = atoi(sa);
+	instr->sa = (uint8_t) atoi(sa);
 }
 
 void decode_target_operands(FILE *in, instruction *instr)

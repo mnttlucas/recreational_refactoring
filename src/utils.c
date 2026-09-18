@@ -111,10 +111,10 @@ void long_to_bin_arr(int start, int end, long value, uint8_t *arr)
 	}
 }
 
-int register_string_to_int(char *reg)
+uint8_t register_string_to_int(char *reg)
 {
-	int reg_1 = reg[1] - '0', reg_int = 0, reg_is_only_numbers = 1;
 	size_t reg_length = strlen(reg);
+	uint8_t reg_1 = (uint8_t) (reg[1] - '0'), reg_int = 0, reg_is_only_numbers = 1;
 
 	for(size_t i = 0; i < reg_length; i++)
 	{
@@ -125,7 +125,7 @@ int register_string_to_int(char *reg)
 		}
 	}
 	
-	if(reg_is_only_numbers) reg_int = atoi(reg);
+	if(reg_is_only_numbers) reg_int = (uint8_t) atoi(reg);
 	else
 	{
 		if(!strcmp(reg, "zero")) reg_int = REG_ZERO;
