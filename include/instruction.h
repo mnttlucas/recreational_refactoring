@@ -77,12 +77,7 @@
 /* Special register values for some operations 
 Even if some values are zeros, this exists for clarity and to match MIPS32 R6 specification */
 #define BGEZ_RT    1
-#define BGTZ_RT    0
-#define BLTZ_RT    0
-#define CLO_RT     0
-#define CLZ_RT     0
-#define CLO_SA     1
-#define CLZ_SA     1
+#define CLO_CLZ_SA 1
 
 typedef enum
 {
@@ -98,8 +93,10 @@ typedef enum
 	ANDI,
 	AUI,
 	BEQ,
+	BGEZ,
 	BGTZ,
 	BLEZ,
+	BLTZ,
 	BNE,
 	CLO,
 	CLZ,

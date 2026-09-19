@@ -20,7 +20,7 @@ int32_t handle_sign(char *param, instruction *instr)
 		remove_sign(param);
 	}
 
-	return((int16_t) atoi(param));
+	return((int32_t) atoi(param));
 }
 
 void finalize_signed_value(int32_t *value, instruction *instr, uint8_t start_bit, uint8_t end_bit)
@@ -35,9 +35,13 @@ void finalize_signed_value(int32_t *value, instruction *instr, uint8_t start_bit
 
 void build_branch_r1_instruction(instruction *instr, int op_code)
 {
+	int rt_value = 0;
+	if(instr->opcode == BGEZ)
+		rt_value = BGEZ_RT;
 	instruction_field fields[] = {
 		FIELD(OPCODE_START, OPCODE_END, op_code),
 		FIELD(RS_START, RS_END, instr->rs),
+		FIELD(RT_START, RT_END, rt_value),
 		FIELD(IMM_START, IMM_END, instr->offset)};
 	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
 	finalize_signed_value(&instr->offset, instr, IMM_START, IMM_END);
@@ -68,6 +72,7 @@ void build_memory_instruction(instruction *instr, int op_code)
 void build_r2_instruction(instruction *instr, int funct_code)
 {
 	instruction_field fields[] = {
+		FIELD(OPCODE_START, OPCODE_END, OPCODE_SPECIAL),
 		FIELD(RS_START, RS_END, instr->rs),
 		FIELD(RT_START, RT_END, instr->rt),
 		FIELD(FUNCT_START, FUNCT_END, funct_code)};
@@ -90,6 +95,7 @@ void build_r3_immediate_instruction(instruction *instr, int op_code)
 void build_r3_instruction(instruction *instr, int funct_code)
 {
 	instruction_field fields[] = {
+		FIELD(OPCODE_START, OPCODE_END, OPCODE_SPECIAL),
 		FIELD(RS_START, RS_END, instr->rs),
 		FIELD(RT_START, RT_END, instr->rt),
 		FIELD(RD_START, RD_END, instr->rd),
@@ -100,6 +106,7 @@ void build_r3_instruction(instruction *instr, int funct_code)
 void build_rd_instruction(instruction *instr, int funct_code)
 {
 	instruction_field fields[] = {
+		FIELD(OPCODE_START, OPCODE_END, OPCODE_SPECIAL),
 		FIELD(RD_START, RD_END, instr->rd),
 		FIELD(FUNCT_START, FUNCT_END, funct_code)};
 	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
@@ -107,21 +114,12 @@ void build_rd_instruction(instruction *instr, int funct_code)
 
 void build_rd_rs_instruction(instruction *instr, int funct_code)
 {
-	int rt_value = 0;
 	int sa_value = 0;
-	if(instr->opcode == CLO)
-	{
-		rt_value = CLO_RT;
-		sa_value = CLO_SA;
-	}
-	else if(instr->opcode == CLZ)
-	{
-		rt_value = CLZ_RT;
-		sa_value = CLZ_SA;
-	}
+	if(instr->opcode == CLO || instr->opcode == CLZ)
+		sa_value = CLO_CLZ_SA;
 	instruction_field fields[] = {
+		FIELD(OPCODE_START, OPCODE_END, OPCODE_SPECIAL),
 		FIELD(RS_START, RS_END, instr->rs),
-		FIELD(RT_START, RT_END, rt_value),
 		FIELD(RD_START, RD_END, instr->rd),
 		FIELD(SHAMT_START, SHAMT_END, sa_value),
 		FIELD(FUNCT_START, FUNCT_END, funct_code)};
@@ -131,6 +129,7 @@ void build_rd_rs_instruction(instruction *instr, int funct_code)
 void build_rs_instruction(instruction *instr, int funct_code)
 {
 	instruction_field fields[] = {
+		FIELD(OPCODE_START, OPCODE_END, OPCODE_SPECIAL),
 		FIELD(RS_START, RS_END, instr->rs),
 		FIELD(FUNCT_START, FUNCT_END, funct_code)};
 	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
@@ -151,6 +150,7 @@ void build_rt_immediate_instruction(instruction *instr, int op_code)
 void build_shift_instruction(instruction *instr, int funct_code)
 {
 	instruction_field fields[] = {
+		FIELD(OPCODE_START, OPCODE_END, OPCODE_SPECIAL),
 		FIELD(RT_START, RT_END, instr->rt),
 		FIELD(RD_START, RD_END, instr->rd),
 		FIELD(SHAMT_START, SHAMT_END, instr->sa),
@@ -171,6 +171,7 @@ void build_target_instruction(instruction *instr, int op_code)
 void build_variable_shift_instruction(instruction *instr, int funct_code)
 {
 	instruction_field fields[] = {
+		FIELD(OPCODE_START, OPCODE_END, OPCODE_SPECIAL),
 		FIELD(RS_START, RS_END, instr->rs),
 		FIELD(RT_START, RT_END, instr->rt),
 		FIELD(RD_START, RD_END, instr->rd),
