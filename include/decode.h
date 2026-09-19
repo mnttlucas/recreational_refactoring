@@ -7,18 +7,18 @@
 #include "instruction.h"
 
 #define FIELD(start, end, value) \
-	(instruction_field) {value, end, start}
+	(instruction_field) {value, start, end}
 
 typedef struct
 {
 	int32_t	value;
-	uint8_t	end_bit;
 	uint8_t	start_bit;
+	uint8_t	end_bit;
 } instruction_field;
 
-int16_t handle_sign(char *param, instruction *instr);
+int32_t handle_sign(char *param, instruction *instr);
 void build_instruction_bin(instruction_field *arr, size_t field_count, uint8_t *bin_arr, char *hex_arr);
-void finalize_signed_value(int16_t *value, instruction *instr);
+void finalize_signed_value(int32_t *value, instruction *instr, uint8_t start_bit, uint8_t end_bit);
 
 void build_branch_r1_instruction(instruction *instr, int op_code);
 void build_branch_r2_instruction(instruction *instr, int op_code);

@@ -12,7 +12,7 @@ void build_instruction_bin(instruction_field *arr, size_t field_count, uint8_t *
 	bin_arr_to_hex_arr(bin_arr, hex_arr);
 }
 
-int16_t handle_sign(char *param, instruction *instr)
+int32_t handle_sign(char *param, instruction *instr)
 {
 	if(is_negative(param))
 	{
@@ -23,12 +23,12 @@ int16_t handle_sign(char *param, instruction *instr)
 	return((int16_t) atoi(param));
 }
 
-void finalize_signed_value(int16_t *value, instruction *instr)
+void finalize_signed_value(int32_t *value, instruction *instr, uint8_t start_bit, uint8_t end_bit)
 {
 	if(instr->negative)
 	{
 		*value *= -1;
-		bin_twos_complement(IMM_START, IMM_END, instr->instr_bin);
+		bin_twos_complement(start_bit, end_bit, instr->instr_bin);
 		bin_arr_to_hex_arr(instr->instr_bin, instr->instr_hex);
 	}
 }
@@ -40,7 +40,7 @@ void build_branch_r1_instruction(instruction *instr, int op_code)
 		FIELD(RS_START, RS_END, instr->rs),
 		FIELD(IMM_START, IMM_END, instr->offset)};
 	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
-	finalize_signed_value(&instr->offset, instr);
+	finalize_signed_value(&instr->offset, instr, IMM_START, IMM_END);
 }
 
 void build_branch_r2_instruction(instruction *instr, int op_code)
@@ -51,7 +51,7 @@ void build_branch_r2_instruction(instruction *instr, int op_code)
 		FIELD(RT_START, RT_END, instr->rt),
 		FIELD(IMM_START, IMM_END, instr->offset)};
 	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
-	finalize_signed_value(&instr->offset, instr);
+	finalize_signed_value(&instr->offset, instr, IMM_START, IMM_END);
 }
 
 void build_memory_instruction(instruction *instr, int op_code)
@@ -62,7 +62,7 @@ void build_memory_instruction(instruction *instr, int op_code)
 		FIELD(RT_START, RT_END, instr->rt),
 		FIELD(IMM_START, IMM_END, instr->offset)};
 	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
-	finalize_signed_value(&instr->offset, instr);
+	finalize_signed_value(&instr->offset, instr, IMM_START, IMM_END);
 }
 
 void build_r2_instruction(instruction *instr, int funct_code)
@@ -76,13 +76,15 @@ void build_r2_instruction(instruction *instr, int funct_code)
 
 void build_r3_immediate_instruction(instruction *instr, int op_code)
 {
+	int32_t imm_value = instr->immediate;
 	instruction_field fields[] = {
 		FIELD(OPCODE_START, OPCODE_END, op_code),
 		FIELD(RS_START, RS_END, instr->rs),
 		FIELD(RT_START, RT_END, instr->rt),
 		FIELD(IMM_START, IMM_END, instr->immediate)};
 	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
-	finalize_signed_value(&instr->immediate, instr);
+	finalize_signed_value(&imm_value, instr, IMM_START, IMM_END);
+	instr->immediate = (int16_t) imm_value;
 }
 
 void build_r3_instruction(instruction *instr, int funct_code)
@@ -136,12 +138,14 @@ void build_rs_instruction(instruction *instr, int funct_code)
 
 void build_rt_immediate_instruction(instruction *instr, int op_code)
 {
+	int32_t imm_value = instr->immediate;
 	instruction_field fields[] = {
 		FIELD(OPCODE_START, OPCODE_END, op_code),
 		FIELD(RT_START, RT_END, instr->rt),
 		FIELD(IMM_START, IMM_END, instr->immediate)};
 	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
-	finalize_signed_value(&instr->immediate, instr);
+	finalize_signed_value(&imm_value, instr, IMM_START, IMM_END);
+	instr->immediate = (int16_t) imm_value;
 }
 
 void build_shift_instruction(instruction *instr, int funct_code)
@@ -214,7 +218,7 @@ void decode_r3_immediate_operands(FILE *in, instruction *instr)
 {
 	char imm[16], rs[8], rt[8];
 	fscanf(in, " $%7[^,] , $%7[^,] , %15s ", rt, rs, imm);
-	instr->immediate = handle_sign(imm, instr);
+	instr->immediate = (int16_t) handle_sign(imm, instr);
 	instr->rs = register_string_to_int(rs);
 	instr->rt = register_string_to_int(rt);
 }
@@ -254,7 +258,7 @@ void decode_rt_immediate_operands(FILE *in, instruction *instr)
 {
 	char imm[16], rt[8];
 	fscanf(in, " $%7[^,] , %15s ", rt, imm);
-	instr->immediate = handle_sign(imm, instr);
+	instr->immediate = (int16_t) handle_sign(imm, instr);
 	instr->rt = register_string_to_int(rt);
 }
 

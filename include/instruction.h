@@ -171,7 +171,7 @@ typedef struct
 	int label;
 	int target;
 	int16_t immediate;
-	int16_t offset;
+	int32_t offset;
 	Opcode opcode;
 	uint8_t base;
 	uint8_t exit;
