@@ -111,6 +111,39 @@ void long_to_bin_arr(int start, int end, long value, uint8_t *arr)
 	}
 }
 
+char *read_full_line(FILE *in)
+{
+	size_t capacity = 256, length = 0;
+	char *line = malloc(capacity);
+
+	if(!line) return(NULL);
+
+	while(fgets(line + length, (int) (capacity - length), in))
+	{
+		length += strlen(line + length);
+
+		if(length > 0 && line[length - 1] == '\n') return(line);
+		if(feof(in)) return(line);
+
+		capacity *= 2;
+		char *tmp = realloc(line, capacity);
+		if(!tmp)
+		{
+			free(line);
+			return(NULL);
+		}
+		line = tmp;
+	}
+	
+	if(length == 0)
+	{
+		free(line);
+		return(NULL);
+	}
+
+	return(line);
+}
+
 uint8_t register_string_to_int(char *reg)
 {
 	size_t reg_length = strlen(reg);

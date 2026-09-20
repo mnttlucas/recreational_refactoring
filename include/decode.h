@@ -34,19 +34,19 @@ void build_shift_instruction(instruction *instr, int funct_code);
 void build_target_instruction(instruction *instr, int op_code);
 void build_variable_shift_instruction(instruction *instr, int funct_code);
 
-void decode_branch_r1_operands(FILE *in, instruction *instr);
-void decode_branch_r2_operands(FILE *in, instruction *instr);
-void decode_memory_operands(FILE *in, instruction *instr);
-void decode_r2_operands(FILE *in, instruction *instr);
-void decode_r3_immediate_operands(FILE *in, instruction *instr);
-void decode_r3_operands(FILE *in, instruction *instr);
-void decode_rd_operand(FILE *in, instruction *instr);
-void decode_rd_rs_operands(FILE *in, instruction *instr);
-void decode_rs_operand(FILE *in, instruction *instr);
-void decode_rt_immediate_operands(FILE *in, instruction *instr);
-void decode_shift_operands(FILE *in, instruction *instr);
-void decode_target_operands(FILE *in, instruction *instr);
-void decode_variable_shift_operands(FILE *in, instruction *instr);
+void decode_branch_r1_operands(char *line, instruction *instr);
+void decode_branch_r2_operands(char *line, instruction *instr);
+void decode_memory_operands(char *line, instruction *instr);
+void decode_r2_operands(char *line, instruction *instr);
+void decode_r3_immediate_operands(char *line, instruction *instr);
+void decode_r3_operands(char *line, instruction *instr);
+void decode_rd_operand(char *line, instruction *instr);
+void decode_rd_rs_operands(char *line, instruction *instr);
+void decode_rs_operand(char *line, instruction *instr);
+void decode_rt_immediate_operands(char *line, instruction *instr);
+void decode_shift_operands(char *line, instruction *instr);
+void decode_target_operands(char *line, instruction *instr);
+void decode_variable_shift_operands(char *line, instruction *instr);
 
 instruction	decode_instruction(int mode, FILE *fichier);
 
