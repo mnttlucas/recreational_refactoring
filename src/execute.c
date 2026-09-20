@@ -54,12 +54,20 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			if(register_read(cpu, instr.rs) == register_read(cpu, instr.rt))
 				cpu->next_PC = register_read(cpu, REG_PC) + instr.offset + 1;
 			break;
+		case BGEZ :
+			if(register_read(cpu, instr.rs) >= 0)
+				cpu->next_PC = register_read(cpu, REG_PC) + instr.offset + 1;
+			break;
 		case BGTZ :
 			if(register_read(cpu, instr.rs) > 0)
 				cpu->next_PC = register_read(cpu, REG_PC) + instr.offset + 1;
 			break;
 		case BLEZ :
 			if(register_read(cpu, instr.rs) <= 0)
+				cpu->next_PC = register_read(cpu, REG_PC) + instr.offset + 1;
+			break;
+		case BLTZ :
+			if(register_read(cpu, instr.rs) < 0)
 				cpu->next_PC = register_read(cpu, REG_PC) + instr.offset + 1;
 			break;
 		case BNE :
