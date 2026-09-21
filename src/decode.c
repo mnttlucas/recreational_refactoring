@@ -306,7 +306,11 @@ instruction decode_instruction(int mode, FILE *fichier)
 
 	ptr = line;
 	while(*ptr == ' ' || *ptr == '\t') ptr++;
-	if(*ptr == '#' || *ptr == '\0') return(instr);
+	if(*ptr == '#' || *ptr == '\0')
+	{
+		free(line);
+		return(instr);
+	}
 
 	sscanf(ptr, "%15s%n", mnemonic, &consumed);
 	ptr += consumed;
