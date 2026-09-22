@@ -49,7 +49,7 @@ void clear_output()
 
 void cpu_dump(CPU *cpu, Config *cfg)
 {
-	char hex_char[4] = {'0', '4', '8', 'C'};
+	int words_to_show = (MEMORY_SIZE / WORD_SIZE < DUMP_MEMORY_WORDS) ? MEMORY_SIZE / WORD_SIZE : DUMP_MEMORY_WORDS;
 
 	printf("\n-------------------- Registers' status -------------------\n");
 	for(int i = 0; i <= (REGISTER_COUNT - 4) / DUMP_LINE_SIZE; i++)
@@ -61,12 +61,15 @@ void cpu_dump(CPU *cpu, Config *cfg)
 	printf("                 HI  : %-10d LO  : %-10d\n", register_read(cpu, REG_HI), register_read(cpu, REG_LO));
 
 	printf("\n------------------------------------ Memory status -----------------------------------\n");
-	for(int i = 0; i <= (MEMORY_SIZE - 1) / DUMP_LINE_SIZE; i++)
+	for(int i = 0; i <= (words_to_show - 1) / DUMP_LINE_SIZE; i++)
 	{
-		for(int j = 0; (i * DUMP_LINE_SIZE + j) < MEMORY_SIZE && j < DUMP_LINE_SIZE; j++)
-			printf("@0000 00%d%c : %-10d ", i, hex_char[j], memory_read(cpu, DUMP_LINE_SIZE * i + j));
+		for(int j = 0; (i * DUMP_LINE_SIZE + j) < words_to_show && j < DUMP_LINE_SIZE; j++)
+			printf("@0000 %04x : %-10d ", (DUMP_LINE_SIZE * i + j) * WORD_SIZE, memory_read(cpu, (DUMP_LINE_SIZE * i + j) * WORD_SIZE));
 		printf("\n");
 	}
+
+	if(words_to_show < MEMORY_SIZE / WORD_SIZE)
+		printf("\t\t\t[...] (%d other words not displayed)\n", MEMORY_SIZE / WORD_SIZE - words_to_show);
 
 	if(cfg->step) wait_for_enter();
 }
