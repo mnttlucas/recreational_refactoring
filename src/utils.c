@@ -64,7 +64,7 @@ void cpu_dump(CPU *cpu, Config *cfg)
 	for(int i = 0; i <= (words_to_show - 1) / DUMP_LINE_SIZE; i++)
 	{
 		for(int j = 0; (i * DUMP_LINE_SIZE + j) < words_to_show && j < DUMP_LINE_SIZE; j++)
-			printf("@0000 %04x : %-10d ", (DUMP_LINE_SIZE * i + j) * WORD_SIZE, memory_read(cpu, (DUMP_LINE_SIZE * i + j) * WORD_SIZE));
+			printf("@0000 %04x : %-10d ", (DUMP_LINE_SIZE * i + j) * WORD_SIZE, memory_read_32(cpu, (DUMP_LINE_SIZE * i + j) * WORD_SIZE));
 		printf("\n");
 	}
 

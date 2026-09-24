@@ -38,6 +38,8 @@
 #define FUNCT_MULT   24
 #define FUNCT_NOR    39
 #define FUNCT_OR     37
+#define FUNCT_SELEQZ 53
+#define FUNCT_SELNEZ 55
 #define FUNCT_SLL     0
 #define FUNCT_SLLV    4
 #define FUNCT_SLT    42
@@ -61,6 +63,7 @@
 #define OPCODE_BNE      5
 #define OPCODE_J        2
 #define OPCODE_JAL      3
+#define OPCODE_LB      32
 #define OPCODE_LW      35
 #define OPCODE_ORI     13
 #define OPCODE_REGIMM   1
@@ -104,6 +107,7 @@ typedef enum
 	J,
 	JAL,
 	JR,
+	LB,
 	LW,
 	MFHI,
 	MFLO,
@@ -116,6 +120,8 @@ typedef enum
 	ORI,
 	ROTR,
 	ROTRV,
+	SELEQZ,
+	SELNEZ,
 	SLL,
 	SLLV,
 	SLT,

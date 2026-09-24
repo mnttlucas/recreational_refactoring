@@ -138,9 +138,14 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 		case JR :
 			cpu->next_PC = register_read(cpu, instr.rs);
 			break;
+		case LB :
+			address = register_read(cpu, instr.base) + instr.offset;
+			res_32 = (int32_t) memory_read_8(cpu, (int) address);
+			register_write(cpu, instr.rt, res_32);
+			break;
 		case LW :
 			address = register_read(cpu, instr.base) + instr.offset;
-			res_32 = memory_read(cpu, (int) address);
+			res_32 = memory_read_32(cpu, (int) address);
 			register_write(cpu, instr.rt, res_32);
 			break;
 		case MFHI :
@@ -186,6 +191,14 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			raw_32 = (uint32_t) register_read(cpu, instr.rt);
 			res_32 = (int32_t) (raw_32 >> shift_8 | raw_32 << ((32 - shift_8) & 31));
 			register_write(cpu, instr.rd, res_32);
+			break;
+		case SELEQZ :
+			if(register_read(cpu, instr.rt) == 0) register_write(cpu, instr.rd, register_read(cpu, instr.rs));
+			else register_write(cpu, instr.rd, 0);
+			break;
+		case SELNEZ :
+			if(register_read(cpu, instr.rt) != 0) register_write(cpu, instr.rd, register_read(cpu, instr.rs));
+			else register_write(cpu, instr.rd, 0);
 			break;
 		case SLL :
 			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rt) << instr.sa);
