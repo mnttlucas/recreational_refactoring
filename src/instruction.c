@@ -26,6 +26,8 @@ static const instruction_desc instruction_table[] =
 	{"JAL", TARGET, OPCODE_JAL, JAL},
 	{"JR", RS, FUNCT_JR, JR},
 	{"LB", MEMORY, OPCODE_LB, LB},
+	{"LBU", MEMORY, OPCODE_LBU, LBU},
+	{"LH", MEMORY, OPCODE_LH, LH},
 	{"LUI", RT_IMMEDIATE, OPCODE_AUI, AUI},
 	{"LW", MEMORY, OPCODE_LW, LW},
 	{"MFHI", RD, FUNCT_MFHI, MFHI},

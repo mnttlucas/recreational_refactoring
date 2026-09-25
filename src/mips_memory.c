@@ -8,6 +8,20 @@ void memory_init(CPU *cpu)
 	for(int i = 0; i < MEMORY_SIZE; i++) cpu->memory[i] = 0;
 }
 
+int16_t memory_read_16(CPU *cpu, int address)
+{
+	uint16_t value = 0;
+
+	if(address >= 0 && address + 1 < MEMORY_SIZE)
+	{
+		value = (uint16_t) cpu->memory[address] << 8;
+		value |= (uint16_t) cpu->memory[address + 1];
+	}
+	else fprintf(stderr, "[!] memory_read_16() : invalid memory address @ %d\n", address);
+	
+	return((int16_t) value);
+}
+
 int32_t memory_read_32(CPU *cpu, int address)
 {
 	uint32_t value = 0;
@@ -29,7 +43,7 @@ int8_t memory_read_8(CPU *cpu, int address)
 	int8_t value = 0;
 
 	if(address >= 0 && address < MEMORY_SIZE) value = (int8_t) cpu->memory[address];
-	else fprintf(stderr, "[!] memory_read_32() : invalid memory address @ %d\n", address);
+	else fprintf(stderr, "[!] memory_read_8() : invalid memory address @ %d\n", address);
 
 	return(value);
 }

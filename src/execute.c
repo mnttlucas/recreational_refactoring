@@ -143,6 +143,16 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			res_32 = (int32_t) memory_read_8(cpu, (int) address);
 			register_write(cpu, instr.rt, res_32);
 			break;
+		case LBU :
+			address = register_read(cpu, instr.base) + instr.offset;
+			raw_32 = (uint32_t) ((uint8_t) memory_read_8(cpu, (int) address));
+			register_write(cpu, instr.rt, (int32_t) raw_32);
+			break;
+		case LH :
+			address = register_read(cpu, instr.base) + instr.offset;
+			res_32 = (int32_t) memory_read_16(cpu, (int) address);
+			register_write(cpu, instr.rt, res_32);
+			break;
 		case LW :
 			address = register_read(cpu, instr.base) + instr.offset;
 			res_32 = memory_read_32(cpu, (int) address);

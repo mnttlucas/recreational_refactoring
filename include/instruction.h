@@ -64,6 +64,8 @@
 #define OPCODE_J        2
 #define OPCODE_JAL      3
 #define OPCODE_LB      32
+#define OPCODE_LBU     36
+#define OPCODE_LH      33
 #define OPCODE_LW      35
 #define OPCODE_ORI     13
 #define OPCODE_REGIMM   1
@@ -108,6 +110,8 @@ typedef enum
 	JAL,
 	JR,
 	LB,
+	LBU,
+	LH,
 	LW,
 	MFHI,
 	MFLO,
