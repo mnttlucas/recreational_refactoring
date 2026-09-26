@@ -145,12 +145,17 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			break;
 		case LBU :
 			address = register_read(cpu, instr.base) + instr.offset;
-			raw_32 = (uint32_t) ((uint8_t) memory_read_8(cpu, (int) address));
+			raw_32 = (uint32_t) (uint8_t) memory_read_8(cpu, (int) address);
 			register_write(cpu, instr.rt, (int32_t) raw_32);
 			break;
 		case LH :
 			address = register_read(cpu, instr.base) + instr.offset;
 			res_32 = (int32_t) memory_read_16(cpu, (int) address);
+			register_write(cpu, instr.rt, res_32);
+			break;
+		case LHU :
+			address = register_read(cpu, instr.base) + instr.offset;
+			res_32 = (uint32_t) (uint16_t) memory_read_16(cpu, (int) address);
 			register_write(cpu, instr.rt, res_32);
 			break;
 		case LW :
@@ -202,6 +207,10 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			res_32 = (int32_t) (raw_32 >> shift_8 | raw_32 << ((32 - shift_8) & 31));
 			register_write(cpu, instr.rd, res_32);
 			break;
+		case SB :
+			address = register_read(cpu, instr.base) + instr.offset;
+			memory_write_8(cpu, address, (int8_t) (uint8_t) register_read(cpu, instr.rt));
+			break;
 		case SELEQZ :
 			if(register_read(cpu, instr.rt) == 0) register_write(cpu, instr.rd, register_read(cpu, instr.rs));
 			else register_write(cpu, instr.rd, 0);
@@ -209,6 +218,10 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 		case SELNEZ :
 			if(register_read(cpu, instr.rt) != 0) register_write(cpu, instr.rd, register_read(cpu, instr.rs));
 			else register_write(cpu, instr.rd, 0);
+			break;
+		case SH :
+			address = register_read(cpu, instr.base) + instr.offset;
+			memory_write_16(cpu, address, (int16_t) (uint16_t) register_read(cpu, instr.rt));
 			break;
 		case SLL :
 			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rt) << instr.sa);
@@ -263,7 +276,7 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 		case SW :
 			res_32 = register_read(cpu, instr.rt);
 			address = register_read(cpu, instr.base) + instr.offset;
-			memory_write(cpu, (int) address, res_32);
+			memory_write_32(cpu, (int) address, res_32);
 			break;
 		case XOR :
 			res_32 = register_read(cpu, instr.rs) ^ register_read(cpu, instr.rt);

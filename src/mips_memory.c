@@ -48,7 +48,19 @@ int8_t memory_read_8(CPU *cpu, int address)
 	return(value);
 }
 
-void memory_write(CPU *cpu, int address, int32_t value)
+void memory_write_16(CPU *cpu, int address, int16_t value)
+{
+	uint16_t raw_value = (uint16_t) value;
+
+	if(address >= 0 && address + 1 < MEMORY_SIZE)
+	{
+		cpu->memory[address] = (uint8_t) (raw_value >> 8);
+		cpu->memory[address + 1] = (uint8_t) raw_value;
+	}
+	else fprintf(stderr, "[!] memory_write_16() : invalid memory address @ %d\n", address);
+}
+
+void memory_write_32(CPU *cpu, int address, int32_t value)
 {
 	uint32_t raw_value = (uint32_t) value;
 
@@ -59,5 +71,13 @@ void memory_write(CPU *cpu, int address, int32_t value)
 		cpu->memory[address + 2] = (uint8_t) (raw_value >> 8);
 		cpu->memory[address + 3] = (uint8_t) raw_value;
 	}
-	else fprintf(stderr, "[!] memory_write() : invalid memory address @ %d\n", address);
+	else fprintf(stderr, "[!] memory_write_32() : invalid memory address @ %d\n", address);
+}
+
+void memory_write_8(CPU *cpu, int address, int8_t value)
+{
+	uint8_t raw_value = (uint8_t) value;
+
+	if(address >= 0 && address < MEMORY_SIZE) cpu->memory[address] = (uint8_t) raw_value;
+	else fprintf(stderr, "[!] memory_write_8() : invalid memory address @ %d\n", address);
 }

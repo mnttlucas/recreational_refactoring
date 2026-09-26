@@ -66,9 +66,12 @@
 #define OPCODE_LB      32
 #define OPCODE_LBU     36
 #define OPCODE_LH      33
+#define OPCODE_LHU     37
 #define OPCODE_LW      35
 #define OPCODE_ORI     13
 #define OPCODE_REGIMM   1
+#define OPCODE_SB      40
+#define OPCODE_SH      41
 #define OPCODE_SLTI    10
 #define OPCODE_SLTIU   11
 #define OPCODE_SPECIAL  0
@@ -112,6 +115,7 @@ typedef enum
 	LB,
 	LBU,
 	LH,
+	LHU,
 	LW,
 	MFHI,
 	MFLO,
@@ -124,8 +128,10 @@ typedef enum
 	ORI,
 	ROTR,
 	ROTRV,
+	SB,
 	SELEQZ,
 	SELNEZ,
+	SH,
 	SLL,
 	SLLV,
 	SLT,
