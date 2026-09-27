@@ -189,7 +189,7 @@ uint8_t register_string_to_int(char *reg)
 		else if(reg[0] == 't')
 		{
 			if('0' <= reg[1] && reg[1] <= '7') reg_int = REG_T0 + reg_1;
-			else if(reg[1] == '8' || reg[1] == '9') reg_int = REG_T8 + (reg_1 - 8);
+			else if(reg[1] == '8' || reg[1] == '9') reg_int = (uint8_t) (REG_T8 + (reg_1 - 8));
 		}
 		else fprintf(stderr, "[!] Unknown register, returned 0 to ignore\n");
 	}

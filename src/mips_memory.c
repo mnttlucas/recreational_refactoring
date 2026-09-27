@@ -14,7 +14,7 @@ int16_t memory_read_16(CPU *cpu, int address)
 
 	if(address >= 0 && address + 1 < MEMORY_SIZE)
 	{
-		value = (uint16_t) cpu->memory[address] << 8;
+		value = (uint16_t) (cpu->memory[address] << 8);
 		value |= (uint16_t) cpu->memory[address + 1];
 	}
 	else fprintf(stderr, "[!] memory_read_16() : invalid memory address @ %d\n", address);
@@ -52,7 +52,7 @@ void memory_write_16(CPU *cpu, int address, int16_t value)
 {
 	uint16_t raw_value = (uint16_t) value;
 
-	if(address >= 0 && address + 1 < MEMORY_SIZE)
+	if(address >= 0 && address < MEMORY_SIZE - 1)
 	{
 		cpu->memory[address] = (uint8_t) (raw_value >> 8);
 		cpu->memory[address + 1] = (uint8_t) raw_value;
@@ -64,7 +64,7 @@ void memory_write_32(CPU *cpu, int address, int32_t value)
 {
 	uint32_t raw_value = (uint32_t) value;
 
-	if(address >= 0 && address + 3 < MEMORY_SIZE)
+	if(address >= 0 && address < MEMORY_SIZE - 3)
 	{
 		cpu->memory[address] = (uint8_t) (raw_value >> 24);
 		cpu->memory[address + 1] = (uint8_t) (raw_value >> 16);
