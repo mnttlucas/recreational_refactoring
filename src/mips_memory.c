@@ -12,7 +12,7 @@ int16_t memory_read_16(CPU *cpu, int address)
 {
 	uint16_t value = 0;
 
-	if(address >= 0 && address + 1 < MEMORY_SIZE)
+	if(address >= 0 && address < MEMORY_SIZE - 1)
 	{
 		value = (uint16_t) (cpu->memory[address] << 8);
 		value |= (uint16_t) cpu->memory[address + 1];
@@ -26,7 +26,7 @@ int32_t memory_read_32(CPU *cpu, int address)
 {
 	uint32_t value = 0;
 
-	if(address >= 0 && address + 3 < MEMORY_SIZE)
+	if(address >= 0 && address < MEMORY_SIZE - 3)
 	{
 		value = (uint32_t) cpu->memory[address] << 24;
 		value |= (uint32_t) cpu->memory[address + 1] << 16;

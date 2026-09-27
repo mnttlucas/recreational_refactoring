@@ -6,12 +6,13 @@
 static const instruction_desc instruction_table[] =
 {
 	{"ADD", R3, FUNCT_ADD, ADD},
-	{"ADDI", R3_IMMEDIATE, OPCODE_ADDI, ADDI},
+	{"ADDI", R3_IMMEDIATE, OPCODE_ADDI, ADDI}, // Removed in Release 6
 	{"ADDIU", R3_IMMEDIATE, OPCODE_ADDIU, ADDIU},
 	{"ADDU", R3, FUNCT_ADDU, ADDU},
 	{"AND", R3, FUNCT_AND, AND},
 	{"ANDI", R3_IMMEDIATE, OPCODE_ANDI, ANDI},
 	{"AUI", R3_IMMEDIATE, OPCODE_AUI, AUI},
+	{"B", BRANCH_R2, OPCODE_BEQ, BEQ},
 	{"BEQ", BRANCH_R2, OPCODE_BEQ, BEQ},
 	{"BGEZ", BRANCH_R1, OPCODE_REGIMM, BGEZ},
 	{"BGTZ", BRANCH_R1, OPCODE_BGTZ, BGTZ},
@@ -20,7 +21,7 @@ static const instruction_desc instruction_table[] =
 	{"BNE", BRANCH_R2, OPCODE_BNE, BNE},
 	{"CLO", RD_RS, FUNCT_CLO, CLO}, 
 	{"CLZ", RD_RS, FUNCT_CLZ, CLZ},
-	{"DIV", R2, FUNCT_DIV, DIV},
+	{"DIV", R2, FUNCT_DIV, DIV}, // Removed in Release 6
 	{"EXIT", CMD_EXIT, 0, 0},
 	{"J", TARGET, OPCODE_J, J},
 	{"JAL", TARGET, OPCODE_JAL, JAL},
@@ -31,11 +32,11 @@ static const instruction_desc instruction_table[] =
 	{"LHU", MEMORY, OPCODE_LHU, LHU},
 	{"LUI", RT_IMMEDIATE, OPCODE_AUI, AUI},
 	{"LW", MEMORY, OPCODE_LW, LW},
-	{"MFHI", RD, FUNCT_MFHI, MFHI},
-	{"MFLO", RD, FUNCT_MFLO, MFLO},
-	{"MTHI", RS, FUNCT_MTHI, MTHI},
-	{"MTLO", RS, FUNCT_MTLO, MTLO},
-	{"MULT", R2, FUNCT_MULT, MULT},
+	{"MFHI", RD, FUNCT_MFHI, MFHI}, // Removed in Release 6
+	{"MFLO", RD, FUNCT_MFLO, MFLO}, // Removed in Release 6
+	{"MTHI", RS, FUNCT_MTHI, MTHI}, // Removed in Release 6
+	{"MTLO", RS, FUNCT_MTLO, MTLO}, // Removed in Release 6
+	{"MULT", R2, FUNCT_MULT, MULT}, // Removed in Release 6
 	{"NOP", CMD_NOP, 0, NOP},
 	{"NOR", R3, FUNCT_NOR, NOR},
 	{"OR", R3, FUNCT_OR, OR},
