@@ -136,7 +136,7 @@ void build_rs_instruction(instruction *instr, int funct_code)
 
 void build_rs_immediate_instruction(instruction *instr, int op_code)
 {
-	int32_t imm_value, rt_value = 0;
+	int32_t imm_value = 0, rt_value = 0;
 	if(instr->opcode == AUIPC) rt_value = AUIPC_RT;
 	instruction_field fields[] = {
 		FIELD(OPCODE_START, OPCODE_END, op_code),
@@ -398,7 +398,7 @@ instruction decode_instruction(int mode, FILE *fichier)
 			case RS_IMMEDIATE :
 				decode_rs_immediate_operands(ptr, &instr);
 				build_rs_immediate_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%s\n", id->mnemonic, instr.rt, instr.immediate, instr.instr_hex);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%s\n", id->mnemonic, instr.rs, instr.immediate, instr.instr_hex);
 				break;
 			case RT_IMMEDIATE :
 				decode_rt_immediate_operands(ptr, &instr);
