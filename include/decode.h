@@ -44,7 +44,7 @@ void decode_r3_operands(char *line, instruction *instr);
 void decode_rd_operand(char *line, instruction *instr);
 void decode_rd_rs_operands(char *line, instruction *instr);
 void decode_rs_operand(char *line, instruction *instr);
-void decode_rt_operand(char *line, instruction *instr);
+void decode_rs_immediate_operand(char *line, instruction *instr);
 void decode_rt_immediate_operands(char *line, instruction *instr);
 void decode_shift_operands(char *line, instruction *instr);
 void decode_target_operands(char *line, instruction *instr);
