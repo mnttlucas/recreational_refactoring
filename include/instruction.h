@@ -69,6 +69,7 @@
 #define OPCODE_LHU     37
 #define OPCODE_LW      35
 #define OPCODE_ORI     13
+#define OPCODE_PCREL   59
 #define OPCODE_REGIMM   1
 #define OPCODE_SB      40
 #define OPCODE_SH      41
@@ -84,6 +85,7 @@
 
 /* Special register values for some operations 
 Even if some values are zeros, this exists for clarity and to match MIPS32 R6 specification */
+#define AUIPC_RT   30
 #define BGEZ_RT    1
 #define CLO_CLZ_SA 1
 
@@ -100,6 +102,7 @@ typedef enum
 	AND,
 	ANDI,
 	AUI,
+	AUIPC,
 	BEQ,
 	BGEZ,
 	BGTZ,
@@ -163,6 +166,7 @@ typedef enum
 	RD,
 	RD_RS,
 	RS,
+	RS_IMMEDIATE,
 	RT_IMMEDIATE,
 	SHIFT,
 	TARGET,

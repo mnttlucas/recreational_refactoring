@@ -7,10 +7,10 @@
 #include "instruction.h"
 #include "utils.h"
 
-void build_instruction_bin(instruction_field *arr, size_t field_count, uint8_t *bin_arr, char *hex_arr)
+void build_instruction_bin(instruction_field *arr, size_t field_count, instruction *instr)
 {
-	for(size_t i = 0; i < field_count; i++) long_to_bin_arr(arr[i].start_bit, arr[i].end_bit, arr[i].value, bin_arr);
-	bin_arr_to_hex_arr(bin_arr, hex_arr);
+	for(size_t i = 0; i < field_count; i++) long_to_bin_arr(arr[i].start_bit, arr[i].end_bit, arr[i].value, instr->instr_bin);
+	bin_arr_to_hex_arr(instr->instr_bin, instr->instr_hex);
 }
 
 int32_t handle_sign(char *param, instruction *instr)
@@ -36,15 +36,14 @@ void finalize_signed_value(int32_t *value, instruction *instr, uint8_t start_bit
 
 void build_branch_r1_instruction(instruction *instr, int op_code)
 {
-	int rt_value = 0;
-	if(instr->opcode == BGEZ)
-		rt_value = BGEZ_RT;
+	int32_t rt_value = 0;
+	if(instr->opcode == BGEZ) rt_value = BGEZ_RT;
 	instruction_field fields[] = {
 		FIELD(OPCODE_START, OPCODE_END, op_code),
 		FIELD(RS_START, RS_END, instr->rs),
 		FIELD(RT_START, RT_END, rt_value),
 		FIELD(IMM_START, IMM_END, instr->offset)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
+	build_instruction_bin(fields, ARR_SIZE(fields), instr);
 	finalize_signed_value(&instr->offset, instr, IMM_START, IMM_END);
 }
 
@@ -55,7 +54,7 @@ void build_branch_r2_instruction(instruction *instr, int op_code)
 		FIELD(RS_START, RS_END, instr->rs),
 		FIELD(RT_START, RT_END, instr->rt),
 		FIELD(IMM_START, IMM_END, instr->offset)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
+	build_instruction_bin(fields, ARR_SIZE(fields), instr);
 	finalize_signed_value(&instr->offset, instr, IMM_START, IMM_END);
 }
 
@@ -66,7 +65,7 @@ void build_memory_instruction(instruction *instr, int op_code)
 		FIELD(BASE_START, BASE_END, instr->base),
 		FIELD(RT_START, RT_END, instr->rt),
 		FIELD(IMM_START, IMM_END, instr->offset)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
+	build_instruction_bin(fields, ARR_SIZE(fields), instr);
 	finalize_signed_value(&instr->offset, instr, IMM_START, IMM_END);
 }
 
@@ -77,7 +76,7 @@ void build_r2_instruction(instruction *instr, int funct_code)
 		FIELD(RS_START, RS_END, instr->rs),
 		FIELD(RT_START, RT_END, instr->rt),
 		FIELD(FUNCT_START, FUNCT_END, funct_code)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
+	build_instruction_bin(fields, ARR_SIZE(fields), instr);
 }
 
 void build_r3_immediate_instruction(instruction *instr, int op_code)
@@ -88,7 +87,7 @@ void build_r3_immediate_instruction(instruction *instr, int op_code)
 		FIELD(RS_START, RS_END, instr->rs),
 		FIELD(RT_START, RT_END, instr->rt),
 		FIELD(IMM_START, IMM_END, instr->immediate)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
+	build_instruction_bin(fields, ARR_SIZE(fields), instr);
 	finalize_signed_value(&imm_value, instr, IMM_START, IMM_END);
 	instr->immediate = (int16_t) imm_value;
 }
@@ -101,7 +100,7 @@ void build_r3_instruction(instruction *instr, int funct_code)
 		FIELD(RT_START, RT_END, instr->rt),
 		FIELD(RD_START, RD_END, instr->rd),
 		FIELD(FUNCT_START, FUNCT_END, funct_code)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
+	build_instruction_bin(fields, ARR_SIZE(fields), instr);
 }
 
 void build_rd_instruction(instruction *instr, int funct_code)
@@ -110,21 +109,20 @@ void build_rd_instruction(instruction *instr, int funct_code)
 		FIELD(OPCODE_START, OPCODE_END, OPCODE_SPECIAL),
 		FIELD(RD_START, RD_END, instr->rd),
 		FIELD(FUNCT_START, FUNCT_END, funct_code)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
+	build_instruction_bin(fields, ARR_SIZE(fields), instr);
 }
 
 void build_rd_rs_instruction(instruction *instr, int funct_code)
 {
-	int sa_value = 0;
-	if(instr->opcode == CLO || instr->opcode == CLZ)
-		sa_value = CLO_CLZ_SA;
+	int32_t sa_value = 0;
+	if(instr->opcode == CLO || instr->opcode == CLZ) sa_value = CLO_CLZ_SA;
 	instruction_field fields[] = {
 		FIELD(OPCODE_START, OPCODE_END, OPCODE_SPECIAL),
 		FIELD(RS_START, RS_END, instr->rs),
 		FIELD(RD_START, RD_END, instr->rd),
 		FIELD(SHAMT_START, SHAMT_END, sa_value),
 		FIELD(FUNCT_START, FUNCT_END, funct_code)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
+	build_instruction_bin(fields, ARR_SIZE(fields), instr);
 }
 
 void build_rs_instruction(instruction *instr, int funct_code)
@@ -133,7 +131,21 @@ void build_rs_instruction(instruction *instr, int funct_code)
 		FIELD(OPCODE_START, OPCODE_END, OPCODE_SPECIAL),
 		FIELD(RS_START, RS_END, instr->rs),
 		FIELD(FUNCT_START, FUNCT_END, funct_code)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
+	build_instruction_bin(fields, ARR_SIZE(fields), instr);
+}
+
+void build_rs_immediate_instruction(instruction *instr, int op_code)
+{
+	int32_t imm_value, rt_value = 0;
+	if(instr->opcode == AUIPC) rt_value = AUIPC_RT;
+	instruction_field fields[] = {
+		FIELD(OPCODE_START, OPCODE_END, op_code),
+		FIELD(RS_START, RS_END, instr->rs),
+		FIELD(RT_START, RT_END, rt_value),
+		FIELD(IMM_START, IMM_END, instr->immediate)};
+	build_instruction_bin(fields, ARR_SIZE(fields), instr);
+	finalize_signed_value(&imm_value, instr, IMM_START, IMM_END);
+	instr->immediate = (int16_t) imm_value;
 }
 
 void build_rt_immediate_instruction(instruction *instr, int op_code)
@@ -143,7 +155,7 @@ void build_rt_immediate_instruction(instruction *instr, int op_code)
 		FIELD(OPCODE_START, OPCODE_END, op_code),
 		FIELD(RT_START, RT_END, instr->rt),
 		FIELD(IMM_START, IMM_END, instr->immediate)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
+	build_instruction_bin(fields, ARR_SIZE(fields), instr);
 	finalize_signed_value(&imm_value, instr, IMM_START, IMM_END);
 	instr->immediate = (int16_t) imm_value;
 }
@@ -156,7 +168,7 @@ void build_shift_instruction(instruction *instr, int funct_code)
 		FIELD(RD_START, RD_END, instr->rd),
 		FIELD(SHAMT_START, SHAMT_END, instr->sa),
 		FIELD(FUNCT_START, FUNCT_END, funct_code)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
+	build_instruction_bin(fields, ARR_SIZE(fields), instr);
 	if(instr->opcode == ROTR) instr->instr_bin[ROTR_BIT] = 1;
 	bin_arr_to_hex_arr(instr->instr_bin, instr->instr_hex);
 }
@@ -166,7 +178,7 @@ void build_target_instruction(instruction *instr, int op_code)
 	instruction_field fields[] = {
 		FIELD(OPCODE_START, OPCODE_END, op_code),
 		FIELD(TARGET_START, TARGET_END, instr->target)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
+	build_instruction_bin(fields, ARR_SIZE(fields), instr);
 }
 
 void build_variable_shift_instruction(instruction *instr, int funct_code)
@@ -177,7 +189,7 @@ void build_variable_shift_instruction(instruction *instr, int funct_code)
 		FIELD(RT_START, RT_END, instr->rt),
 		FIELD(RD_START, RD_END, instr->rd),
 		FIELD(FUNCT_START, FUNCT_END, funct_code)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr->instr_bin, instr->instr_hex);
+	build_instruction_bin(fields, ARR_SIZE(fields), instr);
 	if(instr->opcode == ROTRV) instr->instr_bin[ROTRV_BIT] = 1;
 	bin_arr_to_hex_arr(instr->instr_bin, instr->instr_hex);
 }
@@ -253,6 +265,14 @@ void decode_rs_operand(char *line, instruction *instr)
 {
 	char rs[8];
 	sscanf(line, " $%7s ", rs);
+	instr->rs = register_string_to_int(rs);
+}
+
+void decode_rs_immediate_operands(char *line, instruction *instr)
+{
+	char imm[16], rs[8];
+	sscanf(line, " $%7[^,], %15s ", rs, imm);
+	instr->immediate = (int16_t) handle_sign(imm, instr);
 	instr->rs = register_string_to_int(rs);
 }
 
@@ -374,6 +394,11 @@ instruction decode_instruction(int mode, FILE *fichier)
 				decode_rs_operand(ptr, &instr);
 				build_rs_instruction(&instr, id->code);
 				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d -> 0x%s\n", id->mnemonic, instr.rs, instr.instr_hex);
+				break;
+			case RS_IMMEDIATE :
+				decode_rs_immediate_operands(ptr, &instr);
+				build_rs_immediate_instruction(&instr, id->code);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%s\n", id->mnemonic, instr.rt, instr.immediate, instr.instr_hex);
 				break;
 			case RT_IMMEDIATE :
 				decode_rt_immediate_operands(ptr, &instr);
