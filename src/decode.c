@@ -136,7 +136,7 @@ void build_rs_instruction(instruction *instr, int funct_code)
 
 void build_rs_immediate_instruction(instruction *instr, int op_code)
 {
-	int32_t imm_value = 0, rt_value = 0;
+	int32_t imm_value = instr->immediate, rt_value = 0;
 	if(instr->opcode == AUIPC) rt_value = AUIPC_RT;
 	instruction_field fields[] = {
 		FIELD(OPCODE_START, OPCODE_END, op_code),
