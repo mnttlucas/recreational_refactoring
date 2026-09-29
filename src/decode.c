@@ -79,6 +79,15 @@ void build_r2_instruction(instruction *instr, int funct_code)
 	build_instruction_bin(fields, ARR_SIZE(fields), instr);
 }
 
+void build_offset_instruction(instruction *instr, int op_code)
+{
+	instruction_field fields[] = {
+		FIELD(OPCODE_START, OPCODE_END, op_code),
+		FIELD(IMM_START, IMM_END, instr->offset)};
+	build_instruction_bin(fields, ARR_SIZE(fields), instr);
+	finalize_signed_value(&instr->offset, instr, IMM_START, IMM_END);
+}
+
 void build_r3_immediate_instruction(instruction *instr, int op_code)
 {
 	int32_t imm_value = instr->immediate;
@@ -218,6 +227,13 @@ void decode_memory_operands(char *line, instruction *instr)
 	instr->base = register_string_to_int(base);
 	instr->offset = handle_sign(offset, instr);
 	instr->rt = register_string_to_int(rt);
+}
+
+void decode_offset_operand(char *line, instruction *instr)
+{
+	char offset[16];
+	sscanf(line, " %15s ", offset);
+	instr->offset = handle_sign(offset, instr);
 }
 
 void decode_r2_operands(char *line, instruction *instr)
@@ -364,6 +380,11 @@ instruction decode_instruction(int mode, FILE *fichier)
 				decode_memory_operands(ptr, &instr);
 				build_memory_instruction(&instr, id->code);
 				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d($%d) -> 0x%s\n", id->mnemonic, instr.rt, instr.offset, instr.base, instr.instr_hex);
+				break;
+			case OFFSET :
+				decode_offset_operand(ptr, &instr);
+				build_offset_instruction(&instr, id->code);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s %d -> 0x%s\n", id->mnemonic, instr.offset, instr.instr_hex);
 				break;
 			case R2 :
 				decode_r2_operands(ptr, &instr);

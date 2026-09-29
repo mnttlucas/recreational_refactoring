@@ -23,6 +23,7 @@ void finalize_signed_value(int32_t *value, instruction *instr, uint8_t start_bit
 void build_branch_r1_instruction(instruction *instr, int op_code);
 void build_branch_r2_instruction(instruction *instr, int op_code);
 void build_memory_instruction(instruction *instr, int op_code);
+void build_offset_instruction(instruction *instr, int op_code);
 void build_r2_instruction(instruction *instr, int funct_code);
 void build_r3_immediate_instruction(instruction *instr, int op_code);
 void build_r3_instruction(instruction *instr, int funct);
@@ -38,6 +39,7 @@ void build_variable_shift_instruction(instruction *instr, int funct_code);
 void decode_branch_r1_operands(char *line, instruction *instr);
 void decode_branch_r2_operands(char *line, instruction *instr);
 void decode_memory_operands(char *line, instruction *instr);
+void decode_offset_operand(char *line, instruction *instr);
 void decode_r2_operands(char *line, instruction *instr);
 void decode_r3_immediate_operands(char *line, instruction *instr);
 void decode_r3_operands(char *line, instruction *instr);

@@ -160,6 +160,7 @@ typedef enum
 	CMD_EXIT,
 	CMD_NOP,
 	MEMORY,
+	OFFSET,
 	R2,
 	R3_IMMEDIATE,
 	R3,
