@@ -57,6 +57,7 @@
 #define OPCODE_ADDIU    9
 #define OPCODE_ANDI    12
 #define OPCODE_AUI     15
+#define OPCODE_BC      50
 #define OPCODE_BEQ      4
 #define OPCODE_BGTZ     7
 #define OPCODE_BLEZ     6
@@ -84,8 +85,10 @@
 #define ROTRV_BIT   25
 
 /* Special register values for some operations 
-Even if some values are zeros, this exists for clarity and to match MIPS32 R6 specification */
+This exists for clarity and to match MIPS32 R6 specification
+When values are zero, it will be implicit */
 #define AUIPC_RT   30
+#define BAL_RT     17
 #define BGEZ_RT    1
 #define CLO_CLZ_SA 1
 
@@ -103,6 +106,8 @@ typedef enum
 	ANDI,
 	AUI,
 	AUIPC,
+	BAL,
+	BC,
 	BEQ,
 	BGEZ,
 	BGTZ,

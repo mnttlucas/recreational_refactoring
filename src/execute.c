@@ -54,6 +54,13 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			res_32 = (int32_t) ((uint32_t) register_read(cpu, REG_PC) + ((uint32_t) instr.immediate << 16));
 			register_write(cpu, instr.rs, res_32);
 			break;
+		case BAL :
+			register_write(cpu, REG_RA, register_read(cpu, REG_PC) + 2);
+			cpu->next_PC = register_read(cpu, REG_PC) + instr.offset + 1;
+			break;
+		case BC :
+			register_write(cpu, REG_PC, (register_read(cpu, REG_PC)) + instr.offset + 1);
+			break;
 		case BEQ :
 			if(register_read(cpu, instr.rs) == register_read(cpu, instr.rt))
 				cpu->next_PC = register_read(cpu, REG_PC) + instr.offset + 1;
