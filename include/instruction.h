@@ -76,7 +76,11 @@
 #define OPCODE_LW      35
 #define OPCODE_ORI     13
 #define OPCODE_PCREL   59
+#define OPCODE_POP06    6
+#define OPCODE_POP07    7
 #define OPCODE_POP10    8
+#define OPCODE_POP26   22
+#define OPCODE_POP27   23
 #define OPCODE_POP30   24
 #define OPCODE_POP66   54
 #define OPCODE_POP76   62
@@ -126,10 +130,18 @@ typedef enum
 	BEQ,
 	BEQC,
 	BEQZC,
+	BGEC,
+	BGEUC,
 	BGEZ,
+	BGEZC,
 	BGTZ,
+	BGTZC,
 	BLEZ,
+	BLEZC,
+	BLTC,
+	BLTUC,
 	BLTZ,
+	BLTZC,
 	BNE,
 	BNEC,
 	BNEZC,
