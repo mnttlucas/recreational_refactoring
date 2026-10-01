@@ -13,7 +13,7 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 	int32_t address, dividend, divisor, pending_PC, res_32, res_HI, res_LO;
 	int64_t res_64;
 	uint32_t raw_32;
-	uint8_t count, shift_8;
+	uint8_t compact = 0, count, shift_8;
 
 	pending_PC = cpu->next_PC;
 	cpu->next_PC = -1;
@@ -59,6 +59,7 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			cpu->next_PC = register_read(cpu, REG_PC) + instr.offset + 1;
 			break;
 		case BC :
+			compact = 1;
 			register_write(cpu, REG_PC, (register_read(cpu, REG_PC)) + instr.offset + 1);
 			break;
 		case BEQ :
@@ -302,7 +303,7 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			break;
 	}
 
-	increment_pc(cpu);
+	if(!compact) increment_pc(cpu);
 
 	if(pending_PC != -1) register_write(cpu, REG_PC, pending_PC);
 

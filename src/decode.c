@@ -69,6 +69,18 @@ void build_memory_instruction(instruction *instr, int op_code)
 	finalize_signed_value(&instr->offset, instr, IMM_START, IMM_END);
 }
 
+void build_offset_instruction(instruction *instr, int op_code)
+{
+	int32_t rt_value = 0;
+	if(instr->opcode == BAL) rt_value = BAL_RT;
+	instruction_field fields[] = {
+		FIELD(OPCODE_START, OPCODE_END, op_code),
+		FIELD(RT_START, RT_END, rt_value),
+		FIELD(IMM_START, IMM_END, instr->offset)};
+	build_instruction_bin(fields, ARR_SIZE(fields), instr);
+	finalize_signed_value(&instr->offset, instr, IMM_START, IMM_END);
+}
+
 void build_r2_instruction(instruction *instr, int funct_code)
 {
 	instruction_field fields[] = {
@@ -77,15 +89,6 @@ void build_r2_instruction(instruction *instr, int funct_code)
 		FIELD(RT_START, RT_END, instr->rt),
 		FIELD(FUNCT_START, FUNCT_END, funct_code)};
 	build_instruction_bin(fields, ARR_SIZE(fields), instr);
-}
-
-void build_offset_instruction(instruction *instr, int op_code)
-{
-	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, op_code),
-		FIELD(IMM_START, IMM_END, instr->offset)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr);
-	finalize_signed_value(&instr->offset, instr, IMM_START, IMM_END);
 }
 
 void build_r3_immediate_instruction(instruction *instr, int op_code)
