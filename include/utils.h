@@ -24,6 +24,7 @@ void	long_to_bin_arr(int start, int end, long value, uint8_t *arr);
 char	*read_full_line(FILE *in);
 uint8_t	register_string_to_int(char *str);
 void	remove_sign(char *str);
+int32_t	sign_extend(int32_t value, uint8_t bits);
 void	wait_for_enter();
 
 #endif	/* UTILS_H */

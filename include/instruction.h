@@ -4,24 +4,28 @@
 #include <stdint.h>
 
 /* MIPS bit fields */
-#define OPCODE_START  0
-#define OPCODE_END    5
-#define BASE_START    RS_START
-#define BASE_END      RS_END
-#define RS_START      6
-#define RS_END       10
-#define RT_START     11
-#define RT_END       15
-#define RD_START     16
-#define RD_END       20
-#define SHAMT_START  21
-#define SHAMT_END    25
-#define FUNCT_START  26
-#define FUNCT_END    31
-#define IMM_START    16
-#define IMM_END      31
-#define TARGET_START  6
-#define TARGET_END   31
+#define OPCODE_START     0
+#define OPCODE_END       5
+#define BASE_START       RS_START
+#define BASE_END         RS_END
+#define RS_START         6
+#define RS_END          10
+#define RT_START        11
+#define RT_END          15
+#define RD_START        16
+#define RD_END          20
+#define SHAMT_START     21
+#define SHAMT_END       25
+#define FUNCT_START     26
+#define FUNCT_END       31
+#define OFFSET_26_START 6
+#define OFFSET_21_START 11
+#define OFFSET_16_START 16
+#define OFFSET_END      31
+#define IMM_START       16
+#define IMM_END         31
+#define TARGET_START     6
+#define TARGET_END      31
 
 /* Function codes */
 #define FUNCT_ADD    32
@@ -74,6 +78,8 @@
 #define OPCODE_PCREL   59
 #define OPCODE_POP10    8
 #define OPCODE_POP30   24
+#define OPCODE_POP66   54
+#define OPCODE_POP76   62
 #define OPCODE_REGIMM   1
 #define OPCODE_SB      40
 #define OPCODE_SH      41
@@ -82,6 +88,11 @@
 #define OPCODE_SPECIAL  0
 #define OPCODE_SW      43
 #define OPCODE_XORI    14
+
+/* Offset sizes */
+#define OFFSET_16_SIZE   16
+#define OFFSET_21_SIZE   21
+#define OFFSET_26_SIZE   26
 
 /* Special bit locations */
 #define ROTR_BIT    10
@@ -114,12 +125,14 @@ typedef enum
 	BC,
 	BEQ,
 	BEQC,
+	BEQZC,
 	BGEZ,
 	BGTZ,
 	BLEZ,
 	BLTZ,
 	BNE,
 	BNEC,
+	BNEZC,
 	CLO,
 	CLZ,
 	DIV,
@@ -167,11 +180,13 @@ typedef enum
 typedef enum
 {
 	BRANCH_R1,
+	BRANCH_R1_21,
 	BRANCH_R2,
 	CMD_EXIT,
 	CMD_NOP,
 	MEMORY,
-	OFFSET,
+	OFFSET_16,
+	OFFSET_26,
 	R2,
 	R3_IMMEDIATE,
 	R3,

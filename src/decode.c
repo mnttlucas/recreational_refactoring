@@ -42,9 +42,21 @@ void build_branch_r1_instruction(instruction *instr, int op_code)
 		FIELD(OPCODE_START, OPCODE_END, op_code),
 		FIELD(RS_START, RS_END, instr->rs),
 		FIELD(RT_START, RT_END, rt_value),
-		FIELD(IMM_START, IMM_END, instr->offset)};
+		FIELD(OFFSET_16_START, OFFSET_END, instr->offset)};
 	build_instruction_bin(fields, ARR_SIZE(fields), instr);
-	finalize_signed_value(&instr->offset, instr, IMM_START, IMM_END);
+	finalize_signed_value(&instr->offset, instr, OFFSET_16_START, OFFSET_END);
+	instr->offset = sign_extend(instr->offset, OFFSET_16_SIZE);
+}
+
+void build_branch_r1_21_instruction(instruction *instr, int op_code)
+{
+	instruction_field fields[] = {
+		FIELD(OPCODE_START, OPCODE_END, op_code),
+		FIELD(RS_START, RS_END, instr->rs),
+		FIELD(OFFSET_21_START, IMM_END, instr->offset)};
+	build_instruction_bin(fields, ARR_SIZE(fields), instr);
+	finalize_signed_value(&instr->offset, instr, OFFSET_21_START, OFFSET_END);
+	instr->offset = sign_extend(instr->offset, OFFSET_21_SIZE);
 }
 
 void build_branch_r2_instruction(instruction *instr, int op_code)
@@ -53,9 +65,10 @@ void build_branch_r2_instruction(instruction *instr, int op_code)
 		FIELD(OPCODE_START, OPCODE_END, op_code),
 		FIELD(RS_START, RS_END, instr->rs),
 		FIELD(RT_START, RT_END, instr->rt),
-		FIELD(IMM_START, IMM_END, instr->offset)};
+		FIELD(OFFSET_16_START, OFFSET_END, instr->offset)};
 	build_instruction_bin(fields, ARR_SIZE(fields), instr);
-	finalize_signed_value(&instr->offset, instr, IMM_START, IMM_END);
+	finalize_signed_value(&instr->offset, instr, OFFSET_16_START, OFFSET_END);
+	instr->offset = sign_extend(instr->offset, OFFSET_16_SIZE);
 }
 
 void build_memory_instruction(instruction *instr, int op_code)
@@ -64,21 +77,33 @@ void build_memory_instruction(instruction *instr, int op_code)
 		FIELD(OPCODE_START, OPCODE_END, op_code),
 		FIELD(BASE_START, BASE_END, instr->base),
 		FIELD(RT_START, RT_END, instr->rt),
-		FIELD(IMM_START, IMM_END, instr->offset)};
+		FIELD(OFFSET_16_START, OFFSET_END, instr->offset)};
 	build_instruction_bin(fields, ARR_SIZE(fields), instr);
-	finalize_signed_value(&instr->offset, instr, IMM_START, IMM_END);
+	finalize_signed_value(&instr->offset, instr, OFFSET_16_START, OFFSET_END);
+	instr->offset = sign_extend(instr->offset, OFFSET_16_SIZE);
 }
 
-void build_offset_instruction(instruction *instr, int op_code)
+void build_offset_16_instruction(instruction *instr, int op_code)
 {
 	int32_t rt_value = 0;
 	if(instr->opcode == BAL) rt_value = BAL_RT;
 	instruction_field fields[] = {
 		FIELD(OPCODE_START, OPCODE_END, op_code),
 		FIELD(RT_START, RT_END, rt_value),
-		FIELD(IMM_START, IMM_END, instr->offset)};
+		FIELD(OFFSET_16_START, OFFSET_END, instr->offset)};
 	build_instruction_bin(fields, ARR_SIZE(fields), instr);
-	finalize_signed_value(&instr->offset, instr, IMM_START, IMM_END);
+	finalize_signed_value(&instr->offset, instr, OFFSET_16_START, OFFSET_END);
+	instr->offset = sign_extend(instr->offset, OFFSET_16_SIZE);
+}
+
+void build_offset_26_instruction(instruction *instr, int op_code)
+{
+	instruction_field fields[] = {
+		FIELD(OPCODE_START, OPCODE_END, op_code),
+		FIELD(OFFSET_26_START, OFFSET_END, instr->offset)};
+	build_instruction_bin(fields, ARR_SIZE(fields), instr);
+	finalize_signed_value(&instr->offset, instr, OFFSET_26_START, OFFSET_END);
+	instr->offset = sign_extend(instr->offset, OFFSET_26_SIZE);
 }
 
 void build_r2_instruction(instruction *instr, int funct_code)
@@ -367,6 +392,11 @@ instruction decode_instruction(int mode, FILE *fichier)
 				build_branch_r1_instruction(&instr, id->code);
 				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%s\n", id->mnemonic, instr.rs, instr.offset, instr.instr_hex);
 				break;
+			case BRANCH_R1_21 :
+				decode_branch_r1_operands(ptr, &instr);
+				build_branch_r1_21_instruction(&instr, id->code);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%s\n", id->mnemonic, instr.rs, instr.offset, instr.instr_hex);
+				break;
 			case BRANCH_R2 :
 				decode_branch_r2_operands(ptr, &instr);
 				build_branch_r2_instruction(&instr, id->code);
@@ -384,9 +414,14 @@ instruction decode_instruction(int mode, FILE *fichier)
 				build_memory_instruction(&instr, id->code);
 				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d($%d) -> 0x%s\n", id->mnemonic, instr.rt, instr.offset, instr.base, instr.instr_hex);
 				break;
-			case OFFSET :
+			case OFFSET_16 :
 				decode_offset_operand(ptr, &instr);
-				build_offset_instruction(&instr, id->code);
+				build_offset_16_instruction(&instr, id->code);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s %d -> 0x%s\n", id->mnemonic, instr.offset, instr.instr_hex);
+				break;
+			case OFFSET_26 :
+				decode_offset_operand(ptr, &instr);
+				build_offset_26_instruction(&instr, id->code);
 				snprintf(instr.to_string, sizeof(instr.to_string), "%s %d -> 0x%s\n", id->mnemonic, instr.offset, instr.instr_hex);
 				break;
 			case R2 :

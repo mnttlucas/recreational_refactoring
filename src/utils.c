@@ -210,6 +210,12 @@ void remove_sign(char *str)
 	str[i] = '\0';
 }
 
+int32_t sign_extend(int32_t value, uint8_t bits)
+{
+	uint32_t raw = (uint32_t) value << (32 - bits);
+	return((int32_t) raw >> (32 - bits));
+}
+
 void wait_for_enter()
 {
 	int c;

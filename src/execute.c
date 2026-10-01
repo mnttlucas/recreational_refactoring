@@ -67,12 +67,16 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			compact = 1;
 			register_write(cpu, REG_PC, (register_read(cpu, REG_PC)) + instr.offset + 1);
 			break;
-		case BEQC :
-			compact = 1;
-			/* fall through */
 		case BEQ :
 			if(register_read(cpu, instr.rs) == register_read(cpu, instr.rt))
 				cpu->next_PC = register_read(cpu, REG_PC) + instr.offset + 1;
+			break;
+		case BEQC :
+			if(register_read(cpu, instr.rs) == register_read(cpu, instr.rt))
+			{
+				compact = 1;
+				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + instr.offset + 1);
+			}
 			break;
 		case BGEZ :
 			if(register_read(cpu, instr.rs) >= 0)
@@ -90,12 +94,16 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			if(register_read(cpu, instr.rs) < 0)
 				cpu->next_PC = register_read(cpu, REG_PC) + instr.offset + 1;
 			break;
-		case BNEC :
-			compact = 1;
-			/* fall through */
 		case BNE :
 			if(register_read(cpu, instr.rs) != register_read(cpu, instr.rt))
 				cpu->next_PC = register_read(cpu, REG_PC) + instr.offset + 1;
+			break;
+		case BNEC :
+			if(register_read(cpu, instr.rs) != register_read(cpu, instr.rt))
+			{
+				compact = 1;
+				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + instr.offset + 1);
+			}
 			break;
 		case CLO :
 			/* Naive CLO/Z implementation, didn't want to just

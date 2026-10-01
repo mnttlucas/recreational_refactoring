@@ -21,9 +21,11 @@ void build_instruction_bin(instruction_field *arr, size_t field_count, instructi
 void finalize_signed_value(int32_t *value, instruction *instr, uint8_t start_bit, uint8_t end_bit);
 
 void build_branch_r1_instruction(instruction *instr, int op_code);
+void build_branch_r1_21_instruction(instruction *instr, int op_code);
 void build_branch_r2_instruction(instruction *instr, int op_code);
 void build_memory_instruction(instruction *instr, int op_code);
-void build_offset_instruction(instruction *instr, int op_code);
+void build_offset_16_instruction(instruction *instr, int op_code);
+void build_offset_26_instruction(instruction *instr, int op_code);
 void build_r2_instruction(instruction *instr, int funct_code);
 void build_r3_immediate_instruction(instruction *instr, int op_code);
 void build_r3_instruction(instruction *instr, int funct);
