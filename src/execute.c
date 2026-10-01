@@ -78,6 +78,13 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + instr.offset + 1);
 			}
 			break;
+		case BEQZC :
+			if(register_read(cpu, instr.rs) == 0)
+			{
+				compact = 1;
+				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + instr.offset + 1);
+			}
+			break;
 		case BGEZ :
 			if(register_read(cpu, instr.rs) >= 0)
 				cpu->next_PC = register_read(cpu, REG_PC) + instr.offset + 1;
@@ -100,6 +107,13 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			break;
 		case BNEC :
 			if(register_read(cpu, instr.rs) != register_read(cpu, instr.rt))
+			{
+				compact = 1;
+				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + instr.offset + 1);
+			}
+			break;
+		case BNEZC :
+			if(register_read(cpu, instr.rs) != 0)
 			{
 				compact = 1;
 				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + instr.offset + 1);
