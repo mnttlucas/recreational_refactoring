@@ -303,6 +303,8 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			break;
 	}
 
+	/* In MIPS32 Release 6, compact branches skip delay slot
+	   This way we ensure this kind of instruction behaves properly */
 	if(!compact) increment_pc(cpu);
 
 	if(pending_PC != -1) register_write(cpu, REG_PC, pending_PC);
