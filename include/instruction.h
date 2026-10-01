@@ -57,6 +57,7 @@
 #define OPCODE_ADDIU    9
 #define OPCODE_ANDI    12
 #define OPCODE_AUI     15
+#define OPCODE_BALC    58
 #define OPCODE_BC      50
 #define OPCODE_BEQ      4
 #define OPCODE_BGTZ     7
@@ -71,6 +72,8 @@
 #define OPCODE_LW      35
 #define OPCODE_ORI     13
 #define OPCODE_PCREL   59
+#define OPCODE_POP10    8
+#define OPCODE_POP30   24
 #define OPCODE_REGIMM   1
 #define OPCODE_SB      40
 #define OPCODE_SH      41
@@ -107,13 +110,16 @@ typedef enum
 	AUI,
 	AUIPC,
 	BAL,
+	BALC,
 	BC,
 	BEQ,
+	BEQC,
 	BGEZ,
 	BGTZ,
 	BLEZ,
 	BLTZ,
 	BNE,
+	BNEC,
 	CLO,
 	CLZ,
 	DIV,
