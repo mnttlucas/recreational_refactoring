@@ -60,8 +60,8 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			break;
 		case BALC :
 			compact = 1;
-			register_write(cpu, REG_RA, register_read(cpu, REG_PC) + 2);
-			cpu->next_PC = register_read(cpu, REG_PC) + instr.offset + 1;
+			register_write(cpu, REG_RA, register_read(cpu, REG_PC) + 1);
+			register_write(cpu, REG_PC, register_read(cpu, REG_PC) + instr.offset + 1);
 			break;
 		case BC :
 			compact = 1;
@@ -93,7 +93,7 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			if(register_read(cpu, instr.rs) >= 0)
 			{
 				compact = 1;
-				cpu->next_PC = register_read(cpu, REG_PC) + instr.offset + 1;
+				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + instr.offset + 1);
 			}
 			break;
 		case BGTZ :
@@ -104,7 +104,7 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			if(register_read(cpu, instr.rs) > 0)
 			{
 				compact = 1;
-				cpu->next_PC = register_read(cpu, REG_PC) + instr.offset + 1;
+				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + instr.offset + 1);
 			}
 			break;
 		case BLEZ :
@@ -115,7 +115,7 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			if(register_read(cpu, instr.rs) <= 0)
 			{
 				compact = 1;
-				cpu->next_PC = register_read(cpu, REG_PC) + instr.offset + 1;
+				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + instr.offset + 1);
 			}
 			break;
 		case BLTZ :
@@ -126,7 +126,7 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			if(register_read(cpu, instr.rs) < 0)
 			{
 				compact = 1;
-				cpu->next_PC = register_read(cpu, REG_PC) + instr.offset + 1;
+				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + instr.offset + 1);
 			}
 			break;
 		case BNE :
