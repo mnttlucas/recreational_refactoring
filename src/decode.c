@@ -248,6 +248,15 @@ void decode_branch_r2_operands(char *line, instruction *instr)
 	instr->rt = register_string_to_int(rt);
 }
 
+void decode_branch_r2_swapped_operands(char *line, instruction *instr)
+{
+	char offset[16], rs[8], rt[8];
+	sscanf(line, " $%7[^,] , $%7[^,] , %15s ", rt, rs, offset);
+	instr->offset = handle_sign(offset, instr);
+	instr->rs = register_string_to_int(rs);
+	instr->rt = register_string_to_int(rt);
+}
+
 void decode_memory_operands(char *line, instruction *instr)
 {
 	char base[8], offset[16], rt[8];
@@ -401,6 +410,11 @@ instruction decode_instruction(int mode, FILE *fichier)
 				decode_branch_r2_operands(ptr, &instr);
 				build_branch_r2_instruction(&instr, id->code);
 				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, %d -> 0x%s\n", id->mnemonic, instr.rs, instr.rt, instr.offset, instr.instr_hex);
+				break;
+			case BRANCH_R2_SWAPPED :
+				decode_branch_r2_swapped_operands(ptr, &instr);
+				build_branch_r2_instruction(&instr, id->code);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, %d -> 0x%s\n", id->mnemonic, instr.rt, instr.rs, instr.offset, instr.instr_hex);
 				break;
 			case CMD_EXIT :
 				instr.exit = 1;

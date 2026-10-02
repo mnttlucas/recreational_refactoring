@@ -40,6 +40,7 @@ void build_variable_shift_instruction(instruction *instr, int funct_code);
 
 void decode_branch_r1_operands(char *line, instruction *instr);
 void decode_branch_r2_operands(char *line, instruction *instr);
+void decode_branch_r2_swapped_operands(char *line, instruction *instr);
 void decode_memory_operands(char *line, instruction *instr);
 void decode_offset_operand(char *line, instruction *instr);
 void decode_r2_operands(char *line, instruction *instr);
