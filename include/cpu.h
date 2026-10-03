@@ -2,7 +2,7 @@
 #define	CPU_H
 
 #define	MEMORY_SIZE 256 * 4
-#define	REGISTER_COUNT 35
+#define	REGISTER_COUNT 33
 #define WORD_SIZE 4
 
 #include <stdint.h>

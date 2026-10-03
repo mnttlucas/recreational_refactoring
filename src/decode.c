@@ -81,11 +81,16 @@ void build_rd_rs_instruction(instruction *instr, int funct_code)
 
 void build_rd_rs_rt_instruction(instruction *instr, int funct_code)
 {
+	uint8_t shamt_value = 0;
+	if(instr->opcode == DIV || instr->opcode == DIVU) shamt_value = DIV_DIVU_SA;
+	else if(instr->opcode == MOD || instr->opcode == MODU) shamt_value = MOD_MODU_SA;
+	else if(instr->opcode == MUL || instr->opcode == MULU) shamt_value = MUL_MULU_SA;
 	instruction_field fields[] = {
 		FIELD(OPCODE_START, OPCODE_END, OPCODE_SPECIAL),
 		FIELD(RS_START, RS_END, instr->rs),
 		FIELD(RT_START, RT_END, instr->rt),
 		FIELD(RD_START, RD_END, instr->rd),
+		FIELD(SHAMT_START, SHAMT_END, shamt_value),
 		FIELD(FUNCT_START, FUNCT_END, funct_code)};
 	build_instruction_bin(fields, ARR_SIZE(fields), instr);
 }

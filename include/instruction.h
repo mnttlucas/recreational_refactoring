@@ -103,10 +103,14 @@
 /* Special register values for some operations 
 This exists for clarity and to match MIPS32 R6 specification
 When values are zero, it will be implicit */
-#define AUIPC_RT   30
-#define BAL_RT     17
-#define BGEZ_RT    1
-#define CLO_CLZ_SA 1
+#define AUIPC_RT      30
+#define BAL_RT        17
+#define BGEZ_RT        1
+#define CLO_CLZ_SA     1
+#define DIV_DIVU_SA    2
+#define MOD_MODU_SA    3
+#define MUH_MUHU_SA    3
+#define MUL_MULU_SA    2
 
 typedef enum
 {
