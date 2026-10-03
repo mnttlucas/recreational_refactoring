@@ -150,6 +150,9 @@ typedef enum
 	DIV,
 	J,
 	JAL,
+	JALR,
+	JIALC,
+	JIC,
 	JR,
 	LB,
 	LBU,
@@ -191,26 +194,27 @@ typedef enum
 
 typedef enum
 {
-	BRANCH_R1,
-	BRANCH_R1_21,
-	BRANCH_R2,
-	BRANCH_R2_SWAPPED,
 	CMD_EXIT,
 	CMD_NOP,
-	MEMORY,
 	OFFSET_16,
 	OFFSET_26,
-	R2,
-	R3_IMMEDIATE,
-	R3,
 	RD,
 	RD_RS,
+	RD_RS_RT,
+	RD_RT_RS,
+	RD_RT_SA,
 	RS,
 	RS_IMMEDIATE,
+	RS_OFFSET_16,
+	RS_OFFSET_21,
+	RS_RT,
+	RS_RT_OFFSET_16,
 	RT_IMMEDIATE,
-	SHIFT,
-	TARGET,
-	VARIABLE_SHIFT
+	RT_OFFSET_16,
+	RT_OFFSET_BASE,
+	RT_RS_IMMEDIATE,
+	RT_RS_OFFSET_16,
+	TARGET
 } format;
 
 typedef struct

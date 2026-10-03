@@ -236,6 +236,19 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			register_write(cpu, REG_RA, register_read(cpu, REG_PC) + 2);
 			cpu->next_PC = instr.target;
 			break;
+		case JALR :
+			register_write(cpu, instr.rd, register_read(cpu, REG_PC) + 2);
+			cpu->next_PC = register_read(cpu, instr.rs);
+			break;
+		case JIALC :
+			compact = 1;
+			register_write(cpu, REG_RA, register_read(cpu, REG_PC) + 1);
+			register_write(cpu, REG_PC, register_read(cpu, instr.rt) + instr.immediate);
+			break;
+		case JIC :
+			compact = 1;
+			register_write(cpu, REG_PC, register_read(cpu, instr.rt) + instr.immediate);
+			break;
 		case JR :
 			cpu->next_PC = register_read(cpu, instr.rs);
 			break;

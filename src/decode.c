@@ -34,55 +34,6 @@ void finalize_signed_value(int32_t *value, instruction *instr, uint8_t start_bit
 	}
 }
 
-void build_branch_r1_instruction(instruction *instr, int op_code)
-{
-	int32_t rt_value = 0;
-	if(instr->opcode == BGEZ) rt_value = BGEZ_RT;
-	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, op_code),
-		FIELD(RS_START, RS_END, instr->rs),
-		FIELD(RT_START, RT_END, rt_value),
-		FIELD(OFFSET_16_START, OFFSET_END, instr->offset)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr);
-	finalize_signed_value(&instr->offset, instr, OFFSET_16_START, OFFSET_END);
-	instr->offset = sign_extend(instr->offset, OFFSET_16_SIZE);
-}
-
-void build_branch_r1_21_instruction(instruction *instr, int op_code)
-{
-	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, op_code),
-		FIELD(RS_START, RS_END, instr->rs),
-		FIELD(OFFSET_21_START, IMM_END, instr->offset)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr);
-	finalize_signed_value(&instr->offset, instr, OFFSET_21_START, OFFSET_END);
-	instr->offset = sign_extend(instr->offset, OFFSET_21_SIZE);
-}
-
-void build_branch_r2_instruction(instruction *instr, int op_code)
-{
-	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, op_code),
-		FIELD(RS_START, RS_END, instr->rs),
-		FIELD(RT_START, RT_END, instr->rt),
-		FIELD(OFFSET_16_START, OFFSET_END, instr->offset)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr);
-	finalize_signed_value(&instr->offset, instr, OFFSET_16_START, OFFSET_END);
-	instr->offset = sign_extend(instr->offset, OFFSET_16_SIZE);
-}
-
-void build_memory_instruction(instruction *instr, int op_code)
-{
-	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, op_code),
-		FIELD(BASE_START, BASE_END, instr->base),
-		FIELD(RT_START, RT_END, instr->rt),
-		FIELD(OFFSET_16_START, OFFSET_END, instr->offset)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr);
-	finalize_signed_value(&instr->offset, instr, OFFSET_16_START, OFFSET_END);
-	instr->offset = sign_extend(instr->offset, OFFSET_16_SIZE);
-}
-
 void build_offset_16_instruction(instruction *instr, int op_code)
 {
 	int32_t rt_value = 0;
@@ -106,40 +57,6 @@ void build_offset_26_instruction(instruction *instr, int op_code)
 	instr->offset = sign_extend(instr->offset, OFFSET_26_SIZE);
 }
 
-void build_r2_instruction(instruction *instr, int funct_code)
-{
-	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, OPCODE_SPECIAL),
-		FIELD(RS_START, RS_END, instr->rs),
-		FIELD(RT_START, RT_END, instr->rt),
-		FIELD(FUNCT_START, FUNCT_END, funct_code)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr);
-}
-
-void build_r3_immediate_instruction(instruction *instr, int op_code)
-{
-	int32_t imm_value = instr->immediate;
-	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, op_code),
-		FIELD(RS_START, RS_END, instr->rs),
-		FIELD(RT_START, RT_END, instr->rt),
-		FIELD(IMM_START, IMM_END, instr->immediate)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr);
-	finalize_signed_value(&imm_value, instr, IMM_START, IMM_END);
-	instr->immediate = (int16_t) imm_value;
-}
-
-void build_r3_instruction(instruction *instr, int funct_code)
-{
-	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, OPCODE_SPECIAL),
-		FIELD(RS_START, RS_END, instr->rs),
-		FIELD(RT_START, RT_END, instr->rt),
-		FIELD(RD_START, RD_END, instr->rd),
-		FIELD(FUNCT_START, FUNCT_END, funct_code)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr);
-}
-
 void build_rd_instruction(instruction *instr, int funct_code)
 {
 	instruction_field fields[] = {
@@ -160,6 +77,43 @@ void build_rd_rs_instruction(instruction *instr, int funct_code)
 		FIELD(SHAMT_START, SHAMT_END, sa_value),
 		FIELD(FUNCT_START, FUNCT_END, funct_code)};
 	build_instruction_bin(fields, ARR_SIZE(fields), instr);
+}
+
+void build_rd_rs_rt_instruction(instruction *instr, int funct_code)
+{
+	instruction_field fields[] = {
+		FIELD(OPCODE_START, OPCODE_END, OPCODE_SPECIAL),
+		FIELD(RS_START, RS_END, instr->rs),
+		FIELD(RT_START, RT_END, instr->rt),
+		FIELD(RD_START, RD_END, instr->rd),
+		FIELD(FUNCT_START, FUNCT_END, funct_code)};
+	build_instruction_bin(fields, ARR_SIZE(fields), instr);
+}
+
+void build_rd_rt_rs_instruction(instruction *instr, int funct_code)
+{
+	instruction_field fields[] = {
+		FIELD(OPCODE_START, OPCODE_END, OPCODE_SPECIAL),
+		FIELD(RS_START, RS_END, instr->rs),
+		FIELD(RT_START, RT_END, instr->rt),
+		FIELD(RD_START, RD_END, instr->rd),
+		FIELD(FUNCT_START, FUNCT_END, funct_code)};
+	build_instruction_bin(fields, ARR_SIZE(fields), instr);
+	if(instr->opcode == ROTRV) instr->instr_bin[ROTRV_BIT] = 1;
+	bin_arr_to_hex_arr(instr->instr_bin, instr->instr_hex);
+}
+
+void build_rd_rt_sa_instruction(instruction *instr, int funct_code)
+{
+	instruction_field fields[] = {
+		FIELD(OPCODE_START, OPCODE_END, OPCODE_SPECIAL),
+		FIELD(RT_START, RT_END, instr->rt),
+		FIELD(RD_START, RD_END, instr->rd),
+		FIELD(SHAMT_START, SHAMT_END, instr->sa),
+		FIELD(FUNCT_START, FUNCT_END, funct_code)};
+	build_instruction_bin(fields, ARR_SIZE(fields), instr);
+	if(instr->opcode == ROTR) instr->instr_bin[ROTR_BIT] = 1;
+	bin_arr_to_hex_arr(instr->instr_bin, instr->instr_hex);
 }
 
 void build_rs_instruction(instruction *instr, int funct_code)
@@ -185,6 +139,53 @@ void build_rs_immediate_instruction(instruction *instr, int op_code)
 	instr->immediate = (int16_t) imm_value;
 }
 
+void build_rs_offset_16_instruction(instruction *instr, int op_code)
+{
+	int32_t rt_value = 0;
+	if(instr->opcode == BGEZ) rt_value = BGEZ_RT;
+	instruction_field fields[] = {
+		FIELD(OPCODE_START, OPCODE_END, op_code),
+		FIELD(RS_START, RS_END, instr->rs),
+		FIELD(RT_START, RT_END, rt_value),
+		FIELD(OFFSET_16_START, OFFSET_END, instr->offset)};
+	build_instruction_bin(fields, ARR_SIZE(fields), instr);
+	finalize_signed_value(&instr->offset, instr, OFFSET_16_START, OFFSET_END);
+	instr->offset = sign_extend(instr->offset, OFFSET_16_SIZE);
+}
+
+void build_rs_offset_21_instruction(instruction *instr, int op_code)
+{
+	instruction_field fields[] = {
+		FIELD(OPCODE_START, OPCODE_END, op_code),
+		FIELD(RS_START, RS_END, instr->rs),
+		FIELD(OFFSET_21_START, IMM_END, instr->offset)};
+	build_instruction_bin(fields, ARR_SIZE(fields), instr);
+	finalize_signed_value(&instr->offset, instr, OFFSET_21_START, OFFSET_END);
+	instr->offset = sign_extend(instr->offset, OFFSET_21_SIZE);
+}
+
+void build_rs_rt_instruction(instruction *instr, int funct_code)
+{
+	instruction_field fields[] = {
+		FIELD(OPCODE_START, OPCODE_END, OPCODE_SPECIAL),
+		FIELD(RS_START, RS_END, instr->rs),
+		FIELD(RT_START, RT_END, instr->rt),
+		FIELD(FUNCT_START, FUNCT_END, funct_code)};
+	build_instruction_bin(fields, ARR_SIZE(fields), instr);
+}
+
+void build_rs_rt_offset_16_instruction(instruction *instr, int op_code)
+{
+	instruction_field fields[] = {
+		FIELD(OPCODE_START, OPCODE_END, op_code),
+		FIELD(RS_START, RS_END, instr->rs),
+		FIELD(RT_START, RT_END, instr->rt),
+		FIELD(OFFSET_16_START, OFFSET_END, instr->offset)};
+	build_instruction_bin(fields, ARR_SIZE(fields), instr);
+	finalize_signed_value(&instr->offset, instr, OFFSET_16_START, OFFSET_END);
+	instr->offset = sign_extend(instr->offset, OFFSET_16_SIZE);
+}
+
 void build_rt_immediate_instruction(instruction *instr, int op_code)
 {
 	int32_t imm_value = instr->immediate;
@@ -197,17 +198,40 @@ void build_rt_immediate_instruction(instruction *instr, int op_code)
 	instr->immediate = (int16_t) imm_value;
 }
 
-void build_shift_instruction(instruction *instr, int funct_code)
+void build_rt_offset_16_instruction(instruction *instr, int op_code)
 {
 	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, OPCODE_SPECIAL),
+		FIELD(OPCODE_START, OPCODE_END, op_code),
 		FIELD(RT_START, RT_END, instr->rt),
-		FIELD(RD_START, RD_END, instr->rd),
-		FIELD(SHAMT_START, SHAMT_END, instr->sa),
-		FIELD(FUNCT_START, FUNCT_END, funct_code)};
+		FIELD(OFFSET_16_START, OFFSET_END, instr->offset)};
 	build_instruction_bin(fields, ARR_SIZE(fields), instr);
-	if(instr->opcode == ROTR) instr->instr_bin[ROTR_BIT] = 1;
-	bin_arr_to_hex_arr(instr->instr_bin, instr->instr_hex);
+	finalize_signed_value(&instr->offset, instr, OFFSET_16_START, OFFSET_END);
+	instr->offset = sign_extend(instr->offset, OFFSET_16_SIZE);
+}
+
+void build_rt_offset_base_instruction(instruction *instr, int op_code)
+{
+	instruction_field fields[] = {
+		FIELD(OPCODE_START, OPCODE_END, op_code),
+		FIELD(BASE_START, BASE_END, instr->base),
+		FIELD(RT_START, RT_END, instr->rt),
+		FIELD(OFFSET_16_START, OFFSET_END, instr->offset)};
+	build_instruction_bin(fields, ARR_SIZE(fields), instr);
+	finalize_signed_value(&instr->offset, instr, OFFSET_16_START, OFFSET_END);
+	instr->offset = sign_extend(instr->offset, OFFSET_16_SIZE);
+}
+
+void build_rt_rs_immediate_instruction(instruction *instr, int op_code)
+{
+	int32_t imm_value = instr->immediate;
+	instruction_field fields[] = {
+		FIELD(OPCODE_START, OPCODE_END, op_code),
+		FIELD(RS_START, RS_END, instr->rs),
+		FIELD(RT_START, RT_END, instr->rt),
+		FIELD(IMM_START, IMM_END, instr->immediate)};
+	build_instruction_bin(fields, ARR_SIZE(fields), instr);
+	finalize_signed_value(&imm_value, instr, IMM_START, IMM_END);
+	instr->immediate = (int16_t) imm_value;
 }
 
 void build_target_instruction(instruction *instr, int op_code)
@@ -218,85 +242,11 @@ void build_target_instruction(instruction *instr, int op_code)
 	build_instruction_bin(fields, ARR_SIZE(fields), instr);
 }
 
-void build_variable_shift_instruction(instruction *instr, int funct_code)
-{
-	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, OPCODE_SPECIAL),
-		FIELD(RS_START, RS_END, instr->rs),
-		FIELD(RT_START, RT_END, instr->rt),
-		FIELD(RD_START, RD_END, instr->rd),
-		FIELD(FUNCT_START, FUNCT_END, funct_code)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr);
-	if(instr->opcode == ROTRV) instr->instr_bin[ROTRV_BIT] = 1;
-	bin_arr_to_hex_arr(instr->instr_bin, instr->instr_hex);
-}
-
-void decode_branch_r1_operands(char *line, instruction *instr)
-{
-	char offset[16], rs[8];
-	sscanf(line, " $%7[^,]  , %15s ", rs, offset);
-	instr->offset = handle_sign(offset, instr);
-	instr->rs = register_string_to_int(rs);
-}
-
-void decode_branch_r2_operands(char *line, instruction *instr)
-{
-	char offset[16], rs[8], rt[8];
-	sscanf(line, " $%7[^,] , $%7[^,] , %15s ", rs, rt, offset);
-	instr->offset = handle_sign(offset, instr);
-	instr->rs = register_string_to_int(rs);
-	instr->rt = register_string_to_int(rt);
-}
-
-void decode_branch_r2_swapped_operands(char *line, instruction *instr)
-{
-	char offset[16], rs[8], rt[8];
-	sscanf(line, " $%7[^,] , $%7[^,] , %15s ", rt, rs, offset);
-	instr->offset = handle_sign(offset, instr);
-	instr->rs = register_string_to_int(rs);
-	instr->rt = register_string_to_int(rt);
-}
-
-void decode_memory_operands(char *line, instruction *instr)
-{
-	char base[8], offset[16], rt[8];
-	sscanf(line, " $%7[^,] , %15[^(] ($%7[^)]) ", rt, offset, base);
-	instr->base = register_string_to_int(base);
-	instr->offset = handle_sign(offset, instr);
-	instr->rt = register_string_to_int(rt);
-}
-
 void decode_offset_operand(char *line, instruction *instr)
 {
 	char offset[16];
 	sscanf(line, " %15s ", offset);
 	instr->offset = handle_sign(offset, instr);
-}
-
-void decode_r2_operands(char *line, instruction *instr)
-{
-	char rs[8], rt[8];
-	sscanf(line, " $%7[^,] , $%7s ", rs, rt);
-	instr->rs = register_string_to_int(rs);
-	instr->rt = register_string_to_int(rt);
-}
-
-void decode_r3_immediate_operands(char *line, instruction *instr)
-{
-	char imm[16], rs[8], rt[8];
-	sscanf(line, " $%7[^,] , $%7[^,] , %15s ", rt, rs, imm);
-	instr->immediate = (int16_t) handle_sign(imm, instr);
-	instr->rs = register_string_to_int(rs);
-	instr->rt = register_string_to_int(rt);
-}
-
-void decode_r3_operands(char *line, instruction *instr)
-{
-	char rd[8], rs[8], rt[8];
-	sscanf(line, " $%7[^,] , $%7[^,] , $%7s ", rd, rs, rt);
-	instr->rd = register_string_to_int(rd);
-	instr->rs = register_string_to_int(rs);
-	instr->rt = register_string_to_int(rt);
 }
 
 void decode_rd_operand(char *line, instruction *instr)
@@ -314,6 +264,33 @@ void decode_rd_rs_operands(char *line, instruction *instr)
 	instr->rs = register_string_to_int(rs);
 }
 
+void decode_rd_rs_rt_operands(char *line, instruction *instr)
+{
+	char rd[8], rs[8], rt[8];
+	sscanf(line, " $%7[^,] , $%7[^,] , $%7s ", rd, rs, rt);
+	instr->rd = register_string_to_int(rd);
+	instr->rs = register_string_to_int(rs);
+	instr->rt = register_string_to_int(rt);
+}
+
+void decode_rd_rt_rs_operands(char *line, instruction *instr)
+{
+	char rd[8], rs[8], rt[8];
+	sscanf(line, " $%7[^,] , $%7[^,] , $%7s ", rd, rt, rs);
+	instr->rd = register_string_to_int(rd);
+	instr->rs = register_string_to_int(rs);
+	instr->rt = register_string_to_int(rt);
+}
+
+void decode_rd_rt_sa_operands(char *line, instruction *instr)
+{
+	char rd[8], rt[8], sa[16];
+	sscanf(line, " $%7[^,] , $%7[^,] , %15s ", rd, rt, sa);
+	instr->rd = register_string_to_int(rd);
+	instr->rt = register_string_to_int(rt);
+	instr->sa = (uint8_t) atoi(sa);
+}
+
 void decode_rs_operand(char *line, instruction *instr)
 {
 	char rs[8];
@@ -329,6 +306,31 @@ void decode_rs_immediate_operands(char *line, instruction *instr)
 	instr->rs = register_string_to_int(rs);
 }
 
+void decode_rs_offset_operands(char *line, instruction *instr)
+{
+	char offset[16], rs[8];
+	sscanf(line, " $%7[^,]  , %15s ", rs, offset);
+	instr->offset = handle_sign(offset, instr);
+	instr->rs = register_string_to_int(rs);
+}
+
+void decode_rs_rt_operands(char *line, instruction *instr)
+{
+	char rs[8], rt[8];
+	sscanf(line, " $%7[^,] , $%7s ", rs, rt);
+	instr->rs = register_string_to_int(rs);
+	instr->rt = register_string_to_int(rt);
+}
+
+void decode_rs_rt_offset_operands(char *line, instruction *instr)
+{
+	char offset[16], rs[8], rt[8];
+	sscanf(line, " $%7[^,] , $%7[^,] , %15s ", rs, rt, offset);
+	instr->offset = handle_sign(offset, instr);
+	instr->rs = register_string_to_int(rs);
+	instr->rt = register_string_to_int(rt);
+}
+
 void decode_rt_immediate_operands(char *line, instruction *instr)
 {
 	char imm[16], rt[8];
@@ -337,13 +339,39 @@ void decode_rt_immediate_operands(char *line, instruction *instr)
 	instr->rt = register_string_to_int(rt);
 }
 
-void decode_shift_operands(char *line, instruction *instr)
+void decode_rt_offset_operands(char *line, instruction *instr)
 {
-	char rd[8], rt[8], sa[16];
-	sscanf(line, " $%7[^,] , $%7[^,] , %15s ", rd, rt, sa);
-	instr->rd = register_string_to_int(rd);
+	char offset[16], rt[8];
+	sscanf(line, "$%7[^,] , %15s ", rt, offset);
+	instr->offset = handle_sign(offset, instr);
 	instr->rt = register_string_to_int(rt);
-	instr->sa = (uint8_t) atoi(sa);
+}
+
+void decode_rt_offset_base_operands(char *line, instruction *instr)
+{
+	char base[8], offset[16], rt[8];
+	sscanf(line, " $%7[^,] , %15[^(] ($%7[^)]) ", rt, offset, base);
+	instr->base = register_string_to_int(base);
+	instr->offset = handle_sign(offset, instr);
+	instr->rt = register_string_to_int(rt);
+}
+
+void decode_rt_rs_immediate_operands(char *line, instruction *instr)
+{
+	char imm[16], rs[8], rt[8];
+	sscanf(line, " $%7[^,] , $%7[^,] , %15s ", rt, rs, imm);
+	instr->immediate = (int16_t) handle_sign(imm, instr);
+	instr->rs = register_string_to_int(rs);
+	instr->rt = register_string_to_int(rt);
+}
+
+void decode_rt_rs_offset_operands(char *line, instruction *instr)
+{
+	char offset[16], rs[8], rt[8];
+	sscanf(line, " $%7[^,] , $%7[^,] , %15s ", rt, rs, offset);
+	instr->offset = handle_sign(offset, instr);
+	instr->rs = register_string_to_int(rs);
+	instr->rt = register_string_to_int(rt);
 }
 
 void decode_target_operands(char *line, instruction *instr)
@@ -351,15 +379,6 @@ void decode_target_operands(char *line, instruction *instr)
 	char target[16];
 	sscanf(line, " %15s ", target);
 	instr->target = atoi(target);
-}
-
-void decode_variable_shift_operands(char *line, instruction *instr)
-{
-	char rd[8], rs[8], rt[8];
-	sscanf(line, " $%7[^,] , $%7[^,] , $%7s ", rd, rt, rs);
-	instr->rd = register_string_to_int(rd);
-	instr->rs = register_string_to_int(rs);
-	instr->rt = register_string_to_int(rt);
 }
 
 instruction decode_instruction(int mode, FILE *fichier)
@@ -396,37 +415,12 @@ instruction decode_instruction(int mode, FILE *fichier)
 		instr.opcode = id->op;
 		switch(id->format)
 		{
-			case BRANCH_R1 :
-				decode_branch_r1_operands(ptr, &instr);
-				build_branch_r1_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%s\n", id->mnemonic, instr.rs, instr.offset, instr.instr_hex);
-				break;
-			case BRANCH_R1_21 :
-				decode_branch_r1_operands(ptr, &instr);
-				build_branch_r1_21_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%s\n", id->mnemonic, instr.rs, instr.offset, instr.instr_hex);
-				break;
-			case BRANCH_R2 :
-				decode_branch_r2_operands(ptr, &instr);
-				build_branch_r2_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, %d -> 0x%s\n", id->mnemonic, instr.rs, instr.rt, instr.offset, instr.instr_hex);
-				break;
-			case BRANCH_R2_SWAPPED :
-				decode_branch_r2_swapped_operands(ptr, &instr);
-				build_branch_r2_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, %d -> 0x%s\n", id->mnemonic, instr.rt, instr.rs, instr.offset, instr.instr_hex);
-				break;
 			case CMD_EXIT :
 				instr.exit = 1;
 				break;
 			case CMD_NOP :
 				bin_arr_to_hex_arr(instr.instr_bin, instr.instr_hex);
 				snprintf(instr.to_string, sizeof(instr.to_string), "NOP -> 0x%s\n", instr.instr_hex);
-				break;
-			case MEMORY :
-				decode_memory_operands(ptr, &instr);
-				build_memory_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d($%d) -> 0x%s\n", id->mnemonic, instr.rt, instr.offset, instr.base, instr.instr_hex);
 				break;
 			case OFFSET_16 :
 				decode_offset_operand(ptr, &instr);
@@ -438,21 +432,6 @@ instruction decode_instruction(int mode, FILE *fichier)
 				build_offset_26_instruction(&instr, id->code);
 				snprintf(instr.to_string, sizeof(instr.to_string), "%s %d -> 0x%s\n", id->mnemonic, instr.offset, instr.instr_hex);
 				break;
-			case R2 :
-				decode_r2_operands(ptr, &instr);
-				build_r2_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d -> 0x%s\n", id->mnemonic, instr.rs, instr.rt, instr.instr_hex);
-				break;
-			case R3_IMMEDIATE :
-				decode_r3_immediate_operands(ptr, &instr);
-				build_r3_immediate_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, %d -> 0x%s\n", id->mnemonic, instr.rt, instr.rs, instr.immediate, instr.instr_hex);
-				break;
-			case R3 :
-				decode_r3_operands(ptr, &instr);
-				build_r3_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, $%d -> 0x%s\n", id->mnemonic, instr.rd, instr.rs, instr.rt, instr.instr_hex);
-				break;
 			case RD :
 				decode_rd_operand(ptr, &instr);
 				build_rd_instruction(&instr, id->code);
@@ -462,6 +441,21 @@ instruction decode_instruction(int mode, FILE *fichier)
 				decode_rd_rs_operands(ptr, &instr);
 				build_rd_rs_instruction(&instr, id->code);
 				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d -> 0x%s\n", id->mnemonic, instr.rd, instr.rs, instr.instr_hex);
+				break;
+			case RD_RS_RT :
+				decode_rd_rs_rt_operands(ptr, &instr);
+				build_rd_rs_rt_instruction(&instr, id->code);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, $%d -> 0x%s\n", id->mnemonic, instr.rd, instr.rs, instr.rt, instr.instr_hex);
+				break;
+			case RD_RT_RS :
+				decode_rd_rt_rs_operands(ptr, &instr);
+				build_rd_rt_rs_instruction(&instr, id->code);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, $%d -> 0x%s\n", id->mnemonic, instr.rd, instr.rt, instr.rs, instr.instr_hex);
+				break;
+			case RD_RT_SA :
+				decode_rd_rt_sa_operands(ptr, &instr);
+				build_rd_rt_sa_instruction(&instr, id->code);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, %d -> 0x%s\n", id->mnemonic, instr.rd, instr.rt, instr.sa, instr.instr_hex);
 				break;
 			case RS :
 				decode_rs_operand(ptr, &instr);
@@ -473,25 +467,55 @@ instruction decode_instruction(int mode, FILE *fichier)
 				build_rs_immediate_instruction(&instr, id->code);
 				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%s\n", id->mnemonic, instr.rs, instr.immediate, instr.instr_hex);
 				break;
+			case RS_OFFSET_16 :
+				decode_rs_offset_operands(ptr, &instr);
+				build_rs_offset_16_instruction(&instr, id->code);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%s\n", id->mnemonic, instr.rs, instr.offset, instr.instr_hex);
+				break;
+			case RS_OFFSET_21 :
+				decode_rs_offset_operands(ptr, &instr);
+				build_rs_offset_21_instruction(&instr, id->code);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%s\n", id->mnemonic, instr.rs, instr.offset, instr.instr_hex);
+				break;
+			case RS_RT :
+				decode_rs_rt_operands(ptr, &instr);
+				build_rs_rt_instruction(&instr, id->code);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d -> 0x%s\n", id->mnemonic, instr.rs, instr.rt, instr.instr_hex);
+				break;
+			case RS_RT_OFFSET_16 :
+				decode_rs_rt_offset_operands(ptr, &instr);
+				build_rs_rt_offset_16_instruction(&instr, id->code);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, %d -> 0x%s\n", id->mnemonic, instr.rs, instr.rt, instr.offset, instr.instr_hex);
+				break;
 			case RT_IMMEDIATE :
 				decode_rt_immediate_operands(ptr, &instr);
 				build_rt_immediate_instruction(&instr, id->code);
 				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%s\n", id->mnemonic, instr.rt, instr.immediate, instr.instr_hex);
 				break;
-			case SHIFT :
-				decode_shift_operands(ptr, &instr);
-				build_shift_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, %d -> 0x%s\n", id->mnemonic, instr.rd, instr.rt, instr.sa, instr.instr_hex);
+			case RT_OFFSET_16 :
+				decode_rt_offset_operands(ptr, &instr);
+				build_rt_offset_16_instruction(&instr, id->code);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s %d, %d -> 0x%s\n", id->mnemonic, instr.rt, instr.offset, instr.instr_hex);
+				break;
+			case RT_OFFSET_BASE :
+				decode_rt_offset_base_operands(ptr, &instr);
+				build_rt_offset_base_instruction(&instr, id->code);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d($%d) -> 0x%s\n", id->mnemonic, instr.rt, instr.offset, instr.base, instr.instr_hex);
+				break;
+			case RT_RS_IMMEDIATE :
+				decode_rt_rs_immediate_operands(ptr, &instr);
+				build_rt_rs_immediate_instruction(&instr, id->code);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, %d -> 0x%s\n", id->mnemonic, instr.rt, instr.rs, instr.immediate, instr.instr_hex);
+				break;
+			case RT_RS_OFFSET_16 :
+				decode_rt_rs_offset_operands(ptr, &instr);
+				build_rs_rt_offset_16_instruction(&instr, id->code);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, %d -> 0x%s\n", id->mnemonic, instr.rt, instr.rs, instr.offset, instr.instr_hex);
 				break;
 			case TARGET :
 				decode_target_operands(ptr, &instr);
 				build_target_instruction(&instr, id->code);
 				snprintf(instr.to_string, sizeof(instr.to_string), "%s %d -> 0x%s\n", id->mnemonic, instr.target, instr.instr_hex);
-				break;
-			case VARIABLE_SHIFT :
-				decode_variable_shift_operands(ptr, &instr);
-				build_variable_shift_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, $%d -> 0x%s\n", id->mnemonic, instr.rd, instr.rt, instr.rs, instr.instr_hex);
 				break;
 		}
 		log_instruction(&instr);
