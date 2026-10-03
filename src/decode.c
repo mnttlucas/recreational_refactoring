@@ -342,7 +342,7 @@ void decode_rt_immediate_operands(char *line, instruction *instr)
 void decode_rt_offset_operands(char *line, instruction *instr)
 {
 	char offset[16], rt[8];
-	sscanf(line, "$%7[^,] , %15s ", rt, offset);
+	sscanf(line, " $%7[^,] , %15s ", rt, offset);
 	instr->offset = handle_sign(offset, instr);
 	instr->rt = register_string_to_int(rt);
 }

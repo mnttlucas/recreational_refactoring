@@ -104,7 +104,7 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 				cpu->next_PC = register_read(cpu, REG_PC) + instr.offset + 1;
 			break;
 		case BGEZC :
-			if(register_read(cpu, instr.rs) >= 0)
+			if(register_read(cpu, instr.rt) >= 0)
 			{
 				compact = 1;
 				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + instr.offset + 1);
@@ -115,7 +115,7 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 				cpu->next_PC = register_read(cpu, REG_PC) + instr.offset + 1;
 			break;
 		case BGTZC :
-			if(register_read(cpu, instr.rs) > 0)
+			if(register_read(cpu, instr.rt) > 0)
 			{
 				compact = 1;
 				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + instr.offset + 1);
@@ -126,7 +126,7 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 				cpu->next_PC = register_read(cpu, REG_PC) + instr.offset + 1;
 			break;
 		case BLEZC :
-			if(register_read(cpu, instr.rs) <= 0)
+			if(register_read(cpu, instr.rt) <= 0)
 			{
 				compact = 1;
 				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + instr.offset + 1);
@@ -151,7 +151,7 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 				cpu->next_PC = register_read(cpu, REG_PC) + instr.offset + 1;
 			break;
 		case BLTZC :
-			if(register_read(cpu, instr.rs) < 0)
+			if(register_read(cpu, instr.rt) < 0)
 			{
 				compact = 1;
 				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + instr.offset + 1);
@@ -243,11 +243,11 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 		case JIALC :
 			compact = 1;
 			register_write(cpu, REG_RA, register_read(cpu, REG_PC) + 1);
-			register_write(cpu, REG_PC, register_read(cpu, instr.rt) + instr.immediate);
+			register_write(cpu, REG_PC, register_read(cpu, instr.rt) + instr.offset);
 			break;
 		case JIC :
 			compact = 1;
-			register_write(cpu, REG_PC, register_read(cpu, instr.rt) + instr.immediate);
+			register_write(cpu, REG_PC, register_read(cpu, instr.rt) + instr.offset);
 			break;
 		case JR :
 			cpu->next_PC = register_read(cpu, instr.rs);
