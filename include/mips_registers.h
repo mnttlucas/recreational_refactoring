@@ -37,9 +37,7 @@
 #define REG_SP 29
 #define REG_FP 30
 #define REG_RA 31
-#define	REG_HI 32
-#define	REG_LO 33
-#define	REG_PC 34
+#define	REG_PC 32
 
 void	registers_init(CPU *cpu);
 int32_t	register_read(CPU *cpu, int id);

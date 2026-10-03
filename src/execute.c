@@ -10,9 +10,10 @@
 
 void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 {
-	int32_t address, dividend, divisor, pending_PC, res_32, res_HI, res_LO;
+	int32_t address, dividend, divisor, pending_PC, res_32, res_H, res_L;
 	int64_t res_64;
-	uint32_t raw_32;
+	uint32_t raw_32, raw_dividend, raw_divisor;
+	uint64_t raw_64;
 	uint8_t compact = 0, count, shift_8;
 
 	pending_PC = cpu->next_PC;
@@ -24,11 +25,6 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			res_64 = (int64_t) register_read(cpu, instr.rs) + (int64_t) register_read(cpu, instr.rt);
 			if(res_64 > INT32_MAX || res_64 < INT32_MIN) fprintf(stderr, "[!] Exception : Integer Overflow\n");
 			else register_write(cpu, instr.rd, (int32_t) res_64);
-			break;
-		case ADDI :
-			res_64 = (int64_t) register_read(cpu, instr.rs) + (int64_t) instr.immediate;
-			if(res_64 > INT32_MAX || res_64 < INT32_MIN) fprintf(stderr, "[!] Exception : Integer Overflow\n");
-			else register_write(cpu, instr.rt, (int32_t) res_64);
 			break;
 		case ADDIU :
 			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rs) + (uint32_t) instr.immediate);
@@ -210,24 +206,21 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			divisor = register_read(cpu, instr.rt);
 			/* Arbitrary choice, MIPS32 documentation :
 			'If the divisor in GPR rt is zero, the arithmetic result value is UNPREDICTABLE' */
-			if(divisor == 0)
-			{
-				res_HI = dividend;
-				res_LO = divisor;
-			}
+			if(divisor == 0) res_32 = divisor;
 			/* Used to cover a C edge-case of integer overflow - not MIPS related */
-			else if(divisor == -1 && dividend == (int32_t) 0x80000000)
-			{
-				res_HI = 0;
-				res_LO = dividend;
-			}
-			else
-			{
-				res_HI = dividend % divisor;
-				res_LO = dividend / divisor;
-			}
-			register_write(cpu, REG_LO, res_LO);
-			register_write(cpu, REG_HI, res_HI);
+			else if(divisor == -1 && dividend == (int32_t) 0x80000000) res_32 = dividend;
+			else res_32 = dividend / divisor;
+			register_write(cpu, instr.rd, res_32);
+			break;
+		case DIVU :
+			raw_dividend = (uint32_t) register_read(cpu, instr.rs);
+			raw_divisor = (uint32_t) register_read(cpu, instr.rt);
+			/* Arbitrary choice, MIPS32 documentation :
+			'If the divisor in GPR rt is zero, the arithmetic result value is UNPREDICTABLE' */
+			if(raw_divisor == 0) res_32 = (int32_t) raw_divisor;
+			/* No integer overflow with unsigned instruction */
+			else res_32 = (int32_t) (raw_dividend / raw_divisor);
+			register_write(cpu, instr.rd, res_32);
 			break;
 		case J :
 			cpu->next_PC = instr.target;
@@ -277,24 +270,46 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			res_32 = memory_read_32(cpu, (int) address);
 			register_write(cpu, instr.rt, res_32);
 			break;
-		case MFHI :
-			register_write(cpu, instr.rd, register_read(cpu, REG_HI));
+		case MOD :
+			dividend = register_read(cpu, instr.rs);
+			divisor = register_read(cpu, instr.rt);
+			/* Arbitrary choice, MIPS32 documentation :
+			'If the divisor in GPR rt is zero, the arithmetic result value is UNPREDICTABLE' */
+			if(divisor == 0) res_32 = dividend;
+			/* Used to cover a C edge-case of integer overflow - not MIPS related */
+			else if(divisor == -1 && dividend == (int32_t) 0x80000000) res_32 = 0;
+			else res_32 = dividend % divisor;
+			register_write(cpu, instr.rd, res_32);
 			break;
-		case MFLO :
-			register_write(cpu, instr.rd, register_read(cpu, REG_LO));
+		case MODU :
+			raw_dividend = (uint32_t) register_read(cpu, instr.rs);
+			raw_divisor = (uint32_t) register_read(cpu, instr.rt);
+			/* Arbitrary choice, MIPS32 documentation :
+			'If the divisor in GPR rt is zero, the arithmetic result value is UNPREDICTABLE' */
+			if(raw_divisor == 0) res_32 = (int32_t) raw_dividend;
+			/* No integer overflow with unsigned instruction */
+			else res_32 = (int32_t) (raw_dividend % raw_divisor);
+			register_write(cpu, instr.rd, res_32);
 			break;
-		case MTHI :
-			register_write(cpu, REG_HI, register_read(cpu, instr.rs));
-			break;
-		case MTLO :
-			register_write(cpu, REG_LO, register_read(cpu, instr.rs));
-			break;
-		case MULT :
+		case MUH :
 			res_64 = (int64_t) register_read(cpu, instr.rs) * (int64_t) register_read(cpu, instr.rt);
-			res_LO = (int32_t) (uint32_t) (res_64 & 0xFFFFFFFF);
-			res_HI = (int32_t) (uint32_t) ((res_64 >> 32) & 0xFFFFFFFF);
-			register_write(cpu, REG_HI, res_HI);
-			register_write(cpu, REG_LO, res_LO);
+			res_H = (int32_t) (uint32_t) ((res_64 >> 32) & 0xFFFFFFFF);
+			register_write(cpu, instr.rd, res_H);
+			break;
+		case MUHU :
+			raw_64 = (uint64_t) (uint32_t) register_read(cpu, instr.rs) * (uint64_t) (uint32_t) register_read(cpu, instr.rt);
+			res_H = (int32_t) (uint32_t) ((raw_64 >> 32) & 0xFFFFFFFF);
+			register_write(cpu, instr.rd, res_H);
+			break;
+		case MUL :
+			res_64 = (int64_t) register_read(cpu, instr.rs) * (int64_t) register_read(cpu, instr.rt);
+			res_L = (int32_t) (uint32_t) (res_64 & 0xFFFFFFFF);
+			register_write(cpu, instr.rd, res_L);
+			break;
+		case MULU :
+			raw_64 = (uint64_t) (uint32_t) register_read(cpu, instr.rs) * (uint64_t) (uint32_t) register_read(cpu, instr.rt);
+			res_L = (int32_t) (uint32_t) (raw_64 & 0xFFFFFFFF);
+			register_write(cpu, instr.rd, res_L);
 			break;
 		case NOP :
 			break;

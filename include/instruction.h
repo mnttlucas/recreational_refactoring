@@ -33,13 +33,12 @@
 #define FUNCT_AND    36
 #define FUNCT_CLO    17
 #define FUNCT_CLZ    16
-#define FUNCT_DIV    26
+#define FUNCT_JALR    9
 #define FUNCT_JR      8
-#define FUNCT_MFHI   16
-#define FUNCT_MFLO   18
-#define FUNCT_MTHI   17
-#define FUNCT_MTLO   19
-#define FUNCT_MULT   24
+#define FUNCT_SOP30  24
+#define FUNCT_SOP31  25
+#define FUNCT_SOP32  26
+#define FUNCT_SOP33  27
 #define FUNCT_NOR    39
 #define FUNCT_OR     37
 #define FUNCT_SELEQZ 53
@@ -57,7 +56,6 @@
 #define FUNCT_XOR    38
 
 /* Operation codes */
-#define OPCODE_ADDI     8
 #define OPCODE_ADDIU    9
 #define OPCODE_ANDI    12
 #define OPCODE_AUI     15
@@ -148,6 +146,7 @@ typedef enum
 	CLO,
 	CLZ,
 	DIV,
+	DIVU,
 	J,
 	JAL,
 	JALR,
@@ -159,11 +158,12 @@ typedef enum
 	LH,
 	LHU,
 	LW,
-	MFHI,
-	MFLO,
-	MULT,
-	MTHI,
-	MTLO,
+	MOD,
+	MODU,
+	MUH,
+	MUHU,
+	MUL,
+	MULU,
 	NOP,
 	NOR,
 	OR,
@@ -198,16 +198,16 @@ typedef enum
 	CMD_NOP,
 	OFFSET_16,
 	OFFSET_26,
-	RD,
+	RD, // Previously used by MFHI/MFLO instructions, unused for now, will remove it if no instruction use it
 	RD_RS,
 	RD_RS_RT,
 	RD_RT_RS,
 	RD_RT_SA,
-	RS,
+	RS, // Previously used by MTHI/MTLO instructions, unused for now, will remove it if no instruction use it
 	RS_IMMEDIATE,
 	RS_OFFSET_16,
 	RS_OFFSET_21,
-	RS_RT,
+	RS_RT, // Previously used by DIV/MUL instructions, unused for now, will remove it if no instruction use it
 	RS_RT_OFFSET_16,
 	RT_IMMEDIATE,
 	RT_OFFSET_16,

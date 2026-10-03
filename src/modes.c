@@ -115,8 +115,6 @@ void batch_mode(CPU *cpu, Config *cfg, char *path_in, char *path_out_hex, char *
 	{
 		cpu_dump(cpu, cfg);
 		for(i = 0; i < 32; i++) fprintf(out_regs, "$%d : %d\n", i, register_read(cpu, i));
-		fprintf(out_regs, "HI : %d\n", register_read(cpu, REG_HI));
-		fprintf(out_regs, "LO : %d\n", register_read(cpu, REG_LO));
 	}
 
 	fclose(in);

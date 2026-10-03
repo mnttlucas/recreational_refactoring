@@ -58,7 +58,6 @@ void cpu_dump(CPU *cpu, Config *cfg)
 			printf("$%s%d : %-10d ", DUMP_LINE_SIZE * i + j <= 9 ? "0" : "", DUMP_LINE_SIZE * i + j, register_read(cpu, DUMP_LINE_SIZE * i + j));
 		printf("\n");
 	}
-	printf("                 HI  : %-10d LO  : %-10d\n", register_read(cpu, REG_HI), register_read(cpu, REG_LO));
 
 	printf("\n------------------------------------ Memory status -----------------------------------\n");
 	for(int i = 0; i <= (words_to_show - 1) / DUMP_LINE_SIZE; i++)

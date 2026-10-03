@@ -6,7 +6,6 @@
 static const instruction_desc instruction_table[] =
 {
 	{"ADD", RD_RS_RT, FUNCT_ADD, ADD},
-	{"ADDI", RT_RS_IMMEDIATE, OPCODE_ADDI, ADDI}, // Removed in Release 6
 	{"ADDIU", RT_RS_IMMEDIATE, OPCODE_ADDIU, ADDIU},
 	{"ADDU", RD_RS_RT, FUNCT_ADDU, ADDU},
 	{"AND", RD_RS_RT, FUNCT_AND, AND},
@@ -41,11 +40,12 @@ static const instruction_desc instruction_table[] =
 	{"BNEZC", RS_OFFSET_21, OPCODE_POP76, BNEZC},
 	{"CLO", RD_RS, FUNCT_CLO, CLO}, 
 	{"CLZ", RD_RS, FUNCT_CLZ, CLZ},
-	{"DIV", RS_RT, FUNCT_DIV, DIV}, // Removed in Release 6
+	{"DIV", RD_RS_RT, FUNCT_SOP32, DIV},
+	{"DIVU", RD_RS_RT, FUNCT_SOP33, DIVU},
 	{"EXIT", CMD_EXIT, 0, 0},
 	{"J", TARGET, OPCODE_J, J},
 	{"JAL", TARGET, OPCODE_JAL, JAL},
-	{"JALR", RD_RS, OPCODE_SPECIAL, JALR},
+	{"JALR", RD_RS, FUNCT_JALR, JALR},
 	{"JIALC", RT_OFFSET_16, OPCODE_POP76, JIALC},
 	{"JIC", RT_OFFSET_16, OPCODE_POP66, JIC},
 	{"JR", RS, FUNCT_JR, JR},
@@ -55,11 +55,12 @@ static const instruction_desc instruction_table[] =
 	{"LHU", RT_OFFSET_BASE, OPCODE_LHU, LHU},
 	{"LUI", RT_IMMEDIATE, OPCODE_AUI, AUI},
 	{"LW", RT_OFFSET_BASE, OPCODE_LW, LW},
-	{"MFHI", RD, FUNCT_MFHI, MFHI}, // Removed in Release 6
-	{"MFLO", RD, FUNCT_MFLO, MFLO}, // Removed in Release 6
-	{"MTHI", RS, FUNCT_MTHI, MTHI}, // Removed in Release 6
-	{"MTLO", RS, FUNCT_MTLO, MTLO}, // Removed in Release 6
-	{"MULT", RS_RT, FUNCT_MULT, MULT}, // Removed in Release 6
+	{"MOD", RD_RS_RT, FUNCT_SOP32, MOD},
+	{"MODU", RD_RS_RT, FUNCT_SOP33, MODU},
+	{"MUH", RD_RS_RT, FUNCT_SOP30, MUH},
+	{"MUHU", RD_RS_RT, FUNCT_SOP31, MUHU},
+	{"MUL", RD_RS_RT, FUNCT_SOP30, MUL},
+	{"MULU", RD_RS_RT, FUNCT_SOP31, MULU},
 	{"NOP", CMD_NOP, 0, NOP},
 	{"NOR", RD_RS_RT, FUNCT_NOR, NOR},
 	{"OR", RD_RS_RT, FUNCT_OR, OR},
