@@ -74,6 +74,14 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + instr.offset + 1);
 			}
 			break;
+		case BEQZALC :
+			if(register_read(cpu, instr.rs) == 0)
+			{
+				compact = 1;
+				register_write(cpu, REG_RA, register_read(cpu, REG_PC) + 1);
+				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + instr.offset + 1);
+			}
+			break;
 		case BEQZC :
 			if(register_read(cpu, instr.rs) == 0)
 			{
@@ -99,6 +107,14 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			if(register_read(cpu, instr.rs) >= 0)
 				cpu->next_PC = register_read(cpu, REG_PC) + instr.offset + 1;
 			break;
+		case BGEZALC :
+			if(register_read(cpu, instr.rs) >= 0)
+			{
+				compact = 1;
+				register_write(cpu, REG_RA, register_read(cpu, REG_PC) + 1);
+				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + instr.offset + 1);
+			}
+			break;
 		case BGEZC :
 			if(register_read(cpu, instr.rt) >= 0)
 			{
@@ -110,6 +126,14 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			if(register_read(cpu, instr.rs) > 0)
 				cpu->next_PC = register_read(cpu, REG_PC) + instr.offset + 1;
 			break;
+		case BGTZALC :
+			if(register_read(cpu, instr.rs) > 0)
+			{
+				compact = 1;
+				register_write(cpu, REG_RA, register_read(cpu, REG_PC) + 1);
+				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + instr.offset + 1);
+			}
+			break;
 		case BGTZC :
 			if(register_read(cpu, instr.rt) > 0)
 			{
@@ -120,6 +144,14 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 		case BLEZ :
 			if(register_read(cpu, instr.rs) <= 0)
 				cpu->next_PC = register_read(cpu, REG_PC) + instr.offset + 1;
+			break;
+		case BLEZALC :
+			if(register_read(cpu, instr.rs) <= 0)
+			{
+				compact = 1;
+				register_write(cpu, REG_RA, register_read(cpu, REG_PC) + 1);
+				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + instr.offset + 1);
+			}
 			break;
 		case BLEZC :
 			if(register_read(cpu, instr.rt) <= 0)
@@ -146,6 +178,14 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			if(register_read(cpu, instr.rs) < 0)
 				cpu->next_PC = register_read(cpu, REG_PC) + instr.offset + 1;
 			break;
+		case BLTZALC :
+			if(register_read(cpu, instr.rs) < 0)
+			{
+				compact = 1;
+				register_write(cpu, REG_RA, register_read(cpu, REG_PC) + 1);
+				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + instr.offset + 1);
+			}
+			break;
 		case BLTZC :
 			if(register_read(cpu, instr.rt) < 0)
 			{
@@ -164,8 +204,32 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + instr.offset + 1);
 			}
 			break;
+		case BNEZALC :
+			if(register_read(cpu, instr.rs) != 0)
+			{
+				compact = 1;
+				register_write(cpu, REG_RA, register_read(cpu, REG_PC) + 1);
+				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + instr.offset + 1);
+			}
+			break;
 		case BNEZC :
 			if(register_read(cpu, instr.rs) != 0)
+			{
+				compact = 1;
+				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + instr.offset + 1);
+			}
+			break;
+		case BNVC :
+			res_64 = (int64_t) register_read(cpu, instr.rs) + (int64_t) register_read(cpu, instr.rt);
+			if(res_64 <= INT32_MAX && res_64 >= INT32_MIN)
+			{
+				compact = 1;
+				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + instr.offset + 1);
+			}
+			break;
+		case BOVC :
+			res_64 = (int64_t) register_read(cpu, instr.rs) + (int64_t) register_read(cpu, instr.rt);
+			if(res_64 > INT32_MAX || res_64 < INT32_MIN)
 			{
 				compact = 1;
 				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + instr.offset + 1);
