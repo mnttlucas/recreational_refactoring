@@ -5,6 +5,7 @@
 
 #include "decode.h"
 #include "instruction.h"
+#include "mips_registers.h"
 #include "utils.h"
 
 void build_instruction_bin(instruction_field *arr, size_t field_count, instruction *instr)
@@ -265,8 +266,29 @@ void decode_rd_operand(char *line, instruction *instr)
 void decode_rd_rs_operands(char *line, instruction *instr)
 {
 	char rd[8], rs[8];
-	sscanf(line, " $%7[^,] , $%7s ", rd, rs);
-	instr->rd = register_string_to_int(rd);
+	/* Handling case of JALR having two formats (quote from specification) :
+
+	   Format:	JALR rs (rd = 31 implied)
+				JALR rd, rs
+	 */
+	if(instr->opcode == JALR)
+	{
+		if(strchr(line, ','))
+		{
+			sscanf(line, " $%7[^,] , $%7s ", rd, rs);
+			instr->rd = register_string_to_int(rd);
+		}
+		else
+		{
+			sscanf(line, " $%7s ", rs);
+			instr->rd = REG_RA;
+		}
+	}
+	else
+	{
+		sscanf(line, " $%7[^,] , $%7s ", rd, rs);
+		instr->rd = register_string_to_int(rd);
+	}
 	instr->rs = register_string_to_int(rs);
 }
 

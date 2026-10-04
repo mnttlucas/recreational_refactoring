@@ -48,7 +48,7 @@ static const instruction_desc instruction_table[] =
 	{"JALR", RD_RS, FUNCT_JALR, JALR},
 	{"JIALC", RT_OFFSET_16, OPCODE_POP76, JIALC},
 	{"JIC", RT_OFFSET_16, OPCODE_POP66, JIC},
-	{"JR", RS, FUNCT_JR, JR},
+	{"JR", RS, FUNCT_JALR, JALR},
 	{"LB", RT_OFFSET_BASE, OPCODE_LB, LB},
 	{"LBU", RT_OFFSET_BASE, OPCODE_LBU, LBU},
 	{"LH", RT_OFFSET_BASE, OPCODE_LH, LH},

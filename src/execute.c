@@ -242,9 +242,6 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			compact = 1;
 			register_write(cpu, REG_PC, register_read(cpu, instr.rt) + instr.offset);
 			break;
-		case JR :
-			cpu->next_PC = register_read(cpu, instr.rs);
-			break;
 		case LB :
 			address = register_read(cpu, instr.base) + instr.offset;
 			res_32 = (int32_t) memory_read_8(cpu, (int) address);
