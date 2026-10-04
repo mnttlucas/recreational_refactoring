@@ -35,6 +35,18 @@ void finalize_signed_value(int32_t *value, instruction *instr, uint8_t start_bit
 	}
 }
 
+void build_cmd_instruction(instruction *instr, int funct_code, int op_code, int rs_value, int rt_value, int rd_value, int shamt_value)
+{
+	instruction_field fields[] = {
+		FIELD(OPCODE_START, OPCODE_END, op_code),
+		FIELD(RS_START, RS_END, rs_value),
+		FIELD(RT_START, RT_END, rt_value),
+		FIELD(RD_START, RD_END, rd_value),
+		FIELD(SHAMT_START, SHAMT_END, shamt_value),
+		FIELD(FUNCT_START, FUNCT_END, funct_code)};
+	build_instruction_bin(fields, ARR_SIZE(fields), instr);
+}
+
 void build_offset_16_instruction(instruction *instr, int op_code)
 {
 	int32_t rt_value = 0;
@@ -69,13 +81,13 @@ void build_rd_instruction(instruction *instr, int funct_code)
 
 void build_rd_rs_instruction(instruction *instr, int funct_code)
 {
-	int32_t sa_value = 0;
-	if(instr->opcode == CLO || instr->opcode == CLZ) sa_value = CLO_CLZ_SA;
+	int32_t shamt_value = 0;
+	if(instr->opcode == CLO || instr->opcode == CLZ) shamt_value = CLO_CLZ_SA;
 	instruction_field fields[] = {
 		FIELD(OPCODE_START, OPCODE_END, OPCODE_SPECIAL),
 		FIELD(RS_START, RS_END, instr->rs),
 		FIELD(RD_START, RD_END, instr->rd),
-		FIELD(SHAMT_START, SHAMT_END, sa_value),
+		FIELD(SHAMT_START, SHAMT_END, shamt_value),
 		FIELD(FUNCT_START, FUNCT_END, funct_code)};
 	build_instruction_bin(fields, ARR_SIZE(fields), instr);
 }
@@ -446,8 +458,12 @@ instruction decode_instruction(int mode, FILE *fichier)
 			case CMD_EXIT :
 				instr.exit = 1;
 				break;
+			case CMD_NAL :
+				build_cmd_instruction(&instr, 0, OPCODE_REGIMM, 0, NAL_RT, 0, 0);
+				snprintf(instr.to_string, sizeof(instr.to_string), "NAL -> 0x%s\n", instr.instr_hex);
+				break;
 			case CMD_NOP :
-				bin_arr_to_hex_arr(instr.instr_bin, instr.instr_hex);
+				build_cmd_instruction(&instr, FUNCT_SLL, OPCODE_SPECIAL, 0, 0, 0, 0);
 				snprintf(instr.to_string, sizeof(instr.to_string), "NOP -> 0x%s\n", instr.instr_hex);
 				break;
 			case OFFSET_16 :

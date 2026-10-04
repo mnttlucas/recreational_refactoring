@@ -111,6 +111,7 @@ When values are zero, it will be implicit */
 #define MOD_MODU_SA    3
 #define MUH_MUHU_SA    3
 #define MUL_MULU_SA    2
+#define NAL_RT        16
 
 typedef enum
 {
@@ -168,6 +169,7 @@ typedef enum
 	MUHU,
 	MUL,
 	MULU,
+	NAL,
 	NOP,
 	NOR,
 	OR,
@@ -199,6 +201,7 @@ typedef enum
 typedef enum
 {
 	CMD_EXIT,
+	CMD_NAL,
 	CMD_NOP,
 	OFFSET_16,
 	OFFSET_26,

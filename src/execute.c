@@ -308,6 +308,9 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			res_L = (int32_t) (uint32_t) (raw_64 & 0xFFFFFFFF);
 			register_write(cpu, instr.rd, res_L);
 			break;
+		case NAL :
+			register_write(cpu, REG_RA, register_read(cpu, REG_PC) + 2);
+			break;
 		case NOP :
 			break;
 		case NOR :
