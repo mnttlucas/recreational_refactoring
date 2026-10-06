@@ -114,6 +114,8 @@ When values are zero, it will be implicit */
 #define MUH_MUHU_SA    3
 #define MUL_MULU_SA    2
 #define NAL_RT        16
+#define SEB_SA        16
+#define SEH_SA        24
 
 typedef enum
 {
@@ -188,6 +190,8 @@ typedef enum
 	ROTR,
 	ROTRV,
 	SB,
+	SEB,
+	SEH,
 	SELEQZ,
 	SELNEZ,
 	SH,

@@ -111,10 +111,14 @@ void build_rd_rs_rt_instruction(instruction *instr, int funct_code)
 
 void build_rd_rt_instruction(instruction *instr, int funct_code)
 {
+	uint8_t shamt_value = 0;
+	if(instr->opcode == SEB) shamt_value = SEB_SA;
+	else if(instr->opcode == SEH) shamt_value = SEH_SA;
 	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, OPCODE_SPECIAL3), // annoying - see TODO
+		FIELD(OPCODE_START, OPCODE_END, OPCODE_SPECIAL3),
 		FIELD(RD_START, RD_END, instr->rd),
 		FIELD(RT_START, RT_END, instr->rt),
+		FIELD(SHAMT_START, SHAMT_END, shamt_value),
 		FIELD(FUNCT_START, FUNCT_END, funct_code)};
 	build_instruction_bin(fields, ARR_SIZE(fields), instr);
 }
