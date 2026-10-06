@@ -109,6 +109,16 @@ void build_rd_rs_rt_instruction(instruction *instr, int funct_code)
 	build_instruction_bin(fields, ARR_SIZE(fields), instr);
 }
 
+void build_rd_rt_instruction(instruction *instr, int funct_code)
+{
+	instruction_field fields[] = {
+		FIELD(OPCODE_START, OPCODE_END, OPCODE_SPECIAL3), // annoying - see TODO
+		FIELD(RD_START, RD_END, instr->rd),
+		FIELD(RT_START, RT_END, instr->rt),
+		FIELD(FUNCT_START, FUNCT_END, funct_code)};
+	build_instruction_bin(fields, ARR_SIZE(fields), instr);
+}
+
 void build_rd_rt_rs_instruction(instruction *instr, int funct_code)
 {
 	instruction_field fields[] = {
@@ -313,6 +323,14 @@ void decode_rd_rs_rt_operands(char *line, instruction *instr)
 	instr->rt = register_string_to_int(rt);
 }
 
+void decode_rd_rt_operands(char *line, instruction *instr)
+{
+	char rd[8], rt[8];
+	sscanf(line, " $%7[^,] , $%7s ", rd, rt);
+	instr->rd = register_string_to_int(rd);
+	instr->rt = register_string_to_int(rt);
+}
+
 void decode_rd_rt_rs_operands(char *line, instruction *instr)
 {
 	char rd[8], rs[8], rt[8];
@@ -490,6 +508,11 @@ instruction decode_instruction(int mode, FILE *fichier)
 				decode_rd_rs_rt_operands(ptr, &instr);
 				build_rd_rs_rt_instruction(&instr, id->code);
 				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, $%d -> 0x%s\n", id->mnemonic, instr.rd, instr.rs, instr.rt, instr.instr_hex);
+				break;
+			case RD_RT :
+				decode_rd_rt_operands(ptr, &instr);
+				build_rd_rt_instruction(&instr, id->code);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d -> 0x%s\n", id->mnemonic, instr.rd, instr.rt, instr.instr_hex);
 				break;
 			case RD_RT_RS :
 				decode_rd_rt_rs_operands(ptr, &instr);

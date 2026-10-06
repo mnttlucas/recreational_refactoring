@@ -12,9 +12,9 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 {
 	int32_t address, dividend, divisor, pending_PC, res_32, res_H, res_L;
 	int64_t res_64;
-	uint32_t raw_32, raw_dividend, raw_divisor;
+	uint32_t raw_32, raw_dividend, raw_divisor, reg_32;
 	uint64_t raw_64;
-	uint8_t compact = 0, count, shift_8;
+	uint8_t compact = 0, count, current_byte, shift_8, swapped_8;
 
 	pending_PC = cpu->next_PC;
 	cpu->next_PC = -1;
@@ -140,6 +140,22 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 				compact = 1;
 				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + instr.offset + 1);
 			}
+			break;
+		case BITSWAP :
+			raw_32 = 0;
+			reg_32 = (uint32_t) register_read(cpu, instr.rt);
+			for(uint8_t byte = 0; byte < 4; byte++)
+			{
+				current_byte = (uint8_t) (reg_32 >> (byte * 8)) & 0xFF;
+				swapped_8 = 0;
+				for(uint8_t bit = 0; bit < 8; bit++)
+				{
+					swapped_8 = (swapped_8 << 1) | (current_byte & 0x01);
+					current_byte >>= 1;
+				}
+				raw_32 |= (uint32_t) swapped_8 << (byte * 8);
+			}
+			register_write(cpu, instr.rd, (int32_t) raw_32);
 			break;
 		case BLEZ :
 			if(register_read(cpu, instr.rs) <= 0)

@@ -31,6 +31,7 @@
 #define FUNCT_ADD    32
 #define FUNCT_ADDU   33
 #define FUNCT_AND    36
+#define FUNCT_BSHFL  32
 #define FUNCT_CLO    17
 #define FUNCT_CLZ    16
 #define FUNCT_JALR    9
@@ -56,40 +57,41 @@
 #define FUNCT_XOR    38
 
 /* Operation codes */
-#define OPCODE_ADDIU    9
-#define OPCODE_ANDI    12
-#define OPCODE_AUI     15
-#define OPCODE_BALC    58
-#define OPCODE_BC      50
-#define OPCODE_BEQ      4
-#define OPCODE_BGTZ     7
-#define OPCODE_BLEZ     6
-#define OPCODE_BNE      5
-#define OPCODE_J        2
-#define OPCODE_JAL      3
-#define OPCODE_LB      32
-#define OPCODE_LBU     36
-#define OPCODE_LH      33
-#define OPCODE_LHU     37
-#define OPCODE_LW      35
-#define OPCODE_ORI     13
-#define OPCODE_PCREL   59
-#define OPCODE_POP06    6
-#define OPCODE_POP07    7
-#define OPCODE_POP10    8
-#define OPCODE_POP26   22
-#define OPCODE_POP27   23
-#define OPCODE_POP30   24
-#define OPCODE_POP66   54
-#define OPCODE_POP76   62
-#define OPCODE_REGIMM   1
-#define OPCODE_SB      40
-#define OPCODE_SH      41
-#define OPCODE_SLTI    10
-#define OPCODE_SLTIU   11
-#define OPCODE_SPECIAL  0
-#define OPCODE_SW      43
-#define OPCODE_XORI    14
+#define OPCODE_ADDIU      9
+#define OPCODE_ANDI      12
+#define OPCODE_AUI       15
+#define OPCODE_BALC      58
+#define OPCODE_BC        50
+#define OPCODE_BEQ        4
+#define OPCODE_BGTZ       7
+#define OPCODE_BLEZ       6
+#define OPCODE_BNE        5
+#define OPCODE_J          2
+#define OPCODE_JAL        3
+#define OPCODE_LB        32
+#define OPCODE_LBU       36
+#define OPCODE_LH        33
+#define OPCODE_LHU       37
+#define OPCODE_LW        35
+#define OPCODE_ORI       13
+#define OPCODE_PCREL     59
+#define OPCODE_POP06      6
+#define OPCODE_POP07      7
+#define OPCODE_POP10      8
+#define OPCODE_POP26     22
+#define OPCODE_POP27     23
+#define OPCODE_POP30     24
+#define OPCODE_POP66     54
+#define OPCODE_POP76     62
+#define OPCODE_REGIMM     1
+#define OPCODE_SB        40
+#define OPCODE_SH        41
+#define OPCODE_SLTI      10
+#define OPCODE_SLTIU     11
+#define OPCODE_SPECIAL    0
+#define OPCODE_SPECIAL3  31
+#define OPCODE_SW        43
+#define OPCODE_XORI      14
 
 /* Offset sizes */
 #define OFFSET_16_SIZE   16
@@ -142,6 +144,7 @@ typedef enum
 	BGTZ,
 	BGTZALC,
 	BGTZC,
+	BITSWAP,
 	BLEZ,
 	BLEZALC,
 	BLEZC,
@@ -215,6 +218,7 @@ typedef enum
 	OFFSET_26,
 	RD, // Previously used by MFHI/MFLO instructions, unused for now, will remove it if no instruction use it
 	RD_RS,
+	RD_RT,
 	RD_RS_RT,
 	RD_RT_RS,
 	RD_RT_SA,
