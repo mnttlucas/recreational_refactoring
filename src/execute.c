@@ -12,7 +12,6 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 {
 	int32_t address, dividend, divisor, pending_PC, res_32, res_H, res_L;
 	int64_t res_64;
-	uint16_t current_halfword;
 	uint32_t raw_32, raw_dividend, raw_divisor, reg_32;
 	uint64_t raw_64;
 	uint8_t compact = 0, count, current_byte, shift_8, swapped_8;
@@ -422,13 +421,11 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			memory_write_8(cpu, address, (int8_t) (uint8_t) register_read(cpu, instr.rt));
 			break;
 		case SEB :
-			current_byte = (uint8_t) register_read(cpu, instr.rt) & 0xFF;
-			res_32 = sign_extend((int32_t) current_byte, 8);
+			res_32 = sign_extend(register_read(cpu, instr.rt), 8);
 			register_write(cpu, instr.rd, res_32);
 			break;
 		case SEH :
-			current_halfword = (uint16_t) register_read(cpu, instr.rt) & 0xFF;
-			res_32 = sign_extend((int32_t) current_halfword, 16);
+			res_32 = sign_extend(register_read(cpu, instr.rt), 16);
 			register_write(cpu, instr.rd, res_32);
 			break;
 		case SELEQZ :
