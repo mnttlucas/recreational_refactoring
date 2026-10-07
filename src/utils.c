@@ -75,7 +75,7 @@ void cpu_dump(CPU *cpu, Config *cfg)
 
 void increment_pc(CPU *cpu)
 {
-	register_write(cpu, REG_PC, register_read(cpu, REG_PC) + 1);
+	register_write(cpu, REG_PC, register_read(cpu, REG_PC) + 4);
 }
 
 int is_negative(char *str)

@@ -108,7 +108,7 @@ void batch_mode(CPU *cpu, Config *cfg, char *path_in, char *path_out_hex, char *
 		if(cfg->step) clear_output();
 		execute_instruction(cpu, cfg, instructions_arr[i]);
 		if(cfg->step) cpu_dump(cpu, cfg);
-		i = register_read(cpu, REG_PC);
+		i = register_read(cpu, REG_PC) / 4;
 	}
 
 	if(!cfg->step)
