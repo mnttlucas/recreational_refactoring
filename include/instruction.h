@@ -101,12 +101,14 @@
 #define OFFSET_26_SIZE   26
 
 /* Special bit locations */
+#define LWPC_BIT    12
 #define ROTR_BIT    10
 #define ROTRV_BIT   25
 
 /* Special register values for some operations 
 This exists for clarity and to match MIPS32 R6 specification
 When values are zero, it will be implicit */
+#define ALUIPC_RT     31
 #define AUIPC_RT      30
 #define BAL_RT        17
 #define BGEZ_RT        1

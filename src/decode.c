@@ -162,6 +162,7 @@ void build_rs_immediate_instruction(instruction *instr, int op_code)
 {
 	int32_t imm_value = instr->immediate, rt_value = 0;
 	if(instr->opcode == AUIPC) rt_value = AUIPC_RT;
+	else if(instr->opcode == ALUIPC) rt_value = ALUIPC_RT;
 	instruction_field fields[] = {
 		FIELD(OPCODE_START, OPCODE_END, op_code),
 		FIELD(RS_START, RS_END, instr->rs),
@@ -193,6 +194,8 @@ void build_rs_offset_19_instruction(instruction *instr, int op_code)
 		FIELD(RS_START, RS_END, instr->rs),
 		FIELD(OFFSET_19_START, OFFSET_END, instr->offset)};
 	build_instruction_bin(fields, ARR_SIZE(fields), instr);
+	if(instr->opcode == LWPC) instr->instr_bin[LWPC_BIT] = 1;
+	bin_arr_to_hex_arr(instr->instr_bin, instr->instr_hex);
 	finalize_signed_value(&instr->offset, instr, OFFSET_19_START, OFFSET_END);
 	instr->offset = sign_extend(instr->offset, OFFSET_19_SIZE);
 }
