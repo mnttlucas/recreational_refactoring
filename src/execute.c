@@ -31,11 +31,6 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			register_write(cpu, instr.rt, res_32);
 			break;
 		case ADDIUPC :
-			/* 
-			TODO : immediate should be a 19 bits value
-			Right now, each immediate slot was on 16 bits so immediate was a int16_t in the instruction struct
-			Will change it, maybe make it like offset (IMMEDIATE_16/19)
-			*/
 			res_32 = (int32_t) ((uint32_t) register_read(cpu, REG_PC) + (uint32_t) instr.immediate);
 			register_write(cpu, instr.rs, res_32);
 			break;
@@ -44,11 +39,6 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			register_write(cpu, instr.rd, res_32);
 			break;
 		case ALUIPC :
-			/*
-			TODO : PC is an index for now
-			So this instruction is correct if we assume PC is an address,
-			but right now this won't work as expected
-			*/
 			res_32 = ~0xFFFF & (register_read(cpu, REG_PC) + instr.immediate << 16);
 			register_write(cpu, instr.rs, res_32);
 			break;
@@ -366,11 +356,6 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			register_write(cpu, instr.rt, res_32);
 			break;
 		case LWPC :
-			/*
-			TODO : PC is an index for now
-			So this instruction is correct if we assume PC is an address,
-			but right now this won't work as expected
-			*/
 			address = register_read(cpu, REG_PC) + instr.offset;
 			res_32 = memory_read_32(cpu, (int) address);
 			register_write(cpu, instr.rs, res_32);
