@@ -27,7 +27,7 @@ void interactive_mode(CPU *cpu, Config *cfg)
 
 void batch_mode(CPU *cpu, Config *cfg, char *path_in, char *path_out_hex, char *path_out_regs)
 {
-	int i = 0, n;
+	uint32_t i = 0, n;
 	unsigned long capacity = 64;
 	instruction *instructions_arr = malloc(capacity * sizeof(instruction));
 	FILE *in, *out_hex, *out_regs;
@@ -75,7 +75,7 @@ void batch_mode(CPU *cpu, Config *cfg, char *path_in, char *path_out_hex, char *
 	printf("\n--- Instruction decode ---\n");
 	while(1)
 	{
-		if(i >= (int) capacity)
+		if(i >= capacity)
 		{
 			capacity *= 2;
 			instruction *tmp = realloc(instructions_arr, capacity * sizeof(instruction));
@@ -108,13 +108,13 @@ void batch_mode(CPU *cpu, Config *cfg, char *path_in, char *path_out_hex, char *
 		if(cfg->step) clear_output();
 		execute_instruction(cpu, cfg, instructions_arr[i]);
 		if(cfg->step) cpu_dump(cpu, cfg);
-		i = register_read(cpu, REG_PC) / 4;
+		i = cpu->PC / 4;
 	}
 
 	if(!cfg->step)
 	{
 		cpu_dump(cpu, cfg);
-		for(i = 0; i < 32; i++) fprintf(out_regs, "$%d : %d\n", i, register_read(cpu, i));
+		for(i = 0; i < REGISTER_COUNT; i++) fprintf(out_regs, "$%d : %d\n", i, register_read(cpu, (int) i));
 	}
 
 	fclose(in);

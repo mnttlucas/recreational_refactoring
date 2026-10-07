@@ -63,7 +63,7 @@ void cpu_dump(CPU *cpu, Config *cfg)
 	for(int i = 0; i <= (words_to_show - 1) / DUMP_LINE_SIZE; i++)
 	{
 		for(int j = 0; (i * DUMP_LINE_SIZE + j) < words_to_show && j < DUMP_LINE_SIZE; j++)
-			printf("@0000 %04x : %-10d ", (DUMP_LINE_SIZE * i + j) * WORD_SIZE, memory_read_32(cpu, (DUMP_LINE_SIZE * i + j) * WORD_SIZE));
+			printf("@0000 %04x : %-10d ", (DUMP_LINE_SIZE * i + j) * WORD_SIZE, memory_read_32(cpu, (uint32_t) (DUMP_LINE_SIZE * i + j) * WORD_SIZE));
 		printf("\n");
 	}
 
@@ -71,11 +71,6 @@ void cpu_dump(CPU *cpu, Config *cfg)
 		printf("\t\t\t[...] (%d other words not displayed)\n", MEMORY_SIZE / WORD_SIZE - words_to_show);
 
 	if(cfg->step) wait_for_enter();
-}
-
-void increment_pc(CPU *cpu)
-{
-	register_write(cpu, REG_PC, register_read(cpu, REG_PC) + 4);
 }
 
 int is_negative(char *str)

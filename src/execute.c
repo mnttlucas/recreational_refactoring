@@ -10,511 +10,501 @@
 
 void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 {
-	int32_t address, dividend, divisor, pending_PC, res_32, res_H, res_L;
-	int64_t res_64;
-	uint32_t raw_32, raw_dividend, raw_divisor, reg_32;
-	uint64_t raw_64;
-	uint8_t compact = 0, count, current_byte, shift_8, swapped_8;
+	int32_t dividend, divisor, i32;
+	int64_t i64;
+	uint16_t u16;
+	uint32_t address, pending_PC, raw_dividend, raw_divisor, u32;
+	uint64_t u64;
+	uint8_t compact = 0, u8;
 
 	pending_PC = cpu->next_PC;
-	cpu->next_PC = -1;
+	cpu->next_PC = INVALID_PC;
 	
 	switch(instr.opcode)
 	{
 		case ADD :
-			res_64 = (int64_t) register_read(cpu, instr.rs) + (int64_t) register_read(cpu, instr.rt);
-			if(res_64 > INT32_MAX || res_64 < INT32_MIN) fprintf(stderr, "[!] Exception : Integer Overflow\n");
-			else register_write(cpu, instr.rd, (int32_t) res_64);
+			i64 = (int64_t) (int32_t) register_read(cpu, instr.rs) + (int64_t) (int32_t) register_read(cpu, instr.rt);
+			if(i64 > INT32_MAX || i64 < INT32_MIN) fprintf(stderr, "[!] Exception : Integer Overflow\n");
+			else register_write(cpu, instr.rd, (uint32_t) i64);
 			break;
 		case ADDIU :
-			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rs) + (uint32_t) instr.immediate);
-			register_write(cpu, instr.rt, res_32);
+			u32 = register_read(cpu, instr.rs) + (uint32_t) instr.immediate;
+			register_write(cpu, instr.rt, u32);
 			break;
 		case ADDIUPC :
-			res_32 = (int32_t) ((uint32_t) register_read(cpu, REG_PC) + (uint32_t) instr.immediate);
-			register_write(cpu, instr.rs, res_32);
+			u32 = cpu->PC + (uint32_t) instr.immediate;
+			register_write(cpu, instr.rs, u32);
 			break;
 		case ADDU :
-			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rs) + (uint32_t) register_read(cpu, instr.rt));
-			register_write(cpu, instr.rd, res_32);
+			u32 = register_read(cpu, instr.rs) + register_read(cpu, instr.rt);
+			register_write(cpu, instr.rd, u32);
 			break;
 		case ALUIPC :
-			res_32 = ~0xFFFF & (register_read(cpu, REG_PC) + instr.immediate << 16);
-			register_write(cpu, instr.rs, res_32);
+			u32 = ~0xFFFFu & (cpu->PC + ((uint32_t) instr.immediate << 16));
+			register_write(cpu, instr.rs, u32);
 			break;
 		case AND :
-			res_32 = register_read(cpu, instr.rs) & register_read(cpu, instr.rt);
-			register_write(cpu, instr.rd, res_32);
+			u32 = register_read(cpu, instr.rs) & register_read(cpu, instr.rt);
+			register_write(cpu, instr.rd, u32);
 			break;
 		case ANDI :
-			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rs) & ((uint32_t) instr.immediate & 0xFFFFu));
-			register_write(cpu, instr.rt, res_32);
+			u32 = register_read(cpu, instr.rs) & ((uint32_t) instr.immediate & 0xFFFF);
+			register_write(cpu, instr.rt, u32);
 			break;
 		case AUI :
-			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rs) + ((uint32_t) instr.immediate << 16));
-			register_write(cpu, instr.rt, res_32);
+			u32 = register_read(cpu, instr.rs) + ((uint32_t) instr.immediate << 16);
+			register_write(cpu, instr.rt, u32);
 			break;
 		case AUIPC :
-			res_32 = (int32_t) ((uint32_t) register_read(cpu, REG_PC) + ((uint32_t) instr.immediate << 16));
-			register_write(cpu, instr.rs, res_32);
+			u32 = cpu->PC + ((uint32_t) instr.immediate << 16);
+			register_write(cpu, instr.rs, u32);
 			break;
 		case BAL :
-			register_write(cpu, REG_RA, register_read(cpu, REG_PC) + 8);
-			cpu->next_PC = register_read(cpu, REG_PC) + (instr.offset << 2) + 4;
+			register_write(cpu, REG_RA, cpu->PC + 8);
+			cpu->next_PC = cpu->PC + ((uint32_t) instr.offset << 2) + 4;
 			break;
 		case BALC :
 			compact = 1;
-			register_write(cpu, REG_RA, register_read(cpu, REG_PC) + 4);
-			register_write(cpu, REG_PC, register_read(cpu, REG_PC) + (instr.offset << 2) + 4);
+			register_write(cpu, REG_RA, cpu->PC + 4);
+			cpu->PC += ((uint32_t) instr.offset << 2) + 4;
 			break;
 		case BC :
 			compact = 1;
-			register_write(cpu, REG_PC, register_read(cpu, REG_PC) + (instr.offset << 2) + 4);
+			cpu->PC += ((uint32_t) instr.offset << 2) + 4;
 			break;
 		case BEQ :
 			if(register_read(cpu, instr.rs) == register_read(cpu, instr.rt))
-				cpu->next_PC = register_read(cpu, REG_PC) + (instr.offset << 2) + 4;
+				cpu->next_PC = cpu->PC + ((uint32_t) instr.offset << 2) + 4;
 			break;
 		case BEQC :
 			if(register_read(cpu, instr.rs) == register_read(cpu, instr.rt))
 			{
 				compact = 1;
-				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + (instr.offset << 2) + 4);
+				cpu->PC += ((uint32_t) instr.offset << 2) + 4;
 			}
 			break;
 		case BEQZALC :
 			if(register_read(cpu, instr.rt) == 0)
 			{
 				compact = 1;
-				register_write(cpu, REG_RA, register_read(cpu, REG_PC) + 4);
-				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + (instr.offset << 2) + 4);
+				register_write(cpu, REG_RA, cpu->PC + 4);
+				cpu->PC += ((uint32_t) instr.offset << 2) + 4;
 			}
 			break;
 		case BEQZC :
 			if(register_read(cpu, instr.rs) == 0)
 			{
 				compact = 1;
-				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + (instr.offset << 2) + 4);
+				cpu->PC += ((uint32_t) instr.offset << 2) + 4;
 			}
 			break;
 		case BGEC :
-			if(register_read(cpu, instr.rs) >= register_read(cpu, instr.rt))
+			if((int32_t) register_read(cpu, instr.rs) >= (int32_t) register_read(cpu, instr.rt))
 			{
 				compact = 1;
-				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + (instr.offset << 2) + 4);
+				cpu->PC += ((uint32_t) instr.offset << 2) + 4;
 			}
 			break;
 		case BGEUC :
-			if((uint32_t) register_read(cpu, instr.rs) >= (uint32_t) register_read(cpu, instr.rt))
+			if(register_read(cpu, instr.rs) >= register_read(cpu, instr.rt))
 			{
 				compact = 1;
-				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + (instr.offset << 2) + 4);
+				cpu->PC += ((uint32_t) instr.offset << 2) + 4;
 			}
 			break;
 		case BGEZ :
-			if(register_read(cpu, instr.rs) >= 0)
-				cpu->next_PC = register_read(cpu, REG_PC) + (instr.offset << 2) + 4;
+			if((int32_t) register_read(cpu, instr.rs) >= 0)
+				cpu->next_PC = cpu->PC + ((uint32_t) instr.offset << 2) + 4;
 			break;
 		case BGEZALC :
-			if(register_read(cpu, instr.rt) >= 0)
+			if((int32_t) register_read(cpu, instr.rt) >= 0)
 			{
 				compact = 1;
-				register_write(cpu, REG_RA, register_read(cpu, REG_PC) + 4);
-				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + (instr.offset << 2) + 4);
+				register_write(cpu, REG_RA, cpu->PC + 4);
+				cpu->PC += ((uint32_t) instr.offset << 2) + 4;
 			}
 			break;
 		case BGEZC :
-			if(register_read(cpu, instr.rt) >= 0)
+			if((int32_t) register_read(cpu, instr.rt) >= 0)
 			{
 				compact = 1;
-				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + (instr.offset << 2) + 4);
+				cpu->PC += ((uint32_t) instr.offset << 2) + 4;
 			}
 			break;
 		case BGTZ :
-			if(register_read(cpu, instr.rs) > 0)
-				cpu->next_PC = register_read(cpu, REG_PC) + (instr.offset << 2) + 4;
+			if((int32_t) register_read(cpu, instr.rs) > 0)
+				cpu->next_PC = cpu->PC + ((uint32_t) instr.offset << 2) + 4;
 			break;
 		case BGTZALC :
-			if(register_read(cpu, instr.rt) > 0)
+			if((int32_t) register_read(cpu, instr.rt) > 0)
 			{
 				compact = 1;
-				register_write(cpu, REG_RA, register_read(cpu, REG_PC) + 4);
-				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + (instr.offset << 2) + 4);
+				register_write(cpu, REG_RA, cpu->PC + 4);
+				cpu->PC += ((uint32_t) instr.offset << 2) + 4;
 			}
 			break;
 		case BGTZC :
-			if(register_read(cpu, instr.rt) > 0)
+			if((int32_t) register_read(cpu, instr.rt) > 0)
 			{
 				compact = 1;
-				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + (instr.offset << 2) + 4);
+				cpu->PC += ((uint32_t) instr.offset << 2) + 4;
 			}
 			break;
 		case BITSWAP :
-			raw_32 = 0;
-			reg_32 = (uint32_t) register_read(cpu, instr.rt);
-			for(uint8_t byte = 0; byte < 4; byte++)
-			{
-				current_byte = (uint8_t) (reg_32 >> (byte * 8)) & 0xFF;
-				swapped_8 = 0;
-				for(uint8_t bit = 0; bit < 8; bit++)
-				{
-					swapped_8 = (uint8_t) ((swapped_8 << 1) | (current_byte & 0x01));
-					current_byte >>= 1;
-				}
-				raw_32 |= (uint32_t) swapped_8 << (byte * 8);
-			}
-			register_write(cpu, instr.rd, (int32_t) raw_32);
+			/* Optimized algorithm I thought was interesting */
+			u32 = register_read(cpu, instr.rt);
+			u32 = ((u32 >> 1) & 0x55555555) | ((u32 & 0x55555555) << 1);
+			u32 = ((u32 >> 2) & 0x33333333) | ((u32 & 0x33333333) << 2);
+			u32 = ((u32 >> 4) & 0x0F0F0F0F) | ((u32 & 0x0F0F0F0F) << 4);
+			register_write(cpu, instr.rd, u32);
 			break;
 		case BLEZ :
-			if(register_read(cpu, instr.rs) <= 0)
-				cpu->next_PC = register_read(cpu, REG_PC) + (instr.offset << 2) + 4;
+			if((int32_t) register_read(cpu, instr.rs) <= 0)
+				cpu->next_PC = cpu->PC + ((uint32_t) instr.offset << 2) + 4;
 			break;
 		case BLEZALC :
-			if(register_read(cpu, instr.rt) <= 0)
+			if((int32_t) register_read(cpu, instr.rt) <= 0)
 			{
 				compact = 1;
-				register_write(cpu, REG_RA, register_read(cpu, REG_PC) + 4);
-				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + (instr.offset << 2) + 4);
+				register_write(cpu, REG_RA, cpu->PC + 4);
+				cpu->PC += ((uint32_t) instr.offset << 2) + 4;
 			}
 			break;
 		case BLEZC :
-			if(register_read(cpu, instr.rt) <= 0)
+			if((int32_t) register_read(cpu, instr.rt) <= 0)
 			{
 				compact = 1;
-				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + (instr.offset << 2) + 4);
+				cpu->PC += ((uint32_t) instr.offset << 2) + 4;
 			}
 			break;
 		case BLTC :
-			if(register_read(cpu, instr.rs) < register_read(cpu, instr.rt))
+			if((int32_t) register_read(cpu, instr.rs) < (int32_t) register_read(cpu, instr.rt))
 			{
 				compact = 1;
-				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + (instr.offset << 2) + 4);
+				cpu->PC += ((uint32_t) instr.offset << 2) + 4;
 			}
 			break;
 		case BLTUC :
-			if((uint32_t) register_read(cpu, instr.rs) < (uint32_t) register_read(cpu, instr.rt))
+			if(register_read(cpu, instr.rs) < register_read(cpu, instr.rt))
 			{
 				compact = 1;
-				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + (instr.offset << 2) + 4);
+				cpu->PC += ((uint32_t) instr.offset << 2) + 4;
 			}
 			break;
 		case BLTZ :
-			if(register_read(cpu, instr.rs) < 0)
-				cpu->next_PC = register_read(cpu, REG_PC) + (instr.offset << 2) + 4;
+			if((int32_t) register_read(cpu, instr.rs) < 0)
+				cpu->next_PC = cpu->PC + ((uint32_t) instr.offset << 2) + 4;
 			break;
 		case BLTZALC :
-			if(register_read(cpu, instr.rt) < 0)
+			if((int32_t) register_read(cpu, instr.rt) < 0)
 			{
 				compact = 1;
-				register_write(cpu, REG_RA, register_read(cpu, REG_PC) + 4);
-				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + (instr.offset << 2) + 4);
+				register_write(cpu, REG_RA, cpu->PC + 4);
+				cpu->PC += ((uint32_t) instr.offset << 2) + 4;
 			}
 			break;
 		case BLTZC :
-			if(register_read(cpu, instr.rt) < 0)
+			if((int32_t) register_read(cpu, instr.rt) < 0)
 			{
 				compact = 1;
-				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + (instr.offset << 2) + 4);
+				cpu->PC += ((uint32_t) instr.offset << 2) + 4;
 			}
 			break;
 		case BNE :
 			if(register_read(cpu, instr.rs) != register_read(cpu, instr.rt))
-				cpu->next_PC = register_read(cpu, REG_PC) + (instr.offset << 2) + 4;
+				cpu->next_PC = cpu->PC + ((uint32_t) instr.offset << 2) + 4;
 			break;
 		case BNEC :
 			if(register_read(cpu, instr.rs) != register_read(cpu, instr.rt))
 			{
 				compact = 1;
-				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + (instr.offset << 2) + 4);
+				cpu->PC += ((uint32_t) instr.offset << 2) + 4;
 			}
 			break;
 		case BNEZALC :
-			if(register_read(cpu, instr.rt) != 0)
+			if((int32_t) register_read(cpu, instr.rt) != 0)
 			{
 				compact = 1;
-				register_write(cpu, REG_RA, register_read(cpu, REG_PC) + 4);
-				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + (instr.offset << 2) + 4);
+				register_write(cpu, REG_RA, cpu->PC + 4);
+				cpu->PC += ((uint32_t) instr.offset << 2) + 4;
 			}
 			break;
 		case BNEZC :
-			if(register_read(cpu, instr.rs) != 0)
+			if((int32_t) register_read(cpu, instr.rs) != 0)
 			{
 				compact = 1;
-				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + (instr.offset << 2) + 4);
+				cpu->PC += ((uint32_t) instr.offset << 2) + 4;
 			}
 			break;
 		case BNVC :
-			res_64 = (int64_t) register_read(cpu, instr.rs) + (int64_t) register_read(cpu, instr.rt);
-			if(res_64 <= INT32_MAX && res_64 >= INT32_MIN)
+			i64 = (int64_t) (int32_t) register_read(cpu, instr.rs) + (int64_t) (int32_t) register_read(cpu, instr.rt);
+			if(i64 <= INT32_MAX && i64 >= INT32_MIN)
 			{
 				compact = 1;
-				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + (instr.offset << 2) + 4);
+				cpu->PC += ((uint32_t) instr.offset << 2) + 4;
 			}
 			break;
 		case BOVC :
-			res_64 = (int64_t) register_read(cpu, instr.rs) + (int64_t) register_read(cpu, instr.rt);
-			if(res_64 > INT32_MAX || res_64 < INT32_MIN)
+			i64 = (int64_t) (int32_t) register_read(cpu, instr.rs) + (int64_t) (int32_t) register_read(cpu, instr.rt);
+			if(i64 > INT32_MAX || i64 < INT32_MIN)
 			{
 				compact = 1;
-				register_write(cpu, REG_PC, register_read(cpu, REG_PC) + (instr.offset << 2) + 4);
+				cpu->PC += ((uint32_t) instr.offset << 2) + 4;
 			}
 			break;
 		case CLO :
 			/* Naive CLO/Z implementation, didn't want to just
-			use C __builtin_clz/popcount */
-			if((uint32_t) register_read(cpu, instr.rs) == 0xFFFFFFFFu) register_write(cpu, instr.rd, 32);
+			use C __builtin_clz/popu8 */
+			u32 = register_read(cpu, instr.rs);
+			if(u32 == 0xFFFFFFFFu) register_write(cpu, instr.rd, 32);
 			else
 			{
-				count = 0;
-				raw_32 = (uint32_t) register_read(cpu, instr.rs);
-				while(raw_32 & 0x80000000)
+				u8 = 0;
+				while(u32 & 0x80000000)
 				{
-					raw_32 <<= 1;
-					count++; 
+					u32 <<= 1;
+					u8++; 
 				}
-				register_write(cpu, instr.rd, (int32_t) count);
+				register_write(cpu, instr.rd, (uint32_t) u8);
 			}
 			break;
 		case CLZ :
-			if((uint32_t) register_read(cpu, instr.rs) == 0u) register_write(cpu, instr.rd, 32);
+			u32 = register_read(cpu, instr.rs);
+			if(u32 == 0u) register_write(cpu, instr.rd, 32);
 			else
 			{
-				count = 0;
-				raw_32 = (uint32_t) register_read(cpu, instr.rs);
-				while(!(raw_32 & 0x80000000))
+				u8 = 0;
+				while(!(u32 & 0x80000000))
 				{
-					raw_32 <<= 1;
-					count++; 
+					u32 <<= 1;
+					u8++; 
 				}
-				register_write(cpu, instr.rd, (int32_t) count);
+				register_write(cpu, instr.rd, (uint32_t) u8);
 			}
 			break;
 		case DIV :
-			dividend = register_read(cpu, instr.rs);
-			divisor = register_read(cpu, instr.rt);
+			dividend = (int32_t) register_read(cpu, instr.rs);
+			divisor = (int32_t) register_read(cpu, instr.rt);
 			/* Arbitrary choice, MIPS32 documentation :
 			'If the divisor in GPR rt is zero, the arithmetic result value is UNPREDICTABLE' */
-			if(divisor == 0) res_32 = divisor;
+			if(divisor == 0) i32 = divisor;
 			/* Used to cover a C edge-case of integer overflow - not MIPS related */
-			else if(divisor == -1 && dividend == (int32_t) 0x80000000) res_32 = dividend;
-			else res_32 = dividend / divisor;
-			register_write(cpu, instr.rd, res_32);
+			else if(divisor == -1 && dividend == (int32_t) 0x80000000) i32 = dividend;
+			else i32 = dividend / divisor;
+			register_write(cpu, instr.rd, (uint32_t) i32);
 			break;
 		case DIVU :
-			raw_dividend = (uint32_t) register_read(cpu, instr.rs);
-			raw_divisor = (uint32_t) register_read(cpu, instr.rt);
+			raw_dividend = register_read(cpu, instr.rs);
+			raw_divisor = register_read(cpu, instr.rt);
 			/* Arbitrary choice, MIPS32 documentation :
 			'If the divisor in GPR rt is zero, the arithmetic result value is UNPREDICTABLE' */
-			if(raw_divisor == 0) res_32 = (int32_t) raw_divisor;
+			if(raw_divisor == 0) u32 = raw_divisor;
 			/* No integer overflow with unsigned instruction */
-			else res_32 = (int32_t) (raw_dividend / raw_divisor);
-			register_write(cpu, instr.rd, res_32);
+			else u32 = raw_dividend / raw_divisor;
+			register_write(cpu, instr.rd, u32);
 			break;
 		case J :
-			cpu->next_PC = (int32_t) (((uint32_t) (register_read(cpu, REG_PC) + 4) & 0xF0000000) | (uint32_t) ((instr.target << 2) & 0x0FFFFFFC));
+			cpu->next_PC = ((cpu->PC + 4) & 0xF0000000u) | ((uint32_t) (instr.target << 2) & 0x0FFFFFFCu);
 			break;
 		case JAL :
-			register_write(cpu, REG_RA, register_read(cpu, REG_PC) + 8);
-			cpu->next_PC = (int32_t) (((uint32_t) (register_read(cpu, REG_PC) + 4) & 0xF0000000) | (uint32_t) ((instr.target << 2) & 0x0FFFFFFC));
+			register_write(cpu, REG_RA, cpu->PC + 8);
+			cpu->next_PC = ((cpu->PC + 4) & 0xF0000000u) | ((uint32_t) (instr.target << 2) & 0x0FFFFFFCu);
 			break;
 		case JALR :
-			register_write(cpu, instr.rd, register_read(cpu, REG_PC) + 8);
-			cpu->next_PC = (int32_t) ((uint32_t) register_read(cpu, instr.rs) & 0x0FFFFFFC);
+			register_write(cpu, instr.rd, cpu->PC + 8);
+			if(register_read(cpu, instr.rs) & 0x03u) fprintf(stderr, "[!] Exception : Address Error\n");
+			else cpu->next_PC = register_read(cpu, instr.rs);
 			break;
 		case JIALC :
 			compact = 1;
-			register_write(cpu, REG_RA, register_read(cpu, REG_PC) + 4);
-			register_write(cpu, REG_PC, register_read(cpu, instr.rt) + (instr.offset << 2));
+			register_write(cpu, REG_RA, cpu->PC + 4);
+			cpu->PC = register_read(cpu, instr.rt) + ((uint32_t) instr.offset << 2);
 			break;
 		case JIC :
 			compact = 1;
-			register_write(cpu, REG_PC, register_read(cpu, instr.rt) + (instr.offset << 2));
+			cpu->PC = register_read(cpu, instr.rt) + ((uint32_t) instr.offset << 2);
 			break;
 		case LB :
-			address = register_read(cpu, instr.base) + instr.offset;
-			res_32 = (int32_t) memory_read_8(cpu, (int) address);
-			register_write(cpu, instr.rt, res_32);
+			address = register_read(cpu, instr.base) + (uint32_t) instr.offset;
+			i32 = sign_extend(memory_read_8(cpu, address), 8);
+			register_write(cpu, instr.rt, (uint32_t) i32);
 			break;
 		case LBU :
-			address = register_read(cpu, instr.base) + instr.offset;
-			raw_32 = (uint32_t) (uint8_t) memory_read_8(cpu, (int) address);
-			register_write(cpu, instr.rt, (int32_t) raw_32);
+			address = register_read(cpu, instr.base) + (uint32_t) instr.offset;
+			u8 = memory_read_8(cpu, address);
+			register_write(cpu, instr.rt, (uint32_t) u8);
 			break;
 		case LH :
-			address = register_read(cpu, instr.base) + instr.offset;
-			res_32 = (int32_t) memory_read_16(cpu, (int) address);
-			register_write(cpu, instr.rt, res_32);
+			address = register_read(cpu, instr.base) + (uint32_t) instr.offset;
+			i32 = sign_extend(memory_read_16(cpu, address), 16);
+			register_write(cpu, instr.rt, (uint32_t) i32);
 			break;
 		case LHU :
-			address = register_read(cpu, instr.base) + instr.offset;
-			res_32 = (uint32_t) (uint16_t) memory_read_16(cpu, (int) address);
-			register_write(cpu, instr.rt, res_32);
+			address = register_read(cpu, instr.base) + (uint32_t) instr.offset;
+			u16 = memory_read_16(cpu, address);
+			register_write(cpu, instr.rt, (uint32_t) u16);
 			break;
 		case LW :
-			address = register_read(cpu, instr.base) + instr.offset;
-			res_32 = memory_read_32(cpu, (int) address);
-			register_write(cpu, instr.rt, res_32);
+			address = register_read(cpu, instr.base) + (uint32_t) instr.offset;
+			u32 = memory_read_32(cpu, address);
+			register_write(cpu, instr.rt, u32);
 			break;
 		case LWPC :
-			address = register_read(cpu, REG_PC) + instr.offset;
-			res_32 = memory_read_32(cpu, (int) address);
-			register_write(cpu, instr.rs, res_32);
+			address = cpu->PC + (uint32_t) (instr.offset << 2);
+			u32 = memory_read_32(cpu, address);
+			register_write(cpu, instr.rs, u32);
 			break;
 		case MOD :
-			dividend = register_read(cpu, instr.rs);
-			divisor = register_read(cpu, instr.rt);
+			dividend = (int32_t) register_read(cpu, instr.rs);
+			divisor = (int32_t) register_read(cpu, instr.rt);
 			/* Arbitrary choice, MIPS32 documentation :
 			'If the divisor in GPR rt is zero, the arithmetic result value is UNPREDICTABLE' */
-			if(divisor == 0) res_32 = dividend;
+			if(divisor == 0) i32 = dividend;
 			/* Used to cover a C edge-case of integer overflow - not MIPS related */
-			else if(divisor == -1 && dividend == (int32_t) 0x80000000) res_32 = 0;
-			else res_32 = dividend % divisor;
-			register_write(cpu, instr.rd, res_32);
+			else if(divisor == -1 && dividend == (int32_t) 0x80000000) i32 = 0;
+			else i32 = dividend % divisor;
+			register_write(cpu, instr.rd, (uint32_t) i32);
 			break;
 		case MODU :
-			raw_dividend = (uint32_t) register_read(cpu, instr.rs);
-			raw_divisor = (uint32_t) register_read(cpu, instr.rt);
+			raw_dividend = register_read(cpu, instr.rs);
+			raw_divisor = register_read(cpu, instr.rt);
 			/* Arbitrary choice, MIPS32 documentation :
 			'If the divisor in GPR rt is zero, the arithmetic result value is UNPREDICTABLE' */
-			if(raw_divisor == 0) res_32 = (int32_t) raw_dividend;
+			if(raw_divisor == 0) u32 = raw_dividend;
 			/* No integer overflow with unsigned instruction */
-			else res_32 = (int32_t) (raw_dividend % raw_divisor);
-			register_write(cpu, instr.rd, res_32);
+			else u32 = raw_dividend % raw_divisor;
+			register_write(cpu, instr.rd, u32);
 			break;
 		case MUH :
-			res_64 = (int64_t) register_read(cpu, instr.rs) * (int64_t) register_read(cpu, instr.rt);
-			res_H = (int32_t) (uint32_t) ((res_64 >> 32) & 0xFFFFFFFF);
-			register_write(cpu, instr.rd, res_H);
+			i64 = (int64_t) (int32_t) register_read(cpu, instr.rs) * (int64_t) (int32_t) register_read(cpu, instr.rt);
+			register_write(cpu, instr.rd, (uint32_t) (i64 >> 32));
 			break;
 		case MUHU :
-			raw_64 = (uint64_t) (uint32_t) register_read(cpu, instr.rs) * (uint64_t) (uint32_t) register_read(cpu, instr.rt);
-			res_H = (int32_t) (uint32_t) ((raw_64 >> 32) & 0xFFFFFFFF);
-			register_write(cpu, instr.rd, res_H);
+			u64 = (uint64_t) register_read(cpu, instr.rs) * (uint64_t) register_read(cpu, instr.rt);
+			register_write(cpu, instr.rd, (uint32_t) (u64 >> 32));
 			break;
 		case MUL :
-			res_64 = (int64_t) register_read(cpu, instr.rs) * (int64_t) register_read(cpu, instr.rt);
-			res_L = (int32_t) (uint32_t) (res_64 & 0xFFFFFFFF);
-			register_write(cpu, instr.rd, res_L);
+			i64 = (int64_t) (int32_t) register_read(cpu, instr.rs) * (int64_t) (int32_t) register_read(cpu, instr.rt);
+			register_write(cpu, instr.rd, (uint32_t) i64);
 			break;
 		case MULU :
-			raw_64 = (uint64_t) (uint32_t) register_read(cpu, instr.rs) * (uint64_t) (uint32_t) register_read(cpu, instr.rt);
-			res_L = (int32_t) (uint32_t) (raw_64 & 0xFFFFFFFF);
-			register_write(cpu, instr.rd, res_L);
+			u64 = (uint64_t) register_read(cpu, instr.rs) * (uint64_t) register_read(cpu, instr.rt);
+			register_write(cpu, instr.rd, (uint32_t) u64);
 			break;
 		case NAL :
-			register_write(cpu, REG_RA, register_read(cpu, REG_PC) + 8);
+			register_write(cpu, REG_RA, cpu->PC + 8);
 			break;
 		case NOP :
 			break;
 		case NOR :
-			res_32 = ~(register_read(cpu, instr.rs) | register_read(cpu, instr.rt));
-			register_write(cpu, instr.rd, res_32);
+			u32 = ~(register_read(cpu, instr.rs) | register_read(cpu, instr.rt));
+			register_write(cpu, instr.rd, u32);
 			break;
 		case OR :
-			res_32 = register_read(cpu, instr.rs) | register_read(cpu, instr.rt);
-			register_write(cpu, instr.rd, res_32);
+			u32 = register_read(cpu, instr.rs) | register_read(cpu, instr.rt);
+			register_write(cpu, instr.rd, u32);
 			break;
 		case ORI :
-			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rs) | ((uint32_t) instr.immediate & 0xFFFF));
-			register_write(cpu, instr.rt, res_32);
+			u32 = register_read(cpu, instr.rs) | ((uint32_t) instr.immediate & 0xFFFF);
+			register_write(cpu, instr.rt, u32);
 			break;
 		case ROTR :
-			raw_32 = (uint32_t) register_read(cpu, instr.rt);
-			res_32 = (int32_t) ((raw_32 >> instr.sa) | (raw_32 << ((32 - instr.sa) & 31)));
-			register_write(cpu, instr.rd, res_32);
+			u32 = register_read(cpu, instr.rt);
+			u32 = (u32 >> instr.sa) | (u32 << ((32 - instr.sa) & 31));
+			register_write(cpu, instr.rd, u32);
 			break;
 		case ROTRV :
-			shift_8 = (uint8_t) (register_read(cpu, instr.rs) & 0x1F);
-			raw_32 = (uint32_t) register_read(cpu, instr.rt);
-			res_32 = (int32_t) (raw_32 >> shift_8 | raw_32 << ((32 - shift_8) & 31));
-			register_write(cpu, instr.rd, res_32);
+			u8 = (uint8_t) (register_read(cpu, instr.rs) & 0x1F);
+			u32 = register_read(cpu, instr.rt);
+			u32 = u32 >> u8 | u32 << ((32 - u8) & 31);
+			register_write(cpu, instr.rd, u32);
 			break;
 		case SB :
-			address = register_read(cpu, instr.base) + instr.offset;
-			memory_write_8(cpu, address, (int8_t) (uint8_t) register_read(cpu, instr.rt));
+			address = register_read(cpu, instr.base) + (uint32_t) instr.offset;
+			memory_write_8(cpu, address, (uint8_t) register_read(cpu, instr.rt));
 			break;
 		case SEB :
-			res_32 = sign_extend(register_read(cpu, instr.rt), 8);
-			register_write(cpu, instr.rd, res_32);
+			i32 = sign_extend((int32_t) register_read(cpu, instr.rt), 8);
+			register_write(cpu, instr.rd, (uint32_t) i32);
 			break;
 		case SEH :
-			res_32 = sign_extend(register_read(cpu, instr.rt), 16);
-			register_write(cpu, instr.rd, res_32);
+			i32 = sign_extend((int32_t) register_read(cpu, instr.rt), 16);
+			register_write(cpu, instr.rd, (uint32_t) i32);
 			break;
 		case SELEQZ :
-			if(register_read(cpu, instr.rt) == 0) register_write(cpu, instr.rd, register_read(cpu, instr.rs));
+			if((int32_t) register_read(cpu, instr.rt) == 0) register_write(cpu, instr.rd, register_read(cpu, instr.rs));
 			else register_write(cpu, instr.rd, 0);
 			break;
 		case SELNEZ :
-			if(register_read(cpu, instr.rt) != 0) register_write(cpu, instr.rd, register_read(cpu, instr.rs));
+			if((int32_t) register_read(cpu, instr.rt) != 0) register_write(cpu, instr.rd, register_read(cpu, instr.rs));
 			else register_write(cpu, instr.rd, 0);
 			break;
 		case SH :
-			address = register_read(cpu, instr.base) + instr.offset;
-			memory_write_16(cpu, address, (int16_t) (uint16_t) register_read(cpu, instr.rt));
+			address = register_read(cpu, instr.base) + (uint32_t) instr.offset;
+			memory_write_16(cpu, address, (uint16_t) register_read(cpu, instr.rt));
 			break;
 		case SLL :
-			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rt) << instr.sa);
-			register_write(cpu, instr.rd, res_32);
+			u32 = register_read(cpu, instr.rt) << instr.sa;
+			register_write(cpu, instr.rd, u32);
 			break;
 		case SLLV :
-			shift_8 = (uint8_t) (register_read(cpu, instr.rs) & 0x1F);
-			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rt) << shift_8);
-			register_write(cpu, instr.rd, res_32);
+			u8 = (uint8_t) (register_read(cpu, instr.rs) & 0x1F);
+			u32 = register_read(cpu, instr.rt) << u8;
+			register_write(cpu, instr.rd, u32);
 			break;
 		case SLT :
-			register_write(cpu, instr.rd, register_read(cpu, instr.rs) < register_read(cpu, instr.rt));
+			register_write(cpu, instr.rd, (int32_t) register_read(cpu, instr.rs) < (int32_t) register_read(cpu, instr.rt));
 			break;
 		case SLTI :
-			register_write(cpu, instr.rt, register_read(cpu, instr.rs) < instr.immediate);
+			register_write(cpu, instr.rt, (int32_t) register_read(cpu, instr.rs) < instr.immediate);
 			break;
 		case SLTIU :
-			register_write(cpu, instr.rt, (uint32_t) register_read(cpu, instr.rs) < (uint32_t) instr.immediate);
+			register_write(cpu, instr.rt, register_read(cpu, instr.rs) < (uint32_t) instr.immediate);
 			break;
 		case SLTU :
-			register_write(cpu, instr.rd, (uint32_t) register_read(cpu, instr.rs) < (uint32_t) register_read(cpu, instr.rt));
+			register_write(cpu, instr.rd, register_read(cpu, instr.rs) < register_read(cpu, instr.rt));
 			break;
 		case SRA :
 			/* Implementation-defined for arithmetic shift :
 			guaranteed by gcc/clang, not C itself */
-			res_32 = register_read(cpu, instr.rt) >> instr.sa;
-			register_write(cpu, instr.rd, res_32);
+			i32 = ((int32_t) register_read(cpu, instr.rt)) >> instr.sa;
+			register_write(cpu, instr.rd, (uint32_t) i32);
 			break;
 		case SRAV :
-			shift_8 = (uint8_t) (register_read(cpu, instr.rs) & 0x1F);
-			res_32 = register_read(cpu, instr.rt) >> shift_8;
-			register_write(cpu, instr.rd, res_32);
+			u8 = (uint8_t) (register_read(cpu, instr.rs) & 0x1F);
+			i32 = ((int32_t) register_read(cpu, instr.rt)) >> u8;
+			register_write(cpu, instr.rd, (uint32_t) i32);
 			break;
 		case SRL :
-			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rt) >> instr.sa);
-			register_write(cpu, instr.rd, res_32);
+			u32 = register_read(cpu, instr.rt) >> instr.sa;
+			register_write(cpu, instr.rd, u32);
 			break;
 		case SRLV :
-			shift_8 = (uint8_t) (register_read(cpu, instr.rs) & 0x1F);
-			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rt) >> shift_8);
-			register_write(cpu, instr.rd, res_32);
+			u8 = (uint8_t) (register_read(cpu, instr.rs) & 0x1F);
+			u32 = register_read(cpu, instr.rt) >> u8;
+			register_write(cpu, instr.rd, u32);
 			break;
 		case SUB :
-			res_64 = (int64_t) register_read(cpu, instr.rs) - (int64_t) register_read(cpu, instr.rt);
-			if(res_64 > INT32_MAX || res_64 < INT32_MIN) fprintf(stderr, "[!] Exception : Integer Overflow\n");
-			else register_write(cpu, instr.rd, (int32_t) res_64);
+			i64 = (int64_t) (int32_t) register_read(cpu, instr.rs) - (int64_t) (int32_t) register_read(cpu, instr.rt);
+			if(i64 > INT32_MAX || i64 < INT32_MIN) fprintf(stderr, "[!] Exception : Integer Overflow\n");
+			else register_write(cpu, instr.rd, (uint32_t) i64);
 			break;
 		case SUBU :
-			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rs) - (uint32_t) register_read(cpu, instr.rt));
-			register_write(cpu, instr.rd, res_32);
+			u32 = register_read(cpu, instr.rs) - register_read(cpu, instr.rt);
+			register_write(cpu, instr.rd, u32);
 			break;
 		case SW :
-			res_32 = register_read(cpu, instr.rt);
-			address = register_read(cpu, instr.base) + instr.offset;
-			memory_write_32(cpu, (int) address, res_32);
+			u32 = register_read(cpu, instr.rt);
+			address = register_read(cpu, instr.base) + (uint32_t) instr.offset;
+			memory_write_32(cpu, address, u32);
 			break;
 		case XOR :
-			res_32 = register_read(cpu, instr.rs) ^ register_read(cpu, instr.rt);
-			register_write(cpu, instr.rd, res_32);
+			u32 = register_read(cpu, instr.rs) ^ register_read(cpu, instr.rt);
+			register_write(cpu, instr.rd, u32);
 			break;
 		case XORI :
-			res_32 = (int32_t) ((uint32_t) register_read(cpu, instr.rs) ^ ((uint32_t) instr.immediate & 0xFFFF));
-			register_write(cpu, instr.rt, res_32);
+			u32 = register_read(cpu, instr.rs) ^ ((uint32_t) instr.immediate & 0xFFFF);
+			register_write(cpu, instr.rt, u32);
 			break;
 		default :
 			fprintf(stderr, "[!] This line was either a comment or an unknown command\n");
@@ -523,9 +513,9 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 
 	/* In MIPS32 Release 6, compact branches skip delay slot
 	   This way we ensure this kind of instruction behaves properly */
-	if(!compact) increment_pc(cpu);
+	if(!compact) cpu->PC += 4;
 
-	if(pending_PC != -1) register_write(cpu, REG_PC, pending_PC);
+	if(pending_PC != INVALID_PC) cpu->PC = pending_PC;
 
 	if(cfg->verbose) printf("%s", instr.to_string);
 }

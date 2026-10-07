@@ -37,10 +37,9 @@
 #define REG_SP 29
 #define REG_FP 30
 #define REG_RA 31
-#define	REG_PC 32
 
-void	registers_init(CPU *cpu);
-int32_t	register_read(CPU *cpu, int id);
-void	register_write(CPU *cpu, int id, int32_t value);
+void registers_init(CPU *cpu);
+uint32_t register_read(CPU *cpu, int id);
+void register_write(CPU *cpu, int id, uint32_t value);
 
 #endif	/* REGISTERS_H */
