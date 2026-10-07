@@ -186,12 +186,23 @@ void build_rs_offset_16_instruction(instruction *instr, int op_code)
 	instr->offset = sign_extend(instr->offset, OFFSET_16_SIZE);
 }
 
+void build_rs_offset_19_instruction(instruction *instr, int op_code)
+{
+	instruction_field fields[] = {
+		FIELD(OPCODE_START, OPCODE_END, op_code),
+		FIELD(RS_START, RS_END, instr->rs),
+		FIELD(OFFSET_19_START, OFFSET_END, instr->offset)};
+	build_instruction_bin(fields, ARR_SIZE(fields), instr);
+	finalize_signed_value(&instr->offset, instr, OFFSET_19_START, OFFSET_END);
+	instr->offset = sign_extend(instr->offset, OFFSET_19_SIZE);
+}
+
 void build_rs_offset_21_instruction(instruction *instr, int op_code)
 {
 	instruction_field fields[] = {
 		FIELD(OPCODE_START, OPCODE_END, op_code),
 		FIELD(RS_START, RS_END, instr->rs),
-		FIELD(OFFSET_21_START, IMM_END, instr->offset)};
+		FIELD(OFFSET_21_START, OFFSET_END, instr->offset)};
 	build_instruction_bin(fields, ARR_SIZE(fields), instr);
 	finalize_signed_value(&instr->offset, instr, OFFSET_21_START, OFFSET_END);
 	instr->offset = sign_extend(instr->offset, OFFSET_21_SIZE);
@@ -541,6 +552,11 @@ instruction decode_instruction(int mode, FILE *fichier)
 			case RS_OFFSET_16 :
 				decode_rs_offset_operands(ptr, &instr);
 				build_rs_offset_16_instruction(&instr, id->code);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%s\n", id->mnemonic, instr.rs, instr.offset, instr.instr_hex);
+				break;
+			case RS_OFFSET_19 :
+				decode_rs_offset_operands(ptr, &instr);
+				build_rs_offset_19_instruction(&instr, id->code);
 				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%s\n", id->mnemonic, instr.rs, instr.offset, instr.instr_hex);
 				break;
 			case RS_OFFSET_21 :

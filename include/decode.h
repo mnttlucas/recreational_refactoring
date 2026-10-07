@@ -31,6 +31,7 @@ void build_rd_rt_sa_instruction(instruction *instr, int funct_code);
 void build_rs_instruction(instruction *instr, int funct_code);
 void build_rs_immediate_instruction(instruction *instr, int op_code);
 void build_rs_offset_16_instruction(instruction *instr, int op_code);
+void build_rs_offset_19_instruction(instruction *instr, int op_code);
 void build_rs_offset_21_instruction(instruction *instr, int op_code);
 void build_rs_rt_instruction(instruction *instr, int funct_code);
 void build_rs_rt_offset_16_instruction(instruction *instr, int op_code);

@@ -20,6 +20,7 @@
 #define FUNCT_END       31
 #define OFFSET_26_START 6
 #define OFFSET_21_START 11
+#define OFFSET_19_START 13
 #define OFFSET_16_START 16
 #define OFFSET_END      31
 #define IMM_START       16
@@ -95,6 +96,7 @@
 
 /* Offset sizes */
 #define OFFSET_16_SIZE   16
+#define OFFSET_19_SIZE   19
 #define OFFSET_21_SIZE   21
 #define OFFSET_26_SIZE   26
 
@@ -126,7 +128,9 @@ typedef enum
 	ADD,
 	ADDI,
 	ADDIU,
+	ADDIUPC,
 	ADDU,
+	ALUIPC,
 	AND,
 	ANDI,
 	AUI,
@@ -176,6 +180,7 @@ typedef enum
 	LH,
 	LHU,
 	LW,
+	LWPC,
 	MOD,
 	MODU,
 	MUH,
@@ -229,6 +234,7 @@ typedef enum
 	RS, // Previously used by MTHI/MTLO instructions, unused for now, will remove it if no instruction use it
 	RS_IMMEDIATE,
 	RS_OFFSET_16,
+	RS_OFFSET_19,
 	RS_OFFSET_21,
 	RS_RT, // Previously used by DIV/MUL instructions, unused for now, will remove it if no instruction use it
 	RS_RT_OFFSET_16,
