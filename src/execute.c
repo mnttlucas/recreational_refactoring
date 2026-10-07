@@ -150,7 +150,7 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 				swapped_8 = 0;
 				for(uint8_t bit = 0; bit < 8; bit++)
 				{
-					swapped_8 = (swapped_8 << 1) | (current_byte & 0x01);
+					swapped_8 = (uint8_t) ((swapped_8 << 1) | (current_byte & 0x01));
 					current_byte >>= 1;
 				}
 				raw_32 |= (uint32_t) swapped_8 << (byte * 8);
