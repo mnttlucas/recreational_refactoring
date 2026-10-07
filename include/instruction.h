@@ -23,7 +23,8 @@
 #define OFFSET_19_START 13
 #define OFFSET_16_START 16
 #define OFFSET_END      31
-#define IMM_START       16
+#define IMM_19_START    13
+#define IMM_16_START    16
 #define IMM_END         31
 #define TARGET_START     6
 #define TARGET_END      31
@@ -234,16 +235,17 @@ typedef enum
 	RD_RT_RS,
 	RD_RT_SA,
 	RS, // Previously used by MTHI/MTLO instructions, unused for now, will remove it if no instruction use it
-	RS_IMMEDIATE,
+	RS_IMMEDIATE_16,
+	RS_IMMEDIATE_19,
 	RS_OFFSET_16,
 	RS_OFFSET_19,
 	RS_OFFSET_21,
 	RS_RT, // Previously used by DIV/MUL instructions, unused for now, will remove it if no instruction use it
 	RS_RT_OFFSET_16,
-	RT_IMMEDIATE,
+	RT_IMMEDIATE_16,
 	RT_OFFSET_16,
 	RT_OFFSET_BASE,
-	RT_RS_IMMEDIATE,
+	RT_RS_IMMEDIATE_16,
 	RT_RS_OFFSET_16,
 	TARGET
 } format;
@@ -262,7 +264,7 @@ typedef struct
 	char to_string[200];
 	int label;
 	int target;
-	int16_t immediate;
+	int32_t immediate;
 	int32_t offset;
 	Opcode opcode;
 	uint8_t base;

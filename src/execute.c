@@ -49,7 +49,7 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			So this instruction is correct if we assume PC is an address,
 			but right now this won't work as expected
 			*/
-			res_32 = ~0xFFFF & (register_read(cpu, REG_PC) + ((int32_t) instr.immediate << 16));
+			res_32 = ~0xFFFF & (register_read(cpu, REG_PC) + instr.immediate << 16);
 			register_write(cpu, instr.rs, res_32);
 			break;
 		case AND :
@@ -481,10 +481,10 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			register_write(cpu, instr.rd, register_read(cpu, instr.rs) < register_read(cpu, instr.rt));
 			break;
 		case SLTI :
-			register_write(cpu, instr.rt, register_read(cpu, instr.rs) < (int32_t) instr.immediate);
+			register_write(cpu, instr.rt, register_read(cpu, instr.rs) < instr.immediate);
 			break;
 		case SLTIU :
-			register_write(cpu, instr.rt, (uint32_t) register_read(cpu, instr.rs) < (uint32_t) ((int32_t) instr.immediate));
+			register_write(cpu, instr.rt, (uint32_t) register_read(cpu, instr.rs) < (uint32_t) instr.immediate);
 			break;
 		case SLTU :
 			register_write(cpu, instr.rd, (uint32_t) register_read(cpu, instr.rs) < (uint32_t) register_read(cpu, instr.rt));
