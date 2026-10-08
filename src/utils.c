@@ -55,7 +55,7 @@ void cpu_dump(CPU *cpu, Config *cfg)
 	for(int i = 0; i <= (REGISTER_COUNT - 4) / DUMP_LINE_SIZE; i++)
 	{
 		for(int j = 0; (i * DUMP_LINE_SIZE + j) < (REGISTER_COUNT - 3) && j < DUMP_LINE_SIZE; j++)
-			printf("$%s%d : %-10d ", DUMP_LINE_SIZE * i + j <= 9 ? "0" : "", DUMP_LINE_SIZE * i + j, register_read(cpu, DUMP_LINE_SIZE * i + j));
+			printf("$%s%d : %-10d ", DUMP_LINE_SIZE * i + j <= 9 ? "0" : "", DUMP_LINE_SIZE * i + j, gpr_read_32(cpu, DUMP_LINE_SIZE * i + j));
 		printf("\n");
 	}
 
@@ -144,7 +144,7 @@ char *read_full_line(FILE *in)
 uint8_t register_string_to_int(char *reg)
 {
 	size_t reg_length = strlen(reg);
-	uint8_t reg_1 = (uint8_t) (reg[1] - '0'), reg_int = 0, reg_is_only_numbers = 1;
+	uint8_t reg_1 = (uint8_t) (reg[1] - '0'), reg_2 = 0, reg_int = 0, reg_is_only_numbers = 1;
 
 	for(size_t i = 0; i < reg_length; i++)
 	{
@@ -185,6 +185,15 @@ uint8_t register_string_to_int(char *reg)
 			if('0' <= reg[1] && reg[1] <= '7') reg_int = REG_T0 + reg_1;
 			else if(reg[1] == '8' || reg[1] == '9') reg_int = (uint8_t) (REG_T8 + (reg_1 - 8));
 		}
+		else if(reg[0] == 'f')
+		{
+			if(reg[2])
+			{
+				reg_1 *= 10;
+				reg_2 = (uint8_t) (reg[2] - '0');
+			}
+			if(reg_1 + reg_2 < 32) reg_int = reg_1 + reg_2;
+		}
 		else fprintf(stderr, "[!] Unknown register, returned 0 to ignore\n");
 	}
 
@@ -221,5 +230,4 @@ void wait_for_enter()
 		c = getchar();
 	}
 	while(c != '\n' && c != EOF);
-	
 }

@@ -114,7 +114,7 @@ void batch_mode(CPU *cpu, Config *cfg, char *path_in, char *path_out_hex, char *
 	if(!cfg->step)
 	{
 		cpu_dump(cpu, cfg);
-		for(i = 0; i < REGISTER_COUNT; i++) fprintf(out_regs, "$%d : %d\n", i, register_read(cpu, (int) i));
+		for(i = 0; i < REGISTER_COUNT; i++) fprintf(out_regs, "$%d : %d\n", i, gpr_read_32(cpu, (int) i));
 	}
 
 	fclose(in);

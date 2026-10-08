@@ -170,6 +170,7 @@ void build_rs_immediate_16_instruction(instruction *instr, int op_code)
 		FIELD(IMM_16_START, IMM_END, instr->immediate)};
 	build_instruction_bin(fields, ARR_SIZE(fields), instr);
 	finalize_signed_value(&instr->immediate, instr, IMM_16_START, IMM_END);
+	instr->immediate = sign_extend(instr->immediate, IMM_16_SIZE);
 }
 
 void build_rs_immediate_19_instruction(instruction *instr, int op_code)
@@ -180,6 +181,7 @@ void build_rs_immediate_19_instruction(instruction *instr, int op_code)
 		FIELD(IMM_19_START, IMM_END, instr->immediate)};
 	build_instruction_bin(fields, ARR_SIZE(fields), instr);
 	finalize_signed_value(&instr->immediate, instr, IMM_19_START, IMM_END);
+	instr->immediate = sign_extend(instr->immediate, IMM_19_SIZE);
 }
 
 void build_rs_offset_16_instruction(instruction *instr, int op_code)
@@ -250,6 +252,7 @@ void build_rt_immediate_16_instruction(instruction *instr, int op_code)
 		FIELD(IMM_16_START, IMM_END, instr->immediate)};
 	build_instruction_bin(fields, ARR_SIZE(fields), instr);
 	finalize_signed_value(&instr->immediate, instr, IMM_16_START, IMM_END);
+	instr->immediate = sign_extend(instr->immediate, IMM_16_SIZE);
 }
 
 void build_rt_offset_16_instruction(instruction *instr, int op_code)
@@ -284,6 +287,7 @@ void build_rt_rs_immediate_16_instruction(instruction *instr, int op_code)
 		FIELD(IMM_16_START, IMM_END, instr->immediate)};
 	build_instruction_bin(fields, ARR_SIZE(fields), instr);
 	finalize_signed_value(&instr->immediate, instr, IMM_16_START, IMM_END);
+	instr->immediate = sign_extend(instr->immediate, IMM_16_SIZE);
 }
 
 void build_target_instruction(instruction *instr, int op_code)

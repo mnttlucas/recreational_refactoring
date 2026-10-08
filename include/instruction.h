@@ -95,8 +95,10 @@
 #define OPCODE_SW        43
 #define OPCODE_XORI      14
 
-/* Offset sizes */
+/* Offset and immediate sizes */
+#define IMM_16_SIZE      16
 #define OFFSET_16_SIZE   16
+#define IMM_19_SIZE      19
 #define OFFSET_19_SIZE   19
 #define OFFSET_21_SIZE   21
 #define OFFSET_26_SIZE   26
@@ -261,7 +263,7 @@ typedef struct
 typedef struct
 {
 	char instr_hex[9];
-	char to_string[200];
+	char to_string[256];
 	int label;
 	int target;
 	int32_t immediate;
@@ -269,11 +271,10 @@ typedef struct
 	Opcode opcode;
 	uint8_t base;
 	uint8_t exit;
+	uint8_t fd, fs, ft;
 	uint8_t instr_bin[32];
 	uint8_t negative;
-	uint8_t rd;
-	uint8_t rs;
-	uint8_t rt;
+	uint8_t rd, rs, rt;
 	uint8_t sa;
 } instruction;
 

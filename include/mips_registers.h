@@ -38,8 +38,14 @@
 #define REG_FP 30
 #define REG_RA 31
 
+#define REG_F0  0
+
 void registers_init(CPU *cpu);
-uint32_t register_read(CPU *cpu, int id);
-void register_write(CPU *cpu, int id, uint32_t value);
+uint32_t fpr_read_32(CPU *cpu, int id);
+uint64_t fpr_read_64(CPU *cpu, int id);
+void fpr_write_32(CPU *cpu, int id, uint32_t value);
+void fpr_write_64(CPU *cpu, int id, uint64_t value);
+uint32_t gpr_read_32(CPU *cpu, int id);
+void gpr_write_32(CPU *cpu, int id, uint32_t value);
 
 #endif	/* REGISTERS_H */
