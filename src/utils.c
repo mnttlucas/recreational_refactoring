@@ -193,6 +193,7 @@ uint8_t register_string_to_int(char *reg)
 				reg_2 = (uint8_t) (reg[2] - '0');
 			}
 			if(reg_1 + reg_2 < 32) reg_int = reg_1 + reg_2;
+			else fprintf(stderr, "[!] Unknown register, returned 0 to ignore\n");
 		}
 		else fprintf(stderr, "[!] Unknown register, returned 0 to ignore\n");
 	}
