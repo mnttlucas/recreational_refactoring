@@ -8,6 +8,8 @@
 #include "instruction.h"
 
 #define DUMP_MEMORY_WORDS 40
+/* Valid registers values are in range [0; REGISTER_COUNT[,
+so INVALID_REGISTER = REGISTER_COUNT, but are separated for clarity */
 #define INVALID_REGISTER  32
 
 #define ARR_SIZE(arr) \

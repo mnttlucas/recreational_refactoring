@@ -49,7 +49,9 @@ void clear_output()
 
 void cpu_dump(CPU *cpu, Config *cfg)
 {
+	double value;
 	int words_to_show = (MEMORY_SIZE / WORD_SIZE < DUMP_MEMORY_WORDS) ? MEMORY_SIZE / WORD_SIZE : DUMP_MEMORY_WORDS;
+	uint64_t raw;
 
 	printf("\n----------------------- GPR' status ----------------------\n");
 	for(int i = 0; i <= (REGISTER_COUNT - 4) / DUMP_LINE_SIZE; i++)
@@ -63,7 +65,11 @@ void cpu_dump(CPU *cpu, Config *cfg)
 	for(int i = 0; i <= (REGISTER_COUNT - 4) / DUMP_LINE_SIZE; i++)
 	{
 		for(int j = 0; (i * DUMP_LINE_SIZE + j) < REGISTER_COUNT && j < DUMP_LINE_SIZE; j++)
-			printf("$%s%d : %-10f ", DUMP_LINE_SIZE * i + j <= 9 ? "0" : "", DUMP_LINE_SIZE * i + j, (double) fpr_read_64(cpu, DUMP_LINE_SIZE * i + j));
+		{
+			raw = fpr_read_64(cpu, DUMP_LINE_SIZE * i + j);
+			memcpy(&value, &raw, sizeof(value));
+			printf("$%s%d : %-10f ", DUMP_LINE_SIZE * i + j <= 9 ? "0" : "", DUMP_LINE_SIZE * i + j, value);
+		}
 		printf("\n");
 	}
 
@@ -201,9 +207,14 @@ uint8_t register_string_to_int(char *reg)
 				reg_2 = (uint8_t) (reg[2] - '0');
 			}
 			reg_int = reg_1 + reg_2;
-			if(reg_int > 32) reg_int = INVALID_REGISTER;
 		}
-		else fprintf(stderr, "[!] Unknown register\n");
+		else fprintf(stderr, "[!] Unknown register : %c not recognized as an alias\n", reg[0]);
+	}
+
+	if(reg_int >= INVALID_REGISTER)
+	{
+		fprintf(stderr, "[!] Unknown register : %d not a valid index\n", reg_int);
+		reg_int = INVALID_REGISTER;
 	}
 
 	return(reg_int);
