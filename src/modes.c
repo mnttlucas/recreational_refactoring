@@ -17,7 +17,7 @@ void interactive_mode(CPU *cpu, Config *cfg)
 	{
 		printf("[#] Enter your instruction :\n");
 		current_instr = decode_instruction(0, NULL);
-		if(!current_instr.exit)
+		if(!current_instr.exit && current_instr.opcode > OPCODE_MIN && current_instr.opcode < OPCODE_MAX)
 		{
 			execute_instruction(cpu, cfg, current_instr);
 			cpu_dump(cpu, cfg);

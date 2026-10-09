@@ -640,7 +640,7 @@ instruction decode_instruction(int mode, FILE *fichier)
 		}
 		if(instr.error)
 		{
-			fprintf(stderr, "[!] Instruction rejected : %s", line);
+			fprintf(stderr, "[!] Instruction rejected : %s\n", line);
 			instr = (instruction) {0};
 		}
 		else log_instruction(&instr);
