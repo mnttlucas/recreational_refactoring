@@ -39,22 +39,15 @@ void batch_mode(CPU *cpu, Config *cfg, char *path_in, char *path_out_hex, char *
 		return;
 	}
 
-	if(cfg->step)
+	if(!(in = fopen(path_in, "r")))
 	{
-		if(!(in = fopen(path_in, "r")))
-		{
-			printf("\n[!] batch_mode : fopen() error\n");
-			return;
-		}
+		printf("\n[!] batch_mode : fopen() error\n");
+		free(instructions_arr);
+		return;
 	}
-	else
+
+	if(!cfg->step)
 	{
-		if(!(in = fopen(path_in, "r")))
-		{
-			printf("\n[!] batch_mode : fopen() error\n");
-			free(instructions_arr);
-			return;
-		}
 		if(!(out_hex = fopen(path_out_hex, "w")))
 		{
 			printf("\n[!] batch_mode : fopen() error\n");
