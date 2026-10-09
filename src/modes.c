@@ -107,7 +107,7 @@ void batch_mode(CPU *cpu, Config *cfg, char *path_in, char *path_out_hex, char *
 	{
 		fprintf(stderr, "[!] batch_mode : %u invalid line(s), program not executed\n", error_count);
 		fclose(in);
-		if(cfg->step)
+		if(!cfg->step)
 		{
 			fclose(out_hex);
 			fclose(out_regs);
