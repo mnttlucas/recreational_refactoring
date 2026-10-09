@@ -638,7 +638,12 @@ instruction decode_instruction(int mode, FILE *fichier)
 				snprintf(instr.to_string, sizeof(instr.to_string), "%s %d -> 0x%s\n", id->mnemonic, instr.target, instr.instr_hex);
 				break;
 		}
-		log_instruction(&instr);
+		if(instr.error)
+		{
+			fprintf(stderr, "[!] Instruction rejected : %s", line);
+			instr = (instruction) {0};
+		}
+		else log_instruction(&instr);
 	}
 
 	free(line);
