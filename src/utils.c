@@ -49,27 +49,21 @@ void clear_output()
 
 void cpu_dump(CPU *cpu, Config *cfg)
 {
-	double value;
 	int words_to_show = (MEMORY_SIZE / WORD_SIZE < DUMP_MEMORY_WORDS) ? MEMORY_SIZE / WORD_SIZE : DUMP_MEMORY_WORDS;
-	uint64_t raw;
 
 	printf("\n----------------------- GPR' status ----------------------\n");
 	for(int i = 0; i <= (REGISTER_COUNT - 4) / DUMP_LINE_SIZE; i++)
 	{
 		for(int j = 0; (i * DUMP_LINE_SIZE + j) < REGISTER_COUNT && j < DUMP_LINE_SIZE; j++)
-			printf("$%s%d : %-10d ", DUMP_LINE_SIZE * i + j <= 9 ? "0" : "", DUMP_LINE_SIZE * i + j, (int32_t) gpr_read_32(cpu, DUMP_LINE_SIZE * i + j));
+			printf("$%s%d : %-10x ", DUMP_LINE_SIZE * i + j <= 9 ? "0" : "", DUMP_LINE_SIZE * i + j, (int32_t) gpr_read_32(cpu, DUMP_LINE_SIZE * i + j));
 		printf("\n");
 	}
 
-	printf("\n----------------------- FPR' status ----------------------\n");
+	printf("\n--------------------------- FPR' status --------------------------\n");
 	for(int i = 0; i <= (REGISTER_COUNT - 4) / DUMP_LINE_SIZE; i++)
 	{
 		for(int j = 0; (i * DUMP_LINE_SIZE + j) < REGISTER_COUNT && j < DUMP_LINE_SIZE; j++)
-		{
-			raw = fpr_read_64(cpu, DUMP_LINE_SIZE * i + j);
-			memcpy(&value, &raw, sizeof(value));
-			printf("$%s%d : %-10f ", DUMP_LINE_SIZE * i + j <= 9 ? "0" : "", DUMP_LINE_SIZE * i + j, value);
-		}
+			printf("$%s%d : 0x%-10lx ", DUMP_LINE_SIZE * i + j <= 9 ? "0" : "", DUMP_LINE_SIZE * i + j, fpr_read_64(cpu, DUMP_LINE_SIZE * i + j));
 		printf("\n");
 	}
 
@@ -157,6 +151,7 @@ char *read_full_line(FILE *in)
 
 uint8_t register_string_to_int(char *reg)
 {
+	int reg_value;
 	size_t reg_length = strlen(reg);
 	uint8_t reg_1 = (uint8_t) (reg[1] - '0'), reg_2 = 0, reg_int = INVALID_REGISTER, reg_is_only_numbers = 1;
 
@@ -169,7 +164,12 @@ uint8_t register_string_to_int(char *reg)
 		}
 	}
 	
-	if(reg_is_only_numbers) reg_int = (uint8_t) atoi(reg);
+	if(reg_is_only_numbers)
+	{
+		reg_value = atoi(reg);
+		if(reg_value >= 0 && reg_value <= 32) reg_int = (uint8_t) reg_value;
+		else reg_int = INVALID_REGISTER;
+	}
 	else
 	{
 		if(!strcmp(reg, "zero")) reg_int = REG_ZERO;
@@ -181,32 +181,42 @@ uint8_t register_string_to_int(char *reg)
 		else if(reg[0] == 'v')
 		{
 			if(reg[1] == '0' || reg[1] == '1') reg_int = REG_V0 + reg_1;
+			else reg_int = INVALID_REGISTER;
 		}
 		else if(reg[0] == 'a')
 		{
 			if('0' <= reg[1] && reg[1] <= '3') reg_int = REG_A0 + reg_1;
+			else reg_int = INVALID_REGISTER;
 		}
 		else if(reg[0] == 's')
 		{
 			if('0' <= reg[1] && reg[1] <= '7') reg_int = REG_S0 + reg_1;
+			else reg_int = INVALID_REGISTER;
 		}
 		else if(reg[0] == 'k')
 		{
 			if(reg[1] == '0' || reg[1] == '1') reg_int = REG_K0 + reg_1;
+			else reg_int = INVALID_REGISTER;
 		}
 		else if(reg[0] == 't')
 		{
 			if('0' <= reg[1] && reg[1] <= '7') reg_int = REG_T0 + reg_1;
 			else if(reg[1] == '8' || reg[1] == '9') reg_int = (uint8_t) (REG_T8 + (reg_1 - 8));
+			else reg_int = INVALID_REGISTER;
 		}
 		else if(reg[0] == 'f')
 		{
-			if(reg[2])
+			if('0' <= reg[1] && reg[1] >= '9')
 			{
-				reg_1 *= 10;
-				reg_2 = (uint8_t) (reg[2] - '0');
+				if('0' <= reg[2] && reg[2] <= '9')
+				{
+					reg_1 *= 10;
+					reg_2 = (uint8_t) (reg[2] - '0');
+					reg_int = reg_1 + reg_2;
+				}
+				else reg_int = reg_1;
 			}
-			reg_int = reg_1 + reg_2;
+			else reg_int = INVALID_REGISTER;
 		}
 		else fprintf(stderr, "[!] Unknown register : %c not recognized as an alias\n", reg[0]);
 	}
