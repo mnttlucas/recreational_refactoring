@@ -167,7 +167,7 @@ uint8_t register_string_to_int(char *reg)
 	if(reg_is_only_numbers)
 	{
 		reg_value = atoi(reg);
-		if(reg_value >= 0 && reg_value <= 32) reg_int = (uint8_t) reg_value;
+		if(reg_value >= 0 && reg_value < REGISTER_COUNT) reg_int = (uint8_t) reg_value;
 		else reg_int = INVALID_REGISTER;
 	}
 	else
@@ -206,7 +206,7 @@ uint8_t register_string_to_int(char *reg)
 		}
 		else if(reg[0] == 'f')
 		{
-			if('0' <= reg[1] && reg[1] >= '9')
+			if('0' <= reg[1] && reg[1] <= '9')
 			{
 				if('0' <= reg[2] && reg[2] <= '9')
 				{
@@ -221,7 +221,7 @@ uint8_t register_string_to_int(char *reg)
 		else fprintf(stderr, "[!] Unknown register : %c not recognized as an alias\n", reg[0]);
 	}
 
-	if(reg_int >= INVALID_REGISTER)
+	if(reg_int >= REGISTER_COUNT)
 	{
 		fprintf(stderr, "[!] Unknown register : %d not a valid index\n", reg_int);
 		reg_int = INVALID_REGISTER;
