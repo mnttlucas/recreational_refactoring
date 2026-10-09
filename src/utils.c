@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -55,7 +56,7 @@ void cpu_dump(CPU *cpu, Config *cfg)
 	for(int i = 0; i <= (REGISTER_COUNT - 4) / DUMP_LINE_SIZE; i++)
 	{
 		for(int j = 0; (i * DUMP_LINE_SIZE + j) < REGISTER_COUNT && j < DUMP_LINE_SIZE; j++)
-			printf("$%s%d : %-10x ", DUMP_LINE_SIZE * i + j <= 9 ? "0" : "", DUMP_LINE_SIZE * i + j, (int32_t) gpr_read_32(cpu, DUMP_LINE_SIZE * i + j));
+			printf("$%s%d : %-10x ", DUMP_LINE_SIZE * i + j <= 9 ? "0" : "", DUMP_LINE_SIZE * i + j, gpr_read_32(cpu, DUMP_LINE_SIZE * i + j));
 		printf("\n");
 	}
 
@@ -63,7 +64,7 @@ void cpu_dump(CPU *cpu, Config *cfg)
 	for(int i = 0; i <= (REGISTER_COUNT - 4) / DUMP_LINE_SIZE; i++)
 	{
 		for(int j = 0; (i * DUMP_LINE_SIZE + j) < REGISTER_COUNT && j < DUMP_LINE_SIZE; j++)
-			printf("$%s%d : 0x%-10lx ", DUMP_LINE_SIZE * i + j <= 9 ? "0" : "", DUMP_LINE_SIZE * i + j, fpr_read_64(cpu, DUMP_LINE_SIZE * i + j));
+			printf("$%s%d : 0x%-10" PRIx64 "", DUMP_LINE_SIZE * i + j <= 9 ? "0" : "", DUMP_LINE_SIZE * i + j, fpr_read_64(cpu, DUMP_LINE_SIZE * i + j));
 		printf("\n");
 	}
 
@@ -208,13 +209,14 @@ uint8_t register_string_to_int(char *reg)
 		{
 			if('0' <= reg[1] && reg[1] <= '9')
 			{
-				if('0' <= reg[2] && reg[2] <= '9')
+				if('0' <= reg[2] && reg[2] <= '9' && !reg[3])
 				{
 					reg_1 *= 10;
 					reg_2 = (uint8_t) (reg[2] - '0');
 					reg_int = reg_1 + reg_2;
 				}
-				else reg_int = reg_1;
+				else if(!reg[2]) reg_int = reg_1;
+				else reg_int = INVALID_REGISTER;
 			}
 			else reg_int = INVALID_REGISTER;
 		}
