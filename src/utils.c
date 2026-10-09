@@ -60,11 +60,11 @@ void cpu_dump(CPU *cpu, Config *cfg)
 		printf("\n");
 	}
 
-	printf("\n--------------------------- FPR' status --------------------------\n");
+	printf("\n------------------------------------ FPR' status -----------------------------------\n");
 	for(int i = 0; i <= (REGISTER_COUNT - 4) / DUMP_LINE_SIZE; i++)
 	{
 		for(int j = 0; (i * DUMP_LINE_SIZE + j) < REGISTER_COUNT && j < DUMP_LINE_SIZE; j++)
-			printf("$%s%d : 0x%-10" PRIx64 "", DUMP_LINE_SIZE * i + j <= 9 ? "0" : "", DUMP_LINE_SIZE * i + j, fpr_read_64(cpu, DUMP_LINE_SIZE * i + j));
+			printf("$%s%d : 0x%-16" PRIx64 " ", DUMP_LINE_SIZE * i + j <= 9 ? "0" : "", DUMP_LINE_SIZE * i + j, fpr_read_64(cpu, DUMP_LINE_SIZE * i + j));
 		printf("\n");
 	}
 
