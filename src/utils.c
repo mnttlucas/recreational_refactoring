@@ -55,7 +55,7 @@ void cpu_dump(CPU *cpu, Config *cfg)
 	for(int i = 0; i <= (REGISTER_COUNT - 4) / DUMP_LINE_SIZE; i++)
 	{
 		for(int j = 0; (i * DUMP_LINE_SIZE + j) < REGISTER_COUNT && j < DUMP_LINE_SIZE; j++)
-			printf("$%s%d : %-10d ", DUMP_LINE_SIZE * i + j <= 9 ? "0" : "", DUMP_LINE_SIZE * i + j, gpr_read_32(cpu, DUMP_LINE_SIZE * i + j));
+			printf("$%s%d : %-10d ", DUMP_LINE_SIZE * i + j <= 9 ? "0" : "", DUMP_LINE_SIZE * i + j, (int32_t) gpr_read_32(cpu, DUMP_LINE_SIZE * i + j));
 		printf("\n");
 	}
 
@@ -63,7 +63,7 @@ void cpu_dump(CPU *cpu, Config *cfg)
 	for(int i = 0; i <= (REGISTER_COUNT - 4) / DUMP_LINE_SIZE; i++)
 	{
 		for(int j = 0; (i * DUMP_LINE_SIZE + j) < REGISTER_COUNT && j < DUMP_LINE_SIZE; j++)
-			printf("$%s%d : %-10ld ", DUMP_LINE_SIZE * i + j <= 9 ? "0" : "", DUMP_LINE_SIZE * i + j, fpr_read_64(cpu, DUMP_LINE_SIZE * i + j));
+			printf("$%s%d : %-10f ", DUMP_LINE_SIZE * i + j <= 9 ? "0" : "", DUMP_LINE_SIZE * i + j, (double) fpr_read_64(cpu, DUMP_LINE_SIZE * i + j));
 		printf("\n");
 	}
 
@@ -152,7 +152,7 @@ char *read_full_line(FILE *in)
 uint8_t register_string_to_int(char *reg)
 {
 	size_t reg_length = strlen(reg);
-	uint8_t reg_1 = (uint8_t) (reg[1] - '0'), reg_2 = 0, reg_int = 0, reg_is_only_numbers = 1;
+	uint8_t reg_1 = (uint8_t) (reg[1] - '0'), reg_2 = 0, reg_int = INVALID_REGISTER, reg_is_only_numbers = 1;
 
 	for(size_t i = 0; i < reg_length; i++)
 	{
@@ -201,8 +201,9 @@ uint8_t register_string_to_int(char *reg)
 				reg_2 = (uint8_t) (reg[2] - '0');
 			}
 			reg_int = reg_1 + reg_2;
+			if(reg_int > 32) reg_int = INVALID_REGISTER;
 		}
-		else fprintf(stderr, "[!] Unknown register, returned 0 to ignore\n");
+		else fprintf(stderr, "[!] Unknown register\n");
 	}
 
 	return(reg_int);

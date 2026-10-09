@@ -8,6 +8,7 @@
 #include "instruction.h"
 
 #define DUMP_MEMORY_WORDS 40
+#define INVALID_REGISTER  32
 
 #define ARR_SIZE(arr) \
 	(sizeof(arr) / sizeof((arr)[0]))

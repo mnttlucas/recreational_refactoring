@@ -43,7 +43,7 @@ void fpr_write_32(CPU *cpu, int id, uint32_t value)
 
 void fpr_write_64(CPU *cpu, int id, uint64_t value)
 {
-	if(id >= 0 && id < REGISTER_COUNT) cpu->FPR[id + 1] = value;
+	if(id >= 0 && id < REGISTER_COUNT) cpu->FPR[id] = value;
 	else fprintf(stderr, "[!] fpr_write_64() : invalid register %d\n", id);
 }
 

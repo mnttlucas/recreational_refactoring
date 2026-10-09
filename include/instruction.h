@@ -3,6 +3,10 @@
 
 #include <stdint.h>
 
+/* Errors */
+#define NO_ERR               0
+#define ERR_INVALID_REGISTER 1
+
 /* MIPS bit fields */
 #define OPCODE_START     0
 #define OPCODE_END       5
@@ -270,6 +274,7 @@ typedef struct
 	int32_t offset;
 	Opcode opcode;
 	uint8_t base;
+	uint8_t error;
 	uint8_t exit;
 	uint8_t fd, fs, ft;
 	uint8_t instr_bin[32];

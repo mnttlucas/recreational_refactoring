@@ -310,6 +310,7 @@ void decode_rd_operand(char *line, instruction *instr)
 	char rd[8];
 	sscanf(line, " $%7s ", rd);
 	instr->rd = register_string_to_int(rd);
+	if(instr->rd == INVALID_REGISTER) instr->error = ERR_INVALID_REGISTER;
 }
 
 void decode_rd_rs_operands(char *line, instruction *instr)
@@ -339,6 +340,7 @@ void decode_rd_rs_operands(char *line, instruction *instr)
 		instr->rd = register_string_to_int(rd);
 	}
 	instr->rs = register_string_to_int(rs);
+	if(instr->rd == INVALID_REGISTER || instr->rs == INVALID_REGISTER) instr->error = ERR_INVALID_REGISTER;
 }
 
 void decode_rd_rs_rt_operands(char *line, instruction *instr)
@@ -348,6 +350,7 @@ void decode_rd_rs_rt_operands(char *line, instruction *instr)
 	instr->rd = register_string_to_int(rd);
 	instr->rs = register_string_to_int(rs);
 	instr->rt = register_string_to_int(rt);
+	if(instr->rd == INVALID_REGISTER || instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error = ERR_INVALID_REGISTER;
 }
 
 void decode_rd_rt_operands(char *line, instruction *instr)
@@ -356,6 +359,7 @@ void decode_rd_rt_operands(char *line, instruction *instr)
 	sscanf(line, " $%7[^,] , $%7s ", rd, rt);
 	instr->rd = register_string_to_int(rd);
 	instr->rt = register_string_to_int(rt);
+	if(instr->rd == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error = ERR_INVALID_REGISTER;
 }
 
 void decode_rd_rt_rs_operands(char *line, instruction *instr)
@@ -365,6 +369,7 @@ void decode_rd_rt_rs_operands(char *line, instruction *instr)
 	instr->rd = register_string_to_int(rd);
 	instr->rs = register_string_to_int(rs);
 	instr->rt = register_string_to_int(rt);
+	if(instr->rd == INVALID_REGISTER || instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error = ERR_INVALID_REGISTER;
 }
 
 void decode_rd_rt_sa_operands(char *line, instruction *instr)
@@ -374,6 +379,7 @@ void decode_rd_rt_sa_operands(char *line, instruction *instr)
 	instr->rd = register_string_to_int(rd);
 	instr->rt = register_string_to_int(rt);
 	instr->sa = (uint8_t) atoi(sa);
+	if(instr->rd == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error = ERR_INVALID_REGISTER;
 }
 
 void decode_rs_operand(char *line, instruction *instr)
@@ -381,6 +387,7 @@ void decode_rs_operand(char *line, instruction *instr)
 	char rs[8];
 	sscanf(line, " $%7s ", rs);
 	instr->rs = register_string_to_int(rs);
+	if(instr->rs == INVALID_REGISTER) instr->error = ERR_INVALID_REGISTER;
 }
 
 void decode_rs_immediate_operands(char *line, instruction *instr)
@@ -389,6 +396,7 @@ void decode_rs_immediate_operands(char *line, instruction *instr)
 	sscanf(line, " $%7[^,], %15s ", rs, imm);
 	instr->immediate = handle_sign(imm, instr);
 	instr->rs = register_string_to_int(rs);
+	if(instr->rs == INVALID_REGISTER) instr->error = ERR_INVALID_REGISTER;
 }
 
 void decode_rs_offset_operands(char *line, instruction *instr)
@@ -397,6 +405,7 @@ void decode_rs_offset_operands(char *line, instruction *instr)
 	sscanf(line, " $%7[^,]  , %15s ", rs, offset);
 	instr->offset = handle_sign(offset, instr);
 	instr->rs = register_string_to_int(rs);
+	if(instr->rs == INVALID_REGISTER) instr->error = ERR_INVALID_REGISTER;
 }
 
 void decode_rs_rt_operands(char *line, instruction *instr)
@@ -405,6 +414,7 @@ void decode_rs_rt_operands(char *line, instruction *instr)
 	sscanf(line, " $%7[^,] , $%7s ", rs, rt);
 	instr->rs = register_string_to_int(rs);
 	instr->rt = register_string_to_int(rt);
+	if(instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error = ERR_INVALID_REGISTER;
 }
 
 void decode_rs_rt_offset_operands(char *line, instruction *instr)
@@ -414,6 +424,7 @@ void decode_rs_rt_offset_operands(char *line, instruction *instr)
 	instr->offset = handle_sign(offset, instr);
 	instr->rs = register_string_to_int(rs);
 	instr->rt = register_string_to_int(rt);
+	if(instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error = ERR_INVALID_REGISTER;
 }
 
 void decode_rt_immediate_operands(char *line, instruction *instr)
@@ -422,6 +433,7 @@ void decode_rt_immediate_operands(char *line, instruction *instr)
 	sscanf(line, " $%7[^,] , %15s ", rt, imm);
 	instr->immediate = handle_sign(imm, instr);
 	instr->rt = register_string_to_int(rt);
+	if(instr->rt == INVALID_REGISTER) instr->error = ERR_INVALID_REGISTER;
 }
 
 void decode_rt_offset_operands(char *line, instruction *instr)
@@ -430,6 +442,7 @@ void decode_rt_offset_operands(char *line, instruction *instr)
 	sscanf(line, " $%7[^,] , %15s ", rt, offset);
 	instr->offset = handle_sign(offset, instr);
 	instr->rt = register_string_to_int(rt);
+	if(instr->rt == INVALID_REGISTER) instr->error = ERR_INVALID_REGISTER;
 }
 
 void decode_rt_offset_base_operands(char *line, instruction *instr)
@@ -439,6 +452,7 @@ void decode_rt_offset_base_operands(char *line, instruction *instr)
 	instr->base = register_string_to_int(base);
 	instr->offset = handle_sign(offset, instr);
 	instr->rt = register_string_to_int(rt);
+	if(instr->base == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error = ERR_INVALID_REGISTER;
 }
 
 void decode_rt_rs_immediate_operands(char *line, instruction *instr)
@@ -448,6 +462,7 @@ void decode_rt_rs_immediate_operands(char *line, instruction *instr)
 	instr->immediate = handle_sign(imm, instr);
 	instr->rs = register_string_to_int(rs);
 	instr->rt = register_string_to_int(rt);
+	if(instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error = ERR_INVALID_REGISTER;
 }
 
 void decode_rt_rs_offset_operands(char *line, instruction *instr)
@@ -457,6 +472,7 @@ void decode_rt_rs_offset_operands(char *line, instruction *instr)
 	instr->offset = handle_sign(offset, instr);
 	instr->rs = register_string_to_int(rs);
 	instr->rt = register_string_to_int(rt);
+	if(instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error = ERR_INVALID_REGISTER;
 }
 
 void decode_target_operands(char *line, instruction *instr)
