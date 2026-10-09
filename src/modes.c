@@ -27,7 +27,7 @@ void interactive_mode(CPU *cpu, Config *cfg)
 
 void batch_mode(CPU *cpu, Config *cfg, char *path_in, char *path_out_hex, char *path_out_regs)
 {
-	uint32_t i = 0, n;
+	uint32_t error_count = 0, i = 0, line_number = 0, n;
 	unsigned long capacity = 64;
 	instruction *instructions_arr = malloc(capacity * sizeof(instruction));
 	FILE *in, *out_hex, *out_regs;
@@ -93,8 +93,27 @@ void batch_mode(CPU *cpu, Config *cfg, char *path_in, char *path_out_hex, char *
 			}
 		}
 		instructions_arr[i] = decode_instruction(1, in);
+		line_number++;
 		if(instructions_arr[i].exit) break;
-		if(instructions_arr[i].opcode > OPCODE_MIN && instructions_arr[i].opcode < OPCODE_MAX) i++;
+		if(instructions_arr[i].error)
+		{
+			fprintf(stderr, "[!] batch_mode : line %u invalid\n", line_number);
+			error_count++;
+		}
+		else if(instructions_arr[i].opcode > OPCODE_MIN && instructions_arr[i].opcode < OPCODE_MAX) i++;
+	}
+
+	if(error_count)
+	{
+		fprintf(stderr, "[!] batch_mode : %u invalid line(s), program not executed\n", error_count);
+		fclose(in);
+		if(cfg->step)
+		{
+			fclose(out_hex);
+			fclose(out_regs);
+		}
+		free(instructions_arr);
+		return;
 	}
 
 	printf("\n-- Instruction  execute --\n");

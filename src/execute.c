@@ -507,7 +507,6 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			gpr_write_32(cpu, instr.rt, u32);
 			break;
 		default :
-			fprintf(stderr, "[!] This line was either a comment or an unknown command\n");
 			break;
 	}
 

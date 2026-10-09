@@ -641,9 +641,14 @@ instruction decode_instruction(int mode, FILE *fichier)
 		if(instr.error)
 		{
 			fprintf(stderr, "[!] Instruction rejected : %s\n", line);
-			instr = (instruction) {0};
+			instr.opcode = OPCODE_MIN;
 		}
 		else log_instruction(&instr);
+	}
+	else
+	{
+		fprintf(stderr, "[!] Unknown instruction : %s\n", mnemonic);
+		instr.error = ERR_UNKNOWN_INSTRUCTION;
 	}
 
 	free(line);

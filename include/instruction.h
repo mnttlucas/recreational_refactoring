@@ -4,8 +4,9 @@
 #include <stdint.h>
 
 /* Errors */
-#define NO_ERR               0
-#define ERR_INVALID_REGISTER 1
+#define NO_ERR                      0
+#define ERR_INVALID_REGISTER        1
+#define ERR_UNKNOWN_INSTRUCTION     2
 
 /* MIPS bit fields */
 #define OPCODE_START     0
