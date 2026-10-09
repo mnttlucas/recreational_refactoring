@@ -10,7 +10,7 @@
 
 typedef struct 
 {
-    uint32_t FPR[REGISTER_COUNT];
+    uint64_t FPR[REGISTER_COUNT];
     uint32_t GPR[REGISTER_COUNT];
     uint32_t PC;
     /* Handle delay slot, field is -1 when no delay slot is pending */

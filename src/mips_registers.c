@@ -17,42 +17,34 @@ void registers_init(CPU *cpu)
 
 uint32_t fpr_read_32(CPU *cpu, int id)
 {
-    uint32_t value = 0;
+	uint32_t value = 0;
 
-    if(id >= 0 && id < REGISTER_COUNT) value = cpu->FPR[id];
-    else fprintf(stderr, "[!] fpr_read_32() : invalid register %d\n", id);
+	if(id >= 0 && id < REGISTER_COUNT) value = (uint32_t) cpu->FPR[id];
+	else fprintf(stderr, "[!] fpr_read_32() : invalid register %d\n", id);
 
-    return(value);
+	return(value);
 }
 
 uint64_t fpr_read_64(CPU *cpu, int id)
 {
-    uint64_t value = 0;
+	uint64_t value = 0;
 
-    if(id >= 0 && id < REGISTER_COUNT - 1)
-    {
-        value = (uint64_t) cpu->FPR[id] << 32;
-        value |= (uint64_t) cpu->FPR[id + 1];
-    }
-    else fprintf(stderr, "[!] fpr_read_64() : invalid register %d\n", id);
+	if(id >= 0 && id < REGISTER_COUNT) value = cpu->FPR[id];
+	else fprintf(stderr, "[!] fpr_read_64() : invalid register %d\n", id);
 
-    return(value);
+	return(value);
 }
 
 void fpr_write_32(CPU *cpu, int id, uint32_t value)
 {
-    if(id >= 0 && id < REGISTER_COUNT) cpu->FPR[id] = value;
-    else fprintf(stderr, "[!] fpr_write_32() : invalid register %d\n", id);
+	if(id >= 0 && id < REGISTER_COUNT) cpu->FPR[id] = (uint64_t) value;
+	else fprintf(stderr, "[!] fpr_write_32() : invalid register %d\n", id);
 }
 
 void fpr_write_64(CPU *cpu, int id, uint64_t value)
 {
-    if(id >= 0 && id < REGISTER_COUNT - 1)
-    {
-        cpu->FPR[id] = (uint32_t) (value >> 32);
-        cpu->FPR[id + 1] = (uint32_t) value;
-    }
-    else fprintf(stderr, "[!] fpr_write_64() : invalid register %d\n", id);
+	if(id >= 0 && id < REGISTER_COUNT) cpu->FPR[id + 1] = value;
+	else fprintf(stderr, "[!] fpr_write_64() : invalid register %d\n", id);
 }
 
 uint32_t gpr_read_32(CPU *cpu, int id)

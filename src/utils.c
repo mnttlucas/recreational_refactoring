@@ -51,11 +51,19 @@ void cpu_dump(CPU *cpu, Config *cfg)
 {
 	int words_to_show = (MEMORY_SIZE / WORD_SIZE < DUMP_MEMORY_WORDS) ? MEMORY_SIZE / WORD_SIZE : DUMP_MEMORY_WORDS;
 
-	printf("\n-------------------- Registers' status -------------------\n");
+	printf("\n----------------------- GPR' status ----------------------\n");
 	for(int i = 0; i <= (REGISTER_COUNT - 4) / DUMP_LINE_SIZE; i++)
 	{
-		for(int j = 0; (i * DUMP_LINE_SIZE + j) < (REGISTER_COUNT - 3) && j < DUMP_LINE_SIZE; j++)
+		for(int j = 0; (i * DUMP_LINE_SIZE + j) < REGISTER_COUNT && j < DUMP_LINE_SIZE; j++)
 			printf("$%s%d : %-10d ", DUMP_LINE_SIZE * i + j <= 9 ? "0" : "", DUMP_LINE_SIZE * i + j, gpr_read_32(cpu, DUMP_LINE_SIZE * i + j));
+		printf("\n");
+	}
+
+	printf("\n----------------------- FPR' status ----------------------\n");
+	for(int i = 0; i <= (REGISTER_COUNT - 4) / DUMP_LINE_SIZE; i++)
+	{
+		for(int j = 0; (i * DUMP_LINE_SIZE + j) < REGISTER_COUNT && j < DUMP_LINE_SIZE; j++)
+			printf("$%s%d : %-10ld ", DUMP_LINE_SIZE * i + j <= 9 ? "0" : "", DUMP_LINE_SIZE * i + j, fpr_read_64(cpu, DUMP_LINE_SIZE * i + j));
 		printf("\n");
 	}
 
@@ -192,8 +200,7 @@ uint8_t register_string_to_int(char *reg)
 				reg_1 *= 10;
 				reg_2 = (uint8_t) (reg[2] - '0');
 			}
-			if(reg_1 + reg_2 < 32) reg_int = reg_1 + reg_2;
-			else fprintf(stderr, "[!] Unknown register, returned 0 to ignore\n");
+			reg_int = reg_1 + reg_2;
 		}
 		else fprintf(stderr, "[!] Unknown register, returned 0 to ignore\n");
 	}
