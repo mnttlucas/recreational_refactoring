@@ -6,6 +6,9 @@
 
 #include "instruction.h"
 
+#define BATCH       1
+#define INTERACTIVE 0
+
 #define FIELD(start, end, value) \
 	(instruction_field) {value, start, end}
 
