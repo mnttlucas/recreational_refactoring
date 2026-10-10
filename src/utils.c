@@ -56,7 +56,7 @@ void cpu_dump(CPU *cpu, Config *cfg)
 	for(int i = 0; i <= (REGISTER_COUNT - 4) / DUMP_LINE_SIZE; i++)
 	{
 		for(int j = 0; (i * DUMP_LINE_SIZE + j) < REGISTER_COUNT && j < DUMP_LINE_SIZE; j++)
-			printf("$%s%d : %-10x ", DUMP_LINE_SIZE * i + j <= 9 ? "0" : "", DUMP_LINE_SIZE * i + j, gpr_read_32(cpu, DUMP_LINE_SIZE * i + j));
+			printf("$%s%d : %-10d ", DUMP_LINE_SIZE * i + j <= 9 ? "0" : "", DUMP_LINE_SIZE * i + j, (int32_t) gpr_read_32(cpu, DUMP_LINE_SIZE * i + j));
 		printf("\n");
 	}
 
