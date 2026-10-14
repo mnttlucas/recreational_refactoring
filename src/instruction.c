@@ -105,7 +105,6 @@ static const instruction_desc instruction_table[] =
 
 const instruction_desc *find_instruction(const char *mnemonic)
 {
-	for(size_t i = 0; i < ARR_SIZE(instruction_table); i++)
-		if(!strcmp(mnemonic, instruction_table[i].mnemonic)) return(&instruction_table[i]);
+	for(size_t i = 0; i < ARR_SIZE(instruction_table); i++) if(!mystrcasecmp(mnemonic, instruction_table[i].mnemonic)) return(&instruction_table[i]);
 	return(NULL);
 }

@@ -8,12 +8,17 @@
 #include "mips_registers.h"
 #include "utils.h"
 
+static int to_lower_ascii(int c)
+{
+	return((c >= 'A' && c <= 'Z') ? c + ('a' - 'A') : c);
+}
+
 void clear_output()
 {
 	printf("\033[2J\033[H\n\n");
 }
 
-void cpu_dump(CPU *cpu, Config *cfg)
+void cpu_dump(CPU *cpu)
 {
 	int words_to_show = (MEMORY_SIZE / WORD_SIZE < DUMP_MEMORY_WORDS) ? MEMORY_SIZE / WORD_SIZE : DUMP_MEMORY_WORDS;
 
@@ -43,8 +48,6 @@ void cpu_dump(CPU *cpu, Config *cfg)
 
 	if(words_to_show < MEMORY_SIZE / WORD_SIZE)
 		printf("\t\t\t[...] (%d other words not displayed)\n", MEMORY_SIZE / WORD_SIZE - words_to_show);
-
-	if(cfg->step) wait_for_enter();
 }
 
 void log_instruction(instruction *instr)
@@ -59,6 +62,17 @@ fprintf(stderr, "\n[!] Usage:\n \
 - %s -step {pathfile instructions file} for batch mode (step by step)\n \
 - %s {pathfile instructions file} {pathfile hex instructions output} {pathfile registers output} for batch mode\n",
 prog_name, prog_name, prog_name);
+}
+
+int mystrcasecmp(const char *a, const char *b)
+{
+	while(*a && to_lower_ascii((unsigned char) *a) == to_lower_ascii((unsigned char) *b))
+	{
+		a++;
+		b++;
+	}
+
+	return(to_lower_ascii((unsigned char) *a) - to_lower_ascii((unsigned char) *b));
 }
 
 char *read_full_line(FILE *in)
@@ -117,39 +131,18 @@ uint8_t register_string_to_int(char *reg)
 	}
 	else
 	{
-		if(!strcmp(reg, "zero")) reg_int = REG_ZERO;
-		else if(!strcmp(reg, "at"))	reg_int = REG_AT;
-		else if(!strcmp(reg, "gp"))	reg_int = REG_GP;
-		else if(!strcmp(reg, "sp"))	reg_int = REG_SP;
-		else if(!strcmp(reg, "fp"))	reg_int = REG_FP;
-		else if(!strcmp(reg, "ra"))	reg_int = REG_RA;
-		else if(reg[0] == 'v')
-		{
-			if(reg[1] == '0' || reg[1] == '1') reg_int = REG_V0 + reg_1;
-			else reg_int = INVALID_REGISTER;
-		}
-		else if(reg[0] == 'a')
+		if(!mystrcasecmp(reg, "zero")) reg_int = REG_ZERO;
+		else if(!mystrcasecmp(reg, "at"))	reg_int = REG_AT;
+		else if(!mystrcasecmp(reg, "gp"))	reg_int = REG_GP;
+		else if(!mystrcasecmp(reg, "sp"))	reg_int = REG_SP;
+		else if(!mystrcasecmp(reg, "fp"))	reg_int = REG_FP;
+		else if(!mystrcasecmp(reg, "ra"))	reg_int = REG_RA;
+		else if(reg[0] == 'a' || reg[0] == 'A')
 		{
 			if('0' <= reg[1] && reg[1] <= '3') reg_int = REG_A0 + reg_1;
 			else reg_int = INVALID_REGISTER;
 		}
-		else if(reg[0] == 's')
-		{
-			if('0' <= reg[1] && reg[1] <= '7') reg_int = REG_S0 + reg_1;
-			else reg_int = INVALID_REGISTER;
-		}
-		else if(reg[0] == 'k')
-		{
-			if(reg[1] == '0' || reg[1] == '1') reg_int = REG_K0 + reg_1;
-			else reg_int = INVALID_REGISTER;
-		}
-		else if(reg[0] == 't')
-		{
-			if('0' <= reg[1] && reg[1] <= '7') reg_int = REG_T0 + reg_1;
-			else if(reg[1] == '8' || reg[1] == '9') reg_int = (uint8_t) (REG_T8 + (reg_1 - 8));
-			else reg_int = INVALID_REGISTER;
-		}
-		else if(reg[0] == 'f')
+		else if(reg[0] == 'f' || reg[0] == 'F')
 		{
 			if('0' <= reg[1] && reg[1] <= '9')
 			{
@@ -162,6 +155,27 @@ uint8_t register_string_to_int(char *reg)
 				else if(!reg[2]) reg_int = reg_1;
 				else reg_int = INVALID_REGISTER;
 			}
+			else reg_int = INVALID_REGISTER;
+		}
+		else if(reg[0] == 'k' || reg[0] == 'K')
+		{
+			if(reg[1] == '0' || reg[1] == '1') reg_int = REG_K0 + reg_1;
+			else reg_int = INVALID_REGISTER;
+		}
+		else if(reg[0] == 's' || reg[0] == 'S')
+		{
+			if('0' <= reg[1] && reg[1] <= '7') reg_int = REG_S0 + reg_1;
+			else reg_int = INVALID_REGISTER;
+		}
+		else if(reg[0] == 't' || reg[0] == 'T')
+		{
+			if('0' <= reg[1] && reg[1] <= '7') reg_int = REG_T0 + reg_1;
+			else if(reg[1] == '8' || reg[1] == '9') reg_int = (uint8_t) (REG_T8 + (reg_1 - 8));
+			else reg_int = INVALID_REGISTER;
+		}
+		else if(reg[0] == 'v' || reg[0] == 'V')
+		{
+			if(reg[1] == '0' || reg[1] == '1') reg_int = REG_V0 + reg_1;
 			else reg_int = INVALID_REGISTER;
 		}
 		else fprintf(stderr, "[!] Unknown register : %c not recognized as an alias\n", reg[0]);

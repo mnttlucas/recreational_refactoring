@@ -6,9 +6,6 @@
 
 #include "instruction.h"
 
-#define BATCH       1
-#define INTERACTIVE 0
-
 void build_offset_16_instruction(instruction *instr, int op_code);
 void build_offset_26_instruction(instruction *instr, int op_code);
 void build_rd_instruction(instruction *instr, int funct_code);

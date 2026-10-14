@@ -14,9 +14,10 @@
 	(sizeof(arr) / sizeof((arr)[0]))
 
 void clear_output();
-void cpu_dump(CPU *cpu, Config *cfg);
+void cpu_dump(CPU *cpu);
 void log_instruction(instruction *instr);
 void log_usage(char *prog_name);
+int mystrcasecmp(const char *a, const char *b);
 char *read_full_line(FILE *in);
 uint8_t register_string_to_int(char *str);
 int32_t sign_extend(int32_t value, uint8_t bits);

@@ -7,6 +7,9 @@
 #include "cpu.h"
 #include "instruction.h"
 
+#define BATCH       1
+#define INTERACTIVE 0
+
 void interactive_mode(CPU *cpu, Config *cfg);
 void batch_mode(CPU *cpu, Config *cfg, char *path_in, char *path_out_hex, char *path_out_regs);
 
