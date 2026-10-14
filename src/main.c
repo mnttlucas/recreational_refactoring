@@ -12,8 +12,7 @@ int main(int argc, char **argv)
 	Config cfg = {0};
 	CPU cpu;
 
-	memory_init(&cpu);
-	registers_init(&cpu);
+	cpu_init(&cpu);
 
 	if(argc == 1) interactive_mode(&cpu, &cfg);
 	else

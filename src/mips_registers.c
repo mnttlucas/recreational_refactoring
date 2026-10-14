@@ -11,8 +11,6 @@ void registers_init(CPU *cpu)
 		cpu->FPR[i] = 0;
 		cpu->GPR[i] = 0;
 	}
-	cpu->PC = 0;
-	cpu->next_PC = INVALID_PC;
 }
 
 uint32_t fpr_read_32(CPU *cpu, int id)

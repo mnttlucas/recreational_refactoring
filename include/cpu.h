@@ -18,4 +18,6 @@ typedef struct
     uint8_t memory[MEMORY_SIZE];
 } CPU;
 
+void cpu_init(CPU *cpu);
+
 #endif	/* CPU_H */
