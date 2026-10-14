@@ -350,7 +350,7 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			gpr_write_32(cpu, instr.rt, u32);
 			break;
 		case OP_LWPC :
-			address = cpu->PC + (uint32_t) (instr.offset << 2);
+			address = cpu->PC + ((uint32_t) instr.offset << 2);
 			u32 = memory_read_32(cpu, address);
 			gpr_write_32(cpu, instr.rs, u32);
 			break;
