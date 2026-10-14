@@ -96,10 +96,10 @@ static void run_program(CPU *cpu, Config *cfg, const Program *prog)
 	printf("\n-- Instruction  execute --\n");
 	while(pc_index < prog->count)
 	{
+		if(cfg->step) clear_output();
 		execute_instruction(cpu, cfg, prog->items[pc_index]);
 		if(cfg->step)
 		{
-			clear_output();
 			cpu_dump(cpu);
 			wait_for_enter();
 		}
