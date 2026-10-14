@@ -8,6 +8,33 @@
 #include "mips_registers.h"
 #include "utils.h"
 
+typedef void (*dump_cell)(CPU *cpu, int index);
+
+static void print_gpr(CPU *cpu, int index)
+{
+	printf("$%02d : %-10d ", index, (int32_t) gpr_read_32(cpu, index));
+}
+
+static void print_fpr(CPU *cpu, int index)
+{
+	printf("$%02d : 0x%-16" PRIx64 " ", index, fpr_read_64(cpu, index));
+}
+
+static void print_memory_word(CPU *cpu, int index)
+{
+	uint32_t address = (uint32_t) index * WORD_SIZE;
+	printf("@0000 %04" PRIx32 " : 0x%08" PRIx32 "       ", address, memory_read_32(cpu, address));
+}
+
+static void dump_grid(CPU *cpu, int count, dump_cell print_cell)
+{
+	for(int i = 0; i < count; i++)
+	{
+		print_cell(cpu, i);
+		if((i + 1) % DUMP_LINE_SIZE == 0 || i == count - 1) printf("\n");
+	}
+}
+
 static int to_lower_ascii(int c)
 {
 	return((c >= 'A' && c <= 'Z') ? c + ('a' - 'A') : c);
@@ -23,31 +50,13 @@ void cpu_dump(CPU *cpu)
 	int words_to_show = (MEMORY_SIZE / WORD_SIZE < DUMP_MEMORY_WORDS) ? MEMORY_SIZE / WORD_SIZE : DUMP_MEMORY_WORDS;
 
 	printf("\n----------------------- GPR' status ----------------------\n");
-	for(int i = 0; i <= (REGISTER_COUNT - 1) / DUMP_LINE_SIZE; i++)
-	{
-		for(int j = 0; (i * DUMP_LINE_SIZE + j) < REGISTER_COUNT && j < DUMP_LINE_SIZE; j++)
-			printf("$%s%d : %-10d ", DUMP_LINE_SIZE * i + j <= 9 ? "0" : "", DUMP_LINE_SIZE * i + j, (int32_t) gpr_read_32(cpu, DUMP_LINE_SIZE * i + j));
-		printf("\n");
-	}
-
+	dump_grid(cpu, REGISTER_COUNT, print_gpr);
 	printf("\n------------------------------------ FPR' status -----------------------------------\n");
-	for(int i = 0; i <= (REGISTER_COUNT - 1) / DUMP_LINE_SIZE; i++)
-	{
-		for(int j = 0; (i * DUMP_LINE_SIZE + j) < REGISTER_COUNT && j < DUMP_LINE_SIZE; j++)
-			printf("$%s%d : 0x%-16" PRIx64 " ", DUMP_LINE_SIZE * i + j <= 9 ? "0" : "", DUMP_LINE_SIZE * i + j, fpr_read_64(cpu, DUMP_LINE_SIZE * i + j));
-		printf("\n");
-	}
-
+	dump_grid(cpu, REGISTER_COUNT, print_fpr);
 	printf("\n------------------------------------------------- Memory status -------------------------------------------------\n");
-	for(int i = 0; i <= (words_to_show - 1) / DUMP_LINE_SIZE; i++)
-	{
-		for(int j = 0; (i * DUMP_LINE_SIZE + j) < words_to_show && j < DUMP_LINE_SIZE; j++)
-			printf("@0000 %04x : 0x%08" PRIx32 "       ", (DUMP_LINE_SIZE * i + j) * WORD_SIZE, memory_read_32(cpu, (uint32_t) (DUMP_LINE_SIZE * i + j) * WORD_SIZE));
-		printf("\n");
-	}
+	dump_grid(cpu, words_to_show, print_memory_word);
 
-	if(words_to_show < MEMORY_SIZE / WORD_SIZE)
-		printf("\t\t\t[...] (%d other words not displayed)\n", MEMORY_SIZE / WORD_SIZE - words_to_show);
+	if(words_to_show < MEMORY_SIZE / WORD_SIZE) printf("\t\t\t[...] (%d other words not displayed)\n", MEMORY_SIZE / WORD_SIZE - words_to_show);
 }
 
 void log_instruction(instruction *instr)
