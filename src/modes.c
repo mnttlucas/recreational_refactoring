@@ -128,7 +128,7 @@ void interactive_mode(CPU *cpu, Config *cfg)
 		if(!cur.exit && cur.opcode > OP_MIN && cur.opcode < OP_MAX)
 		{
 			execute_instruction(cpu, cfg, cur);
-			cpu_dump(cpu, cfg);
+			cpu_dump(cpu);
 		}
 	}
 }
@@ -151,7 +151,7 @@ void batch_mode(CPU *cpu, Config *cfg, char *path_in, char *path_out_hex, char *
 			if(!cfg->step)
 			{
 				write_hex(out_hex, &prog);
-				cpu_dump(cpu, cfg);
+				cpu_dump(cpu);
 				write_regs(out_regs, cpu);
 			}
 		}
