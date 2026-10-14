@@ -1,9 +1,13 @@
-#ifndef	REGISTERS_H
-#define	REGISTERS_H
+#ifndef	MIPS_REGISTERS_H
+#define	MIPS_REGISTERS_H
 
 #include <stdint.h>
 
 #include "cpu.h"
+
+/* Valid registers values are in range [0; REGISTER_COUNT[,
+so INVALID_REGISTER = REGISTER_COUNT, but are separated for clarity */
+#define INVALID_REGISTER  32
 
 #define REG_ZERO 0
 #define REG_AT 1
@@ -48,4 +52,4 @@ void fpr_write_64(CPU *cpu, int id, uint64_t value);
 uint32_t gpr_read_32(CPU *cpu, int id);
 void gpr_write_32(CPU *cpu, int id, uint32_t value);
 
-#endif	/* REGISTERS_H */
+#endif	/* MIPS_REGISTERS_H */

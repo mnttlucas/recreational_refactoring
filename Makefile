@@ -5,6 +5,7 @@ CC = gcc
 CFLAGS = -Wall -Wextra -Wpedantic \
           -Wshadow -Wconversion \
           -std=c11 -g \
+          -MMD -MP \
           -Iinclude
 
 TARGET = emul-mips
@@ -20,6 +21,7 @@ SRC = src/main.c \
       src/cpu.c
 
 OBJ = $(patsubst src/%.c,obj/%.o,$(SRC))
+DEP = $(OBJ:.o=.d)
 
 all: $(TARGET)
 
@@ -38,3 +40,5 @@ clean:
 re: clean all
 
 .PHONY: all clean re
+
+-include $(DEP)

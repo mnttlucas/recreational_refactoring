@@ -1,3 +1,6 @@
+#include <ctype.h>
+#include <errno.h>
+#include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,484 +11,510 @@
 #include "mips_registers.h"
 #include "utils.h"
 
-void build_instruction_bin(instruction_field *arr, size_t field_count, instruction *instr)
+#define SA_MAX     31
+#define TARGET_MAX ((INT32_C(1) << OFFSET_26_SIZE) - 1)
+
+static void syntax_error(instruction *instr)
 {
-	for(size_t i = 0; i < field_count; i++) long_to_bin_arr(arr[i].start_bit, arr[i].end_bit, arr[i].value, instr->instr_bin);
-	bin_arr_to_hex_arr(instr->instr_bin, instr->instr_hex);
+	fprintf(stderr, "[!] Syntax error : missing or malformed operands\n");
+	instr->error |= ERR_SYNTAX;
 }
 
-int32_t handle_sign(char *param, instruction *instr)
+/* Parses a decimal integer (optional sign, optional trailing spaces).
+   The whole token must be consumed, otherwise the instruction is rejected. */
+static int32_t parse_integer(const char *str, instruction *instr)
 {
-	if(is_negative(param))
+	char *end;
+	long value;
+
+	errno = 0;
+	value = strtol(str, &end, 10);
+
+	if(end == str)
 	{
-		instr->negative = 1;
-		remove_sign(param);
+		fprintf(stderr, "[!] Invalid number : '%s'\n", str);
+		instr->error |= ERR_INVALID_NUMBER;
+		return(0);
 	}
 
-	return((int32_t) atoi(param));
-}
+	while(isspace((unsigned char) *end)) end++;
 
-void finalize_signed_value(int32_t *value, instruction *instr, uint8_t start_bit, uint8_t end_bit)
-{
-	if(instr->negative)
+	if(*end != '\0')
 	{
-		*value *= -1;
-		bin_twos_complement(start_bit, end_bit, instr->instr_bin);
-		bin_arr_to_hex_arr(instr->instr_bin, instr->instr_hex);
+		fprintf(stderr, "[!] Invalid number : '%s'\n", str);
+		instr->error |= ERR_INVALID_NUMBER;
+		return(0);
 	}
+
+	if(errno == ERANGE || value > INT32_MAX || value < INT32_MIN)
+	{
+		fprintf(stderr, "[!] Number out of range : '%s'\n", str);
+		instr->error |= ERR_RANGE;
+		return(0);
+	}
+
+	return((int32_t) value);
 }
 
-void build_cmd_instruction(instruction *instr, int funct_code, int op_code, int rs_value, int rt_value, int rd_value, int shamt_value)
+/* A value is accepted if it fits in `size` bits either as signed or as unsigned,
+   i.e. [-2^(size-1); 2^size - 1]. Returns it sign-extended, as the execution expects. */
+static int32_t check_field(instruction *instr, int32_t value, uint8_t size)
 {
-	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, op_code),
-		FIELD(RS_START, RS_END, rs_value),
-		FIELD(RT_START, RT_END, rt_value),
-		FIELD(RD_START, RD_END, rd_value),
-		FIELD(SHAMT_START, SHAMT_END, shamt_value),
-		FIELD(FUNCT_START, FUNCT_END, funct_code)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr);
+	int32_t min = -(INT32_C(1) << (size - 1)), max = (INT32_C(1) << size) - 1;
+
+	if(value < min || value > max)
+	{
+		fprintf(stderr, "[!] Value out of range : %" PRId32 " does not fit in %d bits (allowed : %" PRId32 " to %" PRId32 ")\n", value, size, min, max);
+		instr->error |= ERR_RANGE;
+		return(0);
+	}
+
+	return(sign_extend(value, size));
+}
+
+static uint32_t field(int32_t value, uint8_t shift, uint8_t size)
+{
+	return(((uint32_t) value & ((UINT32_C(1) << size) - 1)) << shift);
+}
+
+static uint32_t encode_r(uint32_t op, uint32_t rs, uint32_t rt, uint32_t rd, uint32_t shamt, uint32_t funct)
+{
+	return((op << OPCODE_SHIFT) | (rs << RS_SHIFT) | (rt << RT_SHIFT) | (rd << RD_SHIFT) | (shamt << SHAMT_SHIFT) | (funct << FUNCT_SHIFT));
+}
+
+/* `value` is the already checked and sign-extended immediate/offset */
+static uint32_t encode_i(uint32_t op, uint32_t rs, uint32_t rt, int32_t value, uint8_t size)
+{
+	return((op << OPCODE_SHIFT) | (rs << RS_SHIFT) | (rt << RT_SHIFT) | field(value, 0, size));
+}
+
+static void build_cmd_instruction(instruction *instr, int funct_code, int op_code, int rs_value, int rt_value, int rd_value, int shamt_value)
+{
+	instr->encoding = encode_r((uint32_t) op_code, (uint32_t) rs_value, (uint32_t) rt_value, (uint32_t) rd_value, (uint32_t) shamt_value, (uint32_t) funct_code);
 }
 
 void build_offset_16_instruction(instruction *instr, int op_code)
 {
-	int32_t rt_value = 0;
-	if(instr->opcode == BAL) rt_value = BAL_RT;
-	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, op_code),
-		FIELD(RT_START, RT_END, rt_value),
-		FIELD(OFFSET_16_START, OFFSET_END, instr->offset)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr);
-	finalize_signed_value(&instr->offset, instr, OFFSET_16_START, OFFSET_END);
-	instr->offset = sign_extend(instr->offset, OFFSET_16_SIZE);
+	uint32_t rt_value = 0;
+	if(instr->opcode == OP_BAL) rt_value = BAL_RT;
+	instr->offset = check_field(instr, instr->offset, OFFSET_16_SIZE);
+	instr->encoding = encode_i((uint32_t) op_code, 0, rt_value, instr->offset, OFFSET_16_SIZE);
 }
 
 void build_offset_26_instruction(instruction *instr, int op_code)
 {
-	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, op_code),
-		FIELD(OFFSET_26_START, OFFSET_END, instr->offset)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr);
-	finalize_signed_value(&instr->offset, instr, OFFSET_26_START, OFFSET_END);
-	instr->offset = sign_extend(instr->offset, OFFSET_26_SIZE);
+	instr->offset = check_field(instr, instr->offset, OFFSET_26_SIZE);
+	instr->encoding = ((uint32_t) op_code << OPCODE_SHIFT) | field(instr->offset, 0, OFFSET_26_SIZE);
 }
 
 void build_rd_instruction(instruction *instr, int funct_code)
 {
-	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, OPCODE_SPECIAL),
-		FIELD(RD_START, RD_END, instr->rd),
-		FIELD(FUNCT_START, FUNCT_END, funct_code)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr);
+	instr->encoding = encode_r(OPCODE_SPECIAL, 0, 0, instr->rd, 0, (uint32_t) funct_code);
 }
 
 void build_rd_rs_instruction(instruction *instr, int funct_code)
 {
-	int32_t shamt_value = 0;
-	if(instr->opcode == CLO || instr->opcode == CLZ) shamt_value = CLO_CLZ_SA;
-	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, OPCODE_SPECIAL),
-		FIELD(RS_START, RS_END, instr->rs),
-		FIELD(RD_START, RD_END, instr->rd),
-		FIELD(SHAMT_START, SHAMT_END, shamt_value),
-		FIELD(FUNCT_START, FUNCT_END, funct_code)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr);
+	uint32_t shamt_value = 0;
+	if(instr->opcode == OP_CLO || instr->opcode == OP_CLZ) shamt_value = CLO_CLZ_SA;
+	instr->encoding = encode_r(OPCODE_SPECIAL, instr->rs, 0, instr->rd, shamt_value, (uint32_t) funct_code);
 }
 
 void build_rd_rs_rt_instruction(instruction *instr, int funct_code)
 {
-	uint8_t shamt_value = 0;
-	if(instr->opcode == DIV || instr->opcode == DIVU) shamt_value = DIV_DIVU_SA;
-	else if(instr->opcode == MOD || instr->opcode == MODU) shamt_value = MOD_MODU_SA;
-	else if(instr->opcode == MUH || instr->opcode == MUHU) shamt_value = MUH_MUHU_SA;
-	else if(instr->opcode == MUL || instr->opcode == MULU) shamt_value = MUL_MULU_SA;
-	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, OPCODE_SPECIAL),
-		FIELD(RS_START, RS_END, instr->rs),
-		FIELD(RT_START, RT_END, instr->rt),
-		FIELD(RD_START, RD_END, instr->rd),
-		FIELD(SHAMT_START, SHAMT_END, shamt_value),
-		FIELD(FUNCT_START, FUNCT_END, funct_code)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr);
+	uint32_t shamt_value = 0;
+	if(instr->opcode == OP_DIV || instr->opcode == OP_DIVU) shamt_value = DIV_DIVU_SA;
+	else if(instr->opcode == OP_MOD || instr->opcode == OP_MODU) shamt_value = MOD_MODU_SA;
+	else if(instr->opcode == OP_MUH || instr->opcode == OP_MUHU) shamt_value = MUH_MUHU_SA;
+	else if(instr->opcode == OP_MUL || instr->opcode == OP_MULU) shamt_value = MUL_MULU_SA;
+	instr->encoding = encode_r(OPCODE_SPECIAL, instr->rs, instr->rt, instr->rd, shamt_value, (uint32_t) funct_code);
 }
 
 void build_rd_rt_instruction(instruction *instr, int funct_code)
 {
-	uint8_t shamt_value = 0;
-	if(instr->opcode == SEB) shamt_value = SEB_SA;
-	else if(instr->opcode == SEH) shamt_value = SEH_SA;
-	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, OPCODE_SPECIAL3),
-		FIELD(RD_START, RD_END, instr->rd),
-		FIELD(RT_START, RT_END, instr->rt),
-		FIELD(SHAMT_START, SHAMT_END, shamt_value),
-		FIELD(FUNCT_START, FUNCT_END, funct_code)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr);
+	uint32_t shamt_value = 0;
+	if(instr->opcode == OP_SEB) shamt_value = SEB_SA;
+	else if(instr->opcode == OP_SEH) shamt_value = SEH_SA;
+	instr->encoding = encode_r(OPCODE_SPECIAL3, 0, instr->rt, instr->rd, shamt_value, (uint32_t) funct_code);
 }
 
 void build_rd_rt_rs_instruction(instruction *instr, int funct_code)
 {
-	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, OPCODE_SPECIAL),
-		FIELD(RS_START, RS_END, instr->rs),
-		FIELD(RT_START, RT_END, instr->rt),
-		FIELD(RD_START, RD_END, instr->rd),
-		FIELD(FUNCT_START, FUNCT_END, funct_code)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr);
-	if(instr->opcode == ROTRV) instr->instr_bin[ROTRV_BIT] = 1;
-	bin_arr_to_hex_arr(instr->instr_bin, instr->instr_hex);
+	uint32_t shamt_value = 0;
+	if(instr->opcode == OP_ROTRV) shamt_value = ROTRV_SA;
+	instr->encoding = encode_r(OPCODE_SPECIAL, instr->rs, instr->rt, instr->rd, shamt_value, (uint32_t) funct_code);
 }
 
 void build_rd_rt_sa_instruction(instruction *instr, int funct_code)
 {
-	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, OPCODE_SPECIAL),
-		FIELD(RT_START, RT_END, instr->rt),
-		FIELD(RD_START, RD_END, instr->rd),
-		FIELD(SHAMT_START, SHAMT_END, instr->sa),
-		FIELD(FUNCT_START, FUNCT_END, funct_code)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr);
-	if(instr->opcode == ROTR) instr->instr_bin[ROTR_BIT] = 1;
-	bin_arr_to_hex_arr(instr->instr_bin, instr->instr_hex);
+	uint32_t rs_value = 0;
+	if(instr->opcode == OP_ROTR) rs_value = ROTR_RS;
+	instr->encoding = encode_r(OPCODE_SPECIAL, rs_value, instr->rt, instr->rd, instr->sa, (uint32_t) funct_code);
 }
 
 void build_rs_instruction(instruction *instr, int funct_code)
 {
-	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, OPCODE_SPECIAL),
-		FIELD(RS_START, RS_END, instr->rs),
-		FIELD(FUNCT_START, FUNCT_END, funct_code)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr);
+	instr->encoding = encode_r(OPCODE_SPECIAL, instr->rs, 0, 0, 0, (uint32_t) funct_code);
 }
 
 void build_rs_immediate_16_instruction(instruction *instr, int op_code)
 {
-	int32_t rt_value = 0;
-	if(instr->opcode == AUIPC) rt_value = AUIPC_RT;
-	else if(instr->opcode == ALUIPC) rt_value = ALUIPC_RT;
-	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, op_code),
-		FIELD(RS_START, RS_END, instr->rs),
-		FIELD(RT_START, RT_END, rt_value),
-		FIELD(IMM_16_START, IMM_END, instr->immediate)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr);
-	finalize_signed_value(&instr->immediate, instr, IMM_16_START, IMM_END);
-	instr->immediate = sign_extend(instr->immediate, IMM_16_SIZE);
+	uint32_t rt_value = 0;
+	if(instr->opcode == OP_AUIPC) rt_value = AUIPC_RT;
+	else if(instr->opcode == OP_ALUIPC) rt_value = ALUIPC_RT;
+	instr->immediate = check_field(instr, instr->immediate, IMM_16_SIZE);
+	instr->encoding = encode_i((uint32_t) op_code, instr->rs, rt_value, instr->immediate, IMM_16_SIZE);
 }
 
 void build_rs_immediate_19_instruction(instruction *instr, int op_code)
 {
-	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, op_code),
-		FIELD(RS_START, RS_END, instr->rs),
-		FIELD(IMM_19_START, IMM_END, instr->immediate)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr);
-	finalize_signed_value(&instr->immediate, instr, IMM_19_START, IMM_END);
-	instr->immediate = sign_extend(instr->immediate, IMM_19_SIZE);
+	instr->immediate = check_field(instr, instr->immediate, IMM_19_SIZE);
+	instr->encoding = encode_i((uint32_t) op_code, instr->rs, 0, instr->immediate, IMM_19_SIZE);
 }
 
 void build_rs_offset_16_instruction(instruction *instr, int op_code)
 {
-	int32_t rt_value = 0;
-	if(instr->opcode == BGEZ) rt_value = BGEZ_RT;
-	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, op_code),
-		FIELD(RS_START, RS_END, instr->rs),
-		FIELD(RT_START, RT_END, rt_value),
-		FIELD(OFFSET_16_START, OFFSET_END, instr->offset)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr);
-	finalize_signed_value(&instr->offset, instr, OFFSET_16_START, OFFSET_END);
-	instr->offset = sign_extend(instr->offset, OFFSET_16_SIZE);
+	uint32_t rt_value = 0;
+	if(instr->opcode == OP_BGEZ) rt_value = BGEZ_RT;
+	instr->offset = check_field(instr, instr->offset, OFFSET_16_SIZE);
+	instr->encoding = encode_i((uint32_t) op_code, instr->rs, rt_value, instr->offset, OFFSET_16_SIZE);
 }
 
 void build_rs_offset_19_instruction(instruction *instr, int op_code)
 {
-	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, op_code),
-		FIELD(RS_START, RS_END, instr->rs),
-		FIELD(OFFSET_19_START, OFFSET_END, instr->offset)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr);
-	if(instr->opcode == LWPC) instr->instr_bin[LWPC_BIT] = 1;
-	bin_arr_to_hex_arr(instr->instr_bin, instr->instr_hex);
-	finalize_signed_value(&instr->offset, instr, OFFSET_19_START, OFFSET_END);
-	instr->offset = sign_extend(instr->offset, OFFSET_19_SIZE);
+	uint32_t rt_value = 0;
+	if(instr->opcode == OP_LWPC) rt_value = LWPC_RT;
+	instr->offset = check_field(instr, instr->offset, OFFSET_19_SIZE);
+	instr->encoding = encode_i((uint32_t) op_code, instr->rs, rt_value, instr->offset, OFFSET_19_SIZE);
 }
 
 void build_rs_offset_21_instruction(instruction *instr, int op_code)
 {
-	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, op_code),
-		FIELD(RS_START, RS_END, instr->rs),
-		FIELD(OFFSET_21_START, OFFSET_END, instr->offset)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr);
-	finalize_signed_value(&instr->offset, instr, OFFSET_21_START, OFFSET_END);
-	instr->offset = sign_extend(instr->offset, OFFSET_21_SIZE);
+	instr->offset = check_field(instr, instr->offset, OFFSET_21_SIZE);
+	instr->encoding = encode_i((uint32_t) op_code, instr->rs, 0, instr->offset, OFFSET_21_SIZE);
 }
 
 void build_rs_rt_instruction(instruction *instr, int funct_code)
 {
-	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, OPCODE_SPECIAL),
-		FIELD(RS_START, RS_END, instr->rs),
-		FIELD(RT_START, RT_END, instr->rt),
-		FIELD(FUNCT_START, FUNCT_END, funct_code)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr);
+	instr->encoding = encode_r(OPCODE_SPECIAL, instr->rs, instr->rt, 0, 0, (uint32_t) funct_code);
 }
 
 void build_rs_rt_offset_16_instruction(instruction *instr, int op_code)
 {
-	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, op_code),
-		FIELD(RS_START, RS_END, instr->rs),
-		FIELD(RT_START, RT_END, instr->rt),
-		FIELD(OFFSET_16_START, OFFSET_END, instr->offset)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr);
-	finalize_signed_value(&instr->offset, instr, OFFSET_16_START, OFFSET_END);
-	instr->offset = sign_extend(instr->offset, OFFSET_16_SIZE);
+	instr->offset = check_field(instr, instr->offset, OFFSET_16_SIZE);
+	instr->encoding = encode_i((uint32_t) op_code, instr->rs, instr->rt, instr->offset, OFFSET_16_SIZE);
 }
 
 void build_rt_immediate_16_instruction(instruction *instr, int op_code)
 {
-	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, op_code),
-		FIELD(RT_START, RT_END, instr->rt),
-		FIELD(IMM_16_START, IMM_END, instr->immediate)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr);
-	finalize_signed_value(&instr->immediate, instr, IMM_16_START, IMM_END);
-	instr->immediate = sign_extend(instr->immediate, IMM_16_SIZE);
+	instr->immediate = check_field(instr, instr->immediate, IMM_16_SIZE);
+	instr->encoding = encode_i((uint32_t) op_code, 0, instr->rt, instr->immediate, IMM_16_SIZE);
 }
 
 void build_rt_offset_16_instruction(instruction *instr, int op_code)
 {
-	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, op_code),
-		FIELD(RT_START, RT_END, instr->rt),
-		FIELD(OFFSET_16_START, OFFSET_END, instr->offset)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr);
-	finalize_signed_value(&instr->offset, instr, OFFSET_16_START, OFFSET_END);
-	instr->offset = sign_extend(instr->offset, OFFSET_16_SIZE);
+	instr->offset = check_field(instr, instr->offset, OFFSET_16_SIZE);
+	instr->encoding = encode_i((uint32_t) op_code, 0, instr->rt, instr->offset, OFFSET_16_SIZE);
 }
 
 void build_rt_offset_base_instruction(instruction *instr, int op_code)
 {
-	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, op_code),
-		FIELD(BASE_START, BASE_END, instr->base),
-		FIELD(RT_START, RT_END, instr->rt),
-		FIELD(OFFSET_16_START, OFFSET_END, instr->offset)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr);
-	finalize_signed_value(&instr->offset, instr, OFFSET_16_START, OFFSET_END);
-	instr->offset = sign_extend(instr->offset, OFFSET_16_SIZE);
+	instr->offset = check_field(instr, instr->offset, OFFSET_16_SIZE);
+	instr->encoding = encode_i((uint32_t) op_code, instr->base, instr->rt, instr->offset, OFFSET_16_SIZE);
 }
 
 void build_rt_rs_immediate_16_instruction(instruction *instr, int op_code)
 {
-	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, op_code),
-		FIELD(RS_START, RS_END, instr->rs),
-		FIELD(RT_START, RT_END, instr->rt),
-		FIELD(IMM_16_START, IMM_END, instr->immediate)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr);
-	finalize_signed_value(&instr->immediate, instr, IMM_16_START, IMM_END);
-	instr->immediate = sign_extend(instr->immediate, IMM_16_SIZE);
+	instr->immediate = check_field(instr, instr->immediate, IMM_16_SIZE);
+	instr->encoding = encode_i((uint32_t) op_code, instr->rs, instr->rt, instr->immediate, IMM_16_SIZE);
 }
 
 void build_target_instruction(instruction *instr, int op_code)
 {
-	instruction_field fields[] = {
-		FIELD(OPCODE_START, OPCODE_END, op_code),
-		FIELD(TARGET_START, TARGET_END, instr->target)};
-	build_instruction_bin(fields, ARR_SIZE(fields), instr);
+	instr->encoding = ((uint32_t) op_code << OPCODE_SHIFT) | field(instr->target, 0, OFFSET_26_SIZE);
 }
 
 void decode_offset_operand(char *line, instruction *instr)
 {
 	char offset[16];
-	sscanf(line, " %15s ", offset);
-	instr->offset = handle_sign(offset, instr);
+	if(sscanf(line, " %15s ", offset) != 1)
+	{
+		syntax_error(instr);
+		return;
+	}
+	instr->offset = parse_integer(offset, instr);
 }
 
 void decode_rd_operand(char *line, instruction *instr)
 {
 	char rd[8];
-	sscanf(line, " $%7s ", rd);
+	if(sscanf(line, " $%7s ", rd) != 1)
+	{
+		syntax_error(instr);
+		return;
+	}
 	instr->rd = register_string_to_int(rd);
-	if(instr->rd == INVALID_REGISTER) instr->error = ERR_INVALID_REGISTER;
+	if(instr->rd == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
 void decode_rd_rs_operands(char *line, instruction *instr)
 {
 	char rd[8], rs[8];
-	/* Handling case of JALR having two formats (quote from specification) :
+	/* Handling case of OP_JALR having two formats (quote from specification) :
 
-	   Format:	JALR rs (rd = 31 implied)
-				JALR rd, rs
+	   Format:	OP_JALR rs (rd = 31 implied)
+				OP_JALR rd, rs
 	 */
-	if(instr->opcode == JALR)
+	if(instr->opcode == OP_JALR)
 	{
 		if(strchr(line, ','))
 		{
-			sscanf(line, " $%7[^,] , $%7s ", rd, rs);
+			if(sscanf(line, " $%7[^,] , $%7s ", rd, rs) != 2)
+			{
+				syntax_error(instr);
+				return;
+			}
 			instr->rd = register_string_to_int(rd);
 		}
 		else
 		{
-			sscanf(line, " $%7s ", rs);
+			if(sscanf(line, " $%7s ", rs) != 1)
+			{
+				syntax_error(instr);
+				return;
+			}
 			instr->rd = REG_RA;
 		}
 	}
 	else
 	{
-		sscanf(line, " $%7[^,] , $%7s ", rd, rs);
+		if(sscanf(line, " $%7[^,] , $%7s ", rd, rs) != 2)
+		{
+			syntax_error(instr);
+			return;
+		}
 		instr->rd = register_string_to_int(rd);
 	}
 	instr->rs = register_string_to_int(rs);
-	if(instr->rd == INVALID_REGISTER || instr->rs == INVALID_REGISTER) instr->error = ERR_INVALID_REGISTER;
+	if(instr->rd == INVALID_REGISTER || instr->rs == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
 void decode_rd_rs_rt_operands(char *line, instruction *instr)
 {
 	char rd[8], rs[8], rt[8];
-	sscanf(line, " $%7[^,] , $%7[^,] , $%7s ", rd, rs, rt);
+	if(sscanf(line, " $%7[^,] , $%7[^,] , $%7s ", rd, rs, rt) != 3)
+	{
+		syntax_error(instr);
+		return;
+	}
 	instr->rd = register_string_to_int(rd);
 	instr->rs = register_string_to_int(rs);
 	instr->rt = register_string_to_int(rt);
-	if(instr->rd == INVALID_REGISTER || instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error = ERR_INVALID_REGISTER;
+	if(instr->rd == INVALID_REGISTER || instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
 void decode_rd_rt_operands(char *line, instruction *instr)
 {
 	char rd[8], rt[8];
-	sscanf(line, " $%7[^,] , $%7s ", rd, rt);
+	if(sscanf(line, " $%7[^,] , $%7s ", rd, rt) != 2)
+	{
+		syntax_error(instr);
+		return;
+	}
 	instr->rd = register_string_to_int(rd);
 	instr->rt = register_string_to_int(rt);
-	if(instr->rd == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error = ERR_INVALID_REGISTER;
+	if(instr->rd == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
 void decode_rd_rt_rs_operands(char *line, instruction *instr)
 {
 	char rd[8], rs[8], rt[8];
-	sscanf(line, " $%7[^,] , $%7[^,] , $%7s ", rd, rt, rs);
+	if(sscanf(line, " $%7[^,] , $%7[^,] , $%7s ", rd, rt, rs) != 3)
+	{
+		syntax_error(instr);
+		return;
+	}
 	instr->rd = register_string_to_int(rd);
 	instr->rs = register_string_to_int(rs);
 	instr->rt = register_string_to_int(rt);
-	if(instr->rd == INVALID_REGISTER || instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error = ERR_INVALID_REGISTER;
+	if(instr->rd == INVALID_REGISTER || instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
 void decode_rd_rt_sa_operands(char *line, instruction *instr)
 {
 	char rd[8], rt[8], sa[16];
-	sscanf(line, " $%7[^,] , $%7[^,] , %15s ", rd, rt, sa);
+	if(sscanf(line, " $%7[^,] , $%7[^,] , %15s ", rd, rt, sa) != 3)
+	{
+		syntax_error(instr);
+		return;
+	}
 	instr->rd = register_string_to_int(rd);
 	instr->rt = register_string_to_int(rt);
-	instr->sa = (uint8_t) atoi(sa);
-	if(instr->rd == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error = ERR_INVALID_REGISTER;
+	int32_t sa_value = parse_integer(sa, instr);
+	if(sa_value < 0 || sa_value > SA_MAX)
+	{
+		fprintf(stderr, "[!] Shift amount out of range : %" PRId32 " (allowed : 0 to %d)\n", sa_value, SA_MAX);
+		instr->error |= ERR_RANGE;
+		sa_value = 0;
+	}
+	instr->sa = (uint8_t) sa_value;
+	if(instr->rd == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
 void decode_rs_operand(char *line, instruction *instr)
 {
 	char rs[8];
-	sscanf(line, " $%7s ", rs);
+	if(sscanf(line, " $%7s ", rs) != 1)
+	{
+		syntax_error(instr);
+		return;
+	}
 	instr->rs = register_string_to_int(rs);
-	if(instr->rs == INVALID_REGISTER) instr->error = ERR_INVALID_REGISTER;
+	if(instr->rs == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
 void decode_rs_immediate_operands(char *line, instruction *instr)
 {
 	char imm[16], rs[8];
-	sscanf(line, " $%7[^,], %15s ", rs, imm);
-	instr->immediate = handle_sign(imm, instr);
+	if(sscanf(line, " $%7[^,], %15s ", rs, imm) != 2)
+	{
+		syntax_error(instr);
+		return;
+	}
+	instr->immediate = parse_integer(imm, instr);
 	instr->rs = register_string_to_int(rs);
-	if(instr->rs == INVALID_REGISTER) instr->error = ERR_INVALID_REGISTER;
+	if(instr->rs == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
 void decode_rs_offset_operands(char *line, instruction *instr)
 {
 	char offset[16], rs[8];
-	sscanf(line, " $%7[^,]  , %15s ", rs, offset);
-	instr->offset = handle_sign(offset, instr);
+	if(sscanf(line, " $%7[^,]  , %15s ", rs, offset) != 2)
+	{
+		syntax_error(instr);
+		return;
+	}
+	instr->offset = parse_integer(offset, instr);
 	instr->rs = register_string_to_int(rs);
-	if(instr->rs == INVALID_REGISTER) instr->error = ERR_INVALID_REGISTER;
+	if(instr->rs == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
 void decode_rs_rt_operands(char *line, instruction *instr)
 {
 	char rs[8], rt[8];
-	sscanf(line, " $%7[^,] , $%7s ", rs, rt);
+	if(sscanf(line, " $%7[^,] , $%7s ", rs, rt) != 2)
+	{
+		syntax_error(instr);
+		return;
+	}
 	instr->rs = register_string_to_int(rs);
 	instr->rt = register_string_to_int(rt);
-	if(instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error = ERR_INVALID_REGISTER;
+	if(instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
 void decode_rs_rt_offset_operands(char *line, instruction *instr)
 {
 	char offset[16], rs[8], rt[8];
-	sscanf(line, " $%7[^,] , $%7[^,] , %15s ", rs, rt, offset);
-	instr->offset = handle_sign(offset, instr);
+	if(sscanf(line, " $%7[^,] , $%7[^,] , %15s ", rs, rt, offset) != 3)
+	{
+		syntax_error(instr);
+		return;
+	}
+	instr->offset = parse_integer(offset, instr);
 	instr->rs = register_string_to_int(rs);
 	instr->rt = register_string_to_int(rt);
-	if(instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error = ERR_INVALID_REGISTER;
+	if(instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
 void decode_rt_immediate_operands(char *line, instruction *instr)
 {
 	char imm[16], rt[8];
-	sscanf(line, " $%7[^,] , %15s ", rt, imm);
-	instr->immediate = handle_sign(imm, instr);
+	if(sscanf(line, " $%7[^,] , %15s ", rt, imm) != 2)
+	{
+		syntax_error(instr);
+		return;
+	}
+	instr->immediate = parse_integer(imm, instr);
 	instr->rt = register_string_to_int(rt);
-	if(instr->rt == INVALID_REGISTER) instr->error = ERR_INVALID_REGISTER;
+	if(instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
 void decode_rt_offset_operands(char *line, instruction *instr)
 {
 	char offset[16], rt[8];
-	sscanf(line, " $%7[^,] , %15s ", rt, offset);
-	instr->offset = handle_sign(offset, instr);
+	if(sscanf(line, " $%7[^,] , %15s ", rt, offset) != 2)
+	{
+		syntax_error(instr);
+		return;
+	}
+	instr->offset = parse_integer(offset, instr);
 	instr->rt = register_string_to_int(rt);
-	if(instr->rt == INVALID_REGISTER) instr->error = ERR_INVALID_REGISTER;
+	if(instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
 void decode_rt_offset_base_operands(char *line, instruction *instr)
 {
 	char base[8], offset[16], rt[8];
-	sscanf(line, " $%7[^,] , %15[^(] ($%7[^)]) ", rt, offset, base);
+	if(sscanf(line, " $%7[^,] , %15[^(] ($%7[^)]) ", rt, offset, base) != 3)
+	{
+		syntax_error(instr);
+		return;
+	}
 	instr->base = register_string_to_int(base);
-	instr->offset = handle_sign(offset, instr);
+	instr->offset = parse_integer(offset, instr);
 	instr->rt = register_string_to_int(rt);
-	if(instr->base == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error = ERR_INVALID_REGISTER;
+	if(instr->base == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
 void decode_rt_rs_immediate_operands(char *line, instruction *instr)
 {
 	char imm[16], rs[8], rt[8];
-	sscanf(line, " $%7[^,] , $%7[^,] , %15s ", rt, rs, imm);
-	instr->immediate = handle_sign(imm, instr);
+	if(sscanf(line, " $%7[^,] , $%7[^,] , %15s ", rt, rs, imm) != 3)
+	{
+		syntax_error(instr);
+		return;
+	}
+	instr->immediate = parse_integer(imm, instr);
 	instr->rs = register_string_to_int(rs);
 	instr->rt = register_string_to_int(rt);
-	if(instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error = ERR_INVALID_REGISTER;
+	if(instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
 void decode_rt_rs_offset_operands(char *line, instruction *instr)
 {
 	char offset[16], rs[8], rt[8];
-	sscanf(line, " $%7[^,] , $%7[^,] , %15s ", rt, rs, offset);
-	instr->offset = handle_sign(offset, instr);
+	if(sscanf(line, " $%7[^,] , $%7[^,] , %15s ", rt, rs, offset) != 3)
+	{
+		syntax_error(instr);
+		return;
+	}
+	instr->offset = parse_integer(offset, instr);
 	instr->rs = register_string_to_int(rs);
 	instr->rt = register_string_to_int(rt);
-	if(instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error = ERR_INVALID_REGISTER;
+	if(instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
 void decode_target_operands(char *line, instruction *instr)
 {
 	char target[16];
-	sscanf(line, " %15s ", target);
-	instr->target = atoi(target);
+	if(sscanf(line, " %15s ", target) != 1)
+	{
+		syntax_error(instr);
+		return;
+	}
+	int32_t target_value = parse_integer(target, instr);
+	if(target_value < 0 || target_value > TARGET_MAX)
+	{
+		fprintf(stderr, "[!] Target out of range : %" PRId32 " (allowed : 0 to %" PRId32 ")\n", target_value, TARGET_MAX);
+		instr->error |= ERR_RANGE;
+		target_value = 0;
+	}
+	instr->target = target_value;
 }
 
-instruction decode_instruction(int mode, FILE *fichier)
+instruction decode_instruction(int mode, FILE *input)
 {
 	char mnemonic[16], *line, *ptr;
-	FILE *in = (!mode) ? stdin : fichier;
+	FILE *in = (!mode) ? stdin : input;
 	instruction instr = {0};
 	int consumed = 0;
 
@@ -521,134 +550,134 @@ instruction decode_instruction(int mode, FILE *fichier)
 				break;
 			case CMD_NAL :
 				build_cmd_instruction(&instr, 0, OPCODE_REGIMM, 0, NAL_RT, 0, 0);
-				snprintf(instr.to_string, sizeof(instr.to_string), "NAL -> 0x%s\n", instr.instr_hex);
+				snprintf(instr.to_string, sizeof(instr.to_string), "NAL -> 0x%08" PRIx32 "\n", instr.encoding);
 				break;
 			case CMD_NOP :
 				build_cmd_instruction(&instr, FUNCT_SLL, OPCODE_SPECIAL, 0, 0, 0, 0);
-				snprintf(instr.to_string, sizeof(instr.to_string), "NOP -> 0x%s\n", instr.instr_hex);
+				snprintf(instr.to_string, sizeof(instr.to_string), "NOP -> 0x%08" PRIx32 "\n", instr.encoding);
 				break;
-			case OFFSET_16 :
+			case FMT_OFFSET_16 :
 				decode_offset_operand(ptr, &instr);
 				build_offset_16_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s %d -> 0x%s\n", id->mnemonic, instr.offset, instr.instr_hex);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.offset, instr.encoding);
 				break;
-			case OFFSET_26 :
+			case FMT_OFFSET_26 :
 				decode_offset_operand(ptr, &instr);
 				build_offset_26_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s %d -> 0x%s\n", id->mnemonic, instr.offset, instr.instr_hex);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.offset, instr.encoding);
 				break;
-			case RD :
+			case FMT_RD :
 				decode_rd_operand(ptr, &instr);
 				build_rd_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d -> 0x%s\n", id->mnemonic, instr.rd, instr.instr_hex);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rd, instr.encoding);
 				break;
-			case RD_RS :
+			case FMT_RD_RS :
 				decode_rd_rs_operands(ptr, &instr);
 				build_rd_rs_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d -> 0x%s\n", id->mnemonic, instr.rd, instr.rs, instr.instr_hex);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rd, instr.rs, instr.encoding);
 				break;
-			case RD_RS_RT :
+			case FMT_RD_RS_RT :
 				decode_rd_rs_rt_operands(ptr, &instr);
 				build_rd_rs_rt_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, $%d -> 0x%s\n", id->mnemonic, instr.rd, instr.rs, instr.rt, instr.instr_hex);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, $%d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rd, instr.rs, instr.rt, instr.encoding);
 				break;
-			case RD_RT :
+			case FMT_RD_RT :
 				decode_rd_rt_operands(ptr, &instr);
 				build_rd_rt_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d -> 0x%s\n", id->mnemonic, instr.rd, instr.rt, instr.instr_hex);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rd, instr.rt, instr.encoding);
 				break;
-			case RD_RT_RS :
+			case FMT_RD_RT_RS :
 				decode_rd_rt_rs_operands(ptr, &instr);
 				build_rd_rt_rs_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, $%d -> 0x%s\n", id->mnemonic, instr.rd, instr.rt, instr.rs, instr.instr_hex);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, $%d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rd, instr.rt, instr.rs, instr.encoding);
 				break;
-			case RD_RT_SA :
+			case FMT_RD_RT_SA :
 				decode_rd_rt_sa_operands(ptr, &instr);
 				build_rd_rt_sa_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, %d -> 0x%s\n", id->mnemonic, instr.rd, instr.rt, instr.sa, instr.instr_hex);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rd, instr.rt, instr.sa, instr.encoding);
 				break;
-			case RS :
+			case FMT_RS :
 				decode_rs_operand(ptr, &instr);
 				build_rs_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d -> 0x%s\n", id->mnemonic, instr.rs, instr.instr_hex);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rs, instr.encoding);
 				break;
-			case RS_IMMEDIATE_16 :
+			case FMT_RS_IMMEDIATE_16 :
 				decode_rs_immediate_operands(ptr, &instr);
 				build_rs_immediate_16_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%s\n", id->mnemonic, instr.rs, instr.immediate, instr.instr_hex);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rs, instr.immediate, instr.encoding);
 				break;
-			case RS_IMMEDIATE_19 :
+			case FMT_RS_IMMEDIATE_19 :
 				decode_rs_immediate_operands(ptr, &instr);
 				build_rs_immediate_19_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%s\n", id->mnemonic, instr.rs, instr.immediate, instr.instr_hex);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rs, instr.immediate, instr.encoding);
 				break;
-			case RS_OFFSET_16 :
+			case FMT_RS_OFFSET_16 :
 				decode_rs_offset_operands(ptr, &instr);
 				build_rs_offset_16_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%s\n", id->mnemonic, instr.rs, instr.offset, instr.instr_hex);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rs, instr.offset, instr.encoding);
 				break;
-			case RS_OFFSET_19 :
+			case FMT_RS_OFFSET_19 :
 				decode_rs_offset_operands(ptr, &instr);
 				build_rs_offset_19_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%s\n", id->mnemonic, instr.rs, instr.offset, instr.instr_hex);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rs, instr.offset, instr.encoding);
 				break;
-			case RS_OFFSET_21 :
+			case FMT_RS_OFFSET_21 :
 				decode_rs_offset_operands(ptr, &instr);
 				build_rs_offset_21_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%s\n", id->mnemonic, instr.rs, instr.offset, instr.instr_hex);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rs, instr.offset, instr.encoding);
 				break;
-			case RS_RT :
+			case FMT_RS_RT :
 				decode_rs_rt_operands(ptr, &instr);
 				build_rs_rt_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d -> 0x%s\n", id->mnemonic, instr.rs, instr.rt, instr.instr_hex);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rs, instr.rt, instr.encoding);
 				break;
-			case RS_RT_OFFSET_16 :
+			case FMT_RS_RT_OFFSET_16 :
 				decode_rs_rt_offset_operands(ptr, &instr);
 				build_rs_rt_offset_16_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, %d -> 0x%s\n", id->mnemonic, instr.rs, instr.rt, instr.offset, instr.instr_hex);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rs, instr.rt, instr.offset, instr.encoding);
 				break;
-			case RT_IMMEDIATE_16 :
+			case FMT_RT_IMMEDIATE_16 :
 				decode_rt_immediate_operands(ptr, &instr);
 				build_rt_immediate_16_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%s\n", id->mnemonic, instr.rt, instr.immediate, instr.instr_hex);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rt, instr.immediate, instr.encoding);
 				break;
-			case RT_OFFSET_16 :
+			case FMT_RT_OFFSET_16 :
 				decode_rt_offset_operands(ptr, &instr);
 				build_rt_offset_16_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s %d, %d -> 0x%s\n", id->mnemonic, instr.rt, instr.offset, instr.instr_hex);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s %d, %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rt, instr.offset, instr.encoding);
 				break;
-			case RT_OFFSET_BASE :
+			case FMT_RT_OFFSET_BASE :
 				decode_rt_offset_base_operands(ptr, &instr);
 				build_rt_offset_base_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d($%d) -> 0x%s\n", id->mnemonic, instr.rt, instr.offset, instr.base, instr.instr_hex);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d($%d) -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rt, instr.offset, instr.base, instr.encoding);
 				break;
-			case RT_RS_IMMEDIATE_16 :
+			case FMT_RT_RS_IMMEDIATE_16 :
 				decode_rt_rs_immediate_operands(ptr, &instr);
 				build_rt_rs_immediate_16_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, %d -> 0x%s\n", id->mnemonic, instr.rt, instr.rs, instr.immediate, instr.instr_hex);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rt, instr.rs, instr.immediate, instr.encoding);
 				break;
-			case RT_RS_OFFSET_16 :
+			case FMT_RT_RS_OFFSET_16 :
 				decode_rt_rs_offset_operands(ptr, &instr);
 				build_rs_rt_offset_16_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, %d -> 0x%s\n", id->mnemonic, instr.rt, instr.rs, instr.offset, instr.instr_hex);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rt, instr.rs, instr.offset, instr.encoding);
 				break;
-			case TARGET :
+			case FMT_TARGET :
 				decode_target_operands(ptr, &instr);
 				build_target_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s %d -> 0x%s\n", id->mnemonic, instr.target, instr.instr_hex);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.target, instr.encoding);
 				break;
 		}
 		if(instr.error)
 		{
 			fprintf(stderr, "[!] Instruction rejected : %s\n", line);
-			instr.opcode = OPCODE_MIN;
+			instr.opcode = OP_MIN;
 		}
 		else log_instruction(&instr);
 	}
 	else
 	{
 		fprintf(stderr, "[!] Unknown instruction : %s\n", mnemonic);
-		instr.error = ERR_UNKNOWN_INSTRUCTION;
+		instr.error |= ERR_UNKNOWN_INSTRUCTION;
 	}
 
 	free(line);

@@ -9,20 +9,6 @@
 #define BATCH       1
 #define INTERACTIVE 0
 
-#define FIELD(start, end, value) \
-	(instruction_field) {value, start, end}
-
-typedef struct
-{
-	int32_t	value;
-	uint8_t	start_bit;
-	uint8_t	end_bit;
-} instruction_field;
-
-int32_t handle_sign(char *param, instruction *instr);
-void build_instruction_bin(instruction_field *arr, size_t field_count, instruction *instr);
-void finalize_signed_value(int32_t *value, instruction *instr, uint8_t start_bit, uint8_t end_bit);
-
 void build_offset_16_instruction(instruction *instr, int op_code);
 void build_offset_26_instruction(instruction *instr, int op_code);
 void build_rd_instruction(instruction *instr, int funct_code);
@@ -64,6 +50,6 @@ void decode_rt_rs_immediate_operands(char *line, instruction *instr);
 void decode_rt_rs_offset_operands(char *line, instruction *instr);
 void decode_target_operands(char *line, instruction *instr);
 
-instruction	decode_instruction(int mode, FILE *fichier);
+instruction	decode_instruction(int mode, FILE *input);
 
 #endif	/* DECODE_H */

@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -66,7 +67,7 @@ static int load_program(const char *path, Program *prog)
 			fprintf(stderr, "[!] batch_mode : line %u invalid\n", line_no);
 			error_cnt++;
 		}
-		else if(cur.opcode > OPCODE_MIN && cur.opcode < OPCODE_MAX)
+		else if(cur.opcode > OP_MIN && cur.opcode < OP_MAX)
 		{
 			if(prog->count >= prog->capacity && !program_grow(prog))
 			{
@@ -104,7 +105,7 @@ static void run_program(CPU *cpu, Config *cfg, const Program *prog)
 
 static void write_hex(FILE *out, const Program *prog)
 {
-	for(uint32_t instr_id = 0; instr_id < prog->count; instr_id++) fprintf(out, "%s\n", prog->items[instr_id].instr_hex);
+	for(uint32_t instr_id = 0; instr_id < prog->count; instr_id++) fprintf(out, "%08" PRIx32 "\n", prog->items[instr_id].encoding);
 }
 
 static void write_regs(FILE *out, CPU *cpu)
@@ -120,7 +121,7 @@ void interactive_mode(CPU *cpu, Config *cfg)
 	{
 		printf("[#] Enter your instruction :\n");
 		cur = decode_instruction(INTERACTIVE, NULL);
-		if(!cur.exit && cur.opcode > OPCODE_MIN && cur.opcode < OPCODE_MAX)
+		if(!cur.exit && cur.opcode > OP_MIN && cur.opcode < OP_MAX)
 		{
 			execute_instruction(cpu, cfg, cur);
 			cpu_dump(cpu, cfg);

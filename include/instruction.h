@@ -3,36 +3,22 @@
 
 #include <stdint.h>
 
-/* Errors */
+/* Errors : bit flags, several can be set on the same instruction (use |=, test with &) */
 #define NO_ERR                      0
-#define ERR_INVALID_REGISTER        1
-#define ERR_UNKNOWN_INSTRUCTION     2
+#define ERR_INVALID_REGISTER        (1u << 0)
+#define ERR_INVALID_NUMBER          (1u << 1)
+#define ERR_RANGE                   (1u << 2)
+#define ERR_SYNTAX                  (1u << 3)
+#define ERR_UNKNOWN_INSTRUCTION     (1u << 4)
 
-/* MIPS bit fields */
-#define OPCODE_START     0
-#define OPCODE_END       5
-#define BASE_START       RS_START
-#define BASE_END         RS_END
-#define RS_START         6
-#define RS_END          10
-#define RT_START        11
-#define RT_END          15
-#define RD_START        16
-#define RD_END          20
-#define SHAMT_START     21
-#define SHAMT_END       25
-#define FUNCT_START     26
-#define FUNCT_END       31
-#define OFFSET_26_START 6
-#define OFFSET_21_START 11
-#define OFFSET_19_START 13
-#define OFFSET_16_START 16
-#define OFFSET_END      31
-#define IMM_19_START    13
-#define IMM_16_START    16
-#define IMM_END         31
-#define TARGET_START     6
-#define TARGET_END      31
+/* MIPS bit fields : position of the least significant bit of each field in the 32-bit encoding */
+#define FUNCT_SHIFT      0
+#define SHAMT_SHIFT      6
+#define RD_SHIFT        11
+#define RT_SHIFT        16
+#define RS_SHIFT        21
+#define BASE_SHIFT      RS_SHIFT
+#define OPCODE_SHIFT    26
 
 /* Function codes */
 #define FUNCT_ADD    32
@@ -108,15 +94,13 @@
 #define OFFSET_21_SIZE   21
 #define OFFSET_26_SIZE   26
 
-/* Special bit locations */
-#define LWPC_BIT    12
-#define ROTR_BIT    10
-#define ROTRV_BIT   25
-
 /* Special register values for some operations 
 This exists for clarity and to match MIPS32 R6 specification
 When values are zero, it will be implicit */
 #define ALUIPC_RT     31
+#define LWPC_RT        8
+#define ROTR_RS        1
+#define ROTRV_SA       1
 #define AUIPC_RT      30
 #define BAL_RT        17
 #define BGEZ_RT        1
@@ -131,101 +115,100 @@ When values are zero, it will be implicit */
 
 typedef enum
 {
-	OPCODE_MIN,
+	OP_MIN,
 	/* instruction object will be initialized to 0, 
 	when line is fully skipped because of a comment, 
 	OPCODE field will be equal to this dummy value for now */
-	ADD,
-	ADDI,
-	ADDIU,
-	ADDIUPC,
-	ADDU,
-	ALUIPC,
-	AND,
-	ANDI,
-	AUI,
-	AUIPC,
-	BAL,
-	BALC,
-	BC,
-	BEQ,
-	BEQC,
-	BEQZALC,
-	BEQZC,
-	BGEC,
-	BGEUC,
-	BGEZ,
-	BGEZALC,
-	BGEZC,
-	BGTZ,
-	BGTZALC,
-	BGTZC,
-	BITSWAP,
-	BLEZ,
-	BLEZALC,
-	BLEZC,
-	BLTC,
-	BLTUC,
-	BLTZ,
-	BLTZALC,
-	BLTZC,
-	BNE,
-	BNEC,
-	BNEZALC,
-	BNEZC,
-	BNVC,
-	BOVC,
-	CLO,
-	CLZ,
-	DIV,
-	DIVU,
-	J,
-	JAL,
-	JALR,
-	JIALC,
-	JIC,
-	JR,
-	LB,
-	LBU,
-	LH,
-	LHU,
-	LW,
-	LWPC,
-	MOD,
-	MODU,
-	MUH,
-	MUHU,
-	MUL,
-	MULU,
-	NAL,
-	NOP,
-	NOR,
-	OR,
-	ORI,
-	ROTR,
-	ROTRV,
-	SB,
-	SEB,
-	SEH,
-	SELEQZ,
-	SELNEZ,
-	SH,
-	SLL,
-	SLLV,
-	SLT,
-	SLTI,
-	SLTIU,
-	SLTU,
-	SRA,
-	SRAV,
-	SRL,
-	SRLV,
-	SUB,
-	SUBU,
-	SW,
-	XOR,
-	XORI,
-	OPCODE_MAX
+	OP_ADD,
+	OP_ADDIU,
+	OP_ADDIUPC,
+	OP_ADDU,
+	OP_ALUIPC,
+	OP_AND,
+	OP_ANDI,
+	OP_AUI,
+	OP_AUIPC,
+	OP_BAL,
+	OP_BALC,
+	OP_BC,
+	OP_BEQ,
+	OP_BEQC,
+	OP_BEQZALC,
+	OP_BEQZC,
+	OP_BGEC,
+	OP_BGEUC,
+	OP_BGEZ,
+	OP_BGEZALC,
+	OP_BGEZC,
+	OP_BGTZ,
+	OP_BGTZALC,
+	OP_BGTZC,
+	OP_BITSWAP,
+	OP_BLEZ,
+	OP_BLEZALC,
+	OP_BLEZC,
+	OP_BLTC,
+	OP_BLTUC,
+	OP_BLTZ,
+	OP_BLTZALC,
+	OP_BLTZC,
+	OP_BNE,
+	OP_BNEC,
+	OP_BNEZALC,
+	OP_BNEZC,
+	OP_BNVC,
+	OP_BOVC,
+	OP_CLO,
+	OP_CLZ,
+	OP_DIV,
+	OP_DIVU,
+	OP_J,
+	OP_JAL,
+	OP_JALR,
+	OP_JIALC,
+	OP_JIC,
+	OP_JR,
+	OP_LB,
+	OP_LBU,
+	OP_LH,
+	OP_LHU,
+	OP_LW,
+	OP_LWPC,
+	OP_MOD,
+	OP_MODU,
+	OP_MUH,
+	OP_MUHU,
+	OP_MUL,
+	OP_MULU,
+	OP_NAL,
+	OP_NOP,
+	OP_NOR,
+	OP_OR,
+	OP_ORI,
+	OP_ROTR,
+	OP_ROTRV,
+	OP_SB,
+	OP_SEB,
+	OP_SEH,
+	OP_SELEQZ,
+	OP_SELNEZ,
+	OP_SH,
+	OP_SLL,
+	OP_SLLV,
+	OP_SLT,
+	OP_SLTI,
+	OP_SLTIU,
+	OP_SLTU,
+	OP_SRA,
+	OP_SRAV,
+	OP_SRL,
+	OP_SRLV,
+	OP_SUB,
+	OP_SUBU,
+	OP_SW,
+	OP_XOR,
+	OP_XORI,
+	OP_MAX
 } Opcode;
 
 typedef enum
@@ -233,28 +216,28 @@ typedef enum
 	CMD_EXIT,
 	CMD_NAL,
 	CMD_NOP,
-	OFFSET_16,
-	OFFSET_26,
-	RD, // Previously used by MFHI/MFLO instructions, unused for now, will remove it if no instruction use it
-	RD_RS,
-	RD_RT,
-	RD_RS_RT,
-	RD_RT_RS,
-	RD_RT_SA,
-	RS, // Previously used by MTHI/MTLO instructions, unused for now, will remove it if no instruction use it
-	RS_IMMEDIATE_16,
-	RS_IMMEDIATE_19,
-	RS_OFFSET_16,
-	RS_OFFSET_19,
-	RS_OFFSET_21,
-	RS_RT, // Previously used by DIV/MUL instructions, unused for now, will remove it if no instruction use it
-	RS_RT_OFFSET_16,
-	RT_IMMEDIATE_16,
-	RT_OFFSET_16,
-	RT_OFFSET_BASE,
-	RT_RS_IMMEDIATE_16,
-	RT_RS_OFFSET_16,
-	TARGET
+	FMT_OFFSET_16,
+	FMT_OFFSET_26,
+	FMT_RD, // Previously used by MFHI/MFLO instructions, unused for now, will remove it if no instruction use it
+	FMT_RD_RS,
+	FMT_RD_RT,
+	FMT_RD_RS_RT,
+	FMT_RD_RT_RS,
+	FMT_RD_RT_SA,
+	FMT_RS, // Previously used by MTHI/MTLO instructions, unused for now, will remove it if no instruction use it
+	FMT_RS_IMMEDIATE_16,
+	FMT_RS_IMMEDIATE_19,
+	FMT_RS_OFFSET_16,
+	FMT_RS_OFFSET_19,
+	FMT_RS_OFFSET_21,
+	FMT_RS_RT, // Previously used by OP_DIV/OP_MUL instructions, unused for now, will remove it if no instruction use it
+	FMT_RS_RT_OFFSET_16,
+	FMT_RT_IMMEDIATE_16,
+	FMT_RT_OFFSET_16,
+	FMT_RT_OFFSET_BASE,
+	FMT_RT_RS_IMMEDIATE_16,
+	FMT_RT_RS_OFFSET_16,
+	FMT_TARGET
 } format;
 
 typedef struct
@@ -267,19 +250,17 @@ typedef struct
 
 typedef struct
 {
-	char instr_hex[9];
 	char to_string[256];
 	int label;
 	int target;
 	int32_t immediate;
 	int32_t offset;
 	Opcode opcode;
+	uint32_t encoding;
 	uint8_t base;
 	uint8_t error;
 	uint8_t exit;
 	uint8_t fd, fs, ft;
-	uint8_t instr_bin[32];
-	uint8_t negative;
 	uint8_t rd, rs, rt;
 	uint8_t sa;
 } instruction;

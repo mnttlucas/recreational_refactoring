@@ -8,41 +8,6 @@
 #include "mips_registers.h"
 #include "utils.h"
 
-#define DUMP_LINE_SIZE 4
-
-void bin_arr_to_hex_arr(uint8_t *bin_arr, char *hex_arr)
-{
-	int bit_value, hex_value;
-
-	for(int i = 0; i < 8; i++)
-	{
-		bit_value = 8;
-		hex_value = 0;
-		for(int j = 0; j < 4; j++)
-		{
-			hex_value += bit_value * bin_arr[i * 4 + j];
-			bit_value /= 2;
-		}
-		if(hex_value <= 9) hex_arr[i] = (char) ('0' + hex_value);
-		else hex_arr[i] = (char) ('a' + (hex_value - 10));
-	}
-
-	hex_arr[8] = '\0';
-}
-
-void bin_twos_complement(int start, int end, uint8_t *arr)
-{
-	int found_one = 0;
-
-	if(start < 0 || start > end) return;
-
-	for(int i = end; i >= start; i--)
-	{
-		if(found_one) arr[i] ^= 1;
-		else if(arr[i] == 1) found_one = 1;
-	}
-}
-
 void clear_output()
 {
 	printf("\033[2J\033[H\n\n");
@@ -53,7 +18,7 @@ void cpu_dump(CPU *cpu, Config *cfg)
 	int words_to_show = (MEMORY_SIZE / WORD_SIZE < DUMP_MEMORY_WORDS) ? MEMORY_SIZE / WORD_SIZE : DUMP_MEMORY_WORDS;
 
 	printf("\n----------------------- GPR' status ----------------------\n");
-	for(int i = 0; i <= (REGISTER_COUNT - 4) / DUMP_LINE_SIZE; i++)
+	for(int i = 0; i <= (REGISTER_COUNT - 1) / DUMP_LINE_SIZE; i++)
 	{
 		for(int j = 0; (i * DUMP_LINE_SIZE + j) < REGISTER_COUNT && j < DUMP_LINE_SIZE; j++)
 			printf("$%s%d : %-10d ", DUMP_LINE_SIZE * i + j <= 9 ? "0" : "", DUMP_LINE_SIZE * i + j, (int32_t) gpr_read_32(cpu, DUMP_LINE_SIZE * i + j));
@@ -61,18 +26,18 @@ void cpu_dump(CPU *cpu, Config *cfg)
 	}
 
 	printf("\n------------------------------------ FPR' status -----------------------------------\n");
-	for(int i = 0; i <= (REGISTER_COUNT - 4) / DUMP_LINE_SIZE; i++)
+	for(int i = 0; i <= (REGISTER_COUNT - 1) / DUMP_LINE_SIZE; i++)
 	{
 		for(int j = 0; (i * DUMP_LINE_SIZE + j) < REGISTER_COUNT && j < DUMP_LINE_SIZE; j++)
 			printf("$%s%d : 0x%-16" PRIx64 " ", DUMP_LINE_SIZE * i + j <= 9 ? "0" : "", DUMP_LINE_SIZE * i + j, fpr_read_64(cpu, DUMP_LINE_SIZE * i + j));
 		printf("\n");
 	}
 
-	printf("\n------------------------------------ Memory status -----------------------------------\n");
+	printf("\n------------------------------------------------- Memory status -------------------------------------------------\n");
 	for(int i = 0; i <= (words_to_show - 1) / DUMP_LINE_SIZE; i++)
 	{
 		for(int j = 0; (i * DUMP_LINE_SIZE + j) < words_to_show && j < DUMP_LINE_SIZE; j++)
-			printf("@0000 %04x : %-10d ", (DUMP_LINE_SIZE * i + j) * WORD_SIZE, memory_read_32(cpu, (uint32_t) (DUMP_LINE_SIZE * i + j) * WORD_SIZE));
+			printf("@0000 %04x : 0x%08" PRIx32 "       ", (DUMP_LINE_SIZE * i + j) * WORD_SIZE, memory_read_32(cpu, (uint32_t) (DUMP_LINE_SIZE * i + j) * WORD_SIZE));
 		printf("\n");
 	}
 
@@ -80,11 +45,6 @@ void cpu_dump(CPU *cpu, Config *cfg)
 		printf("\t\t\t[...] (%d other words not displayed)\n", MEMORY_SIZE / WORD_SIZE - words_to_show);
 
 	if(cfg->step) wait_for_enter();
-}
-
-int is_negative(char *str)
-{
-	return(str[0] == '-');
 }
 
 void log_instruction(instruction *instr)
@@ -99,22 +59,6 @@ fprintf(stderr, "\n[!] Usage:\n \
 - %s -step {pathfile instructions file} for batch mode (step by step)\n \
 - %s {pathfile instructions file} {pathfile hex instructions output} {pathfile registers output} for batch mode\n",
 prog_name, prog_name, prog_name);
-}
-
-void long_to_bin_arr(int start, int end, long value, uint8_t *arr)
-{
-	long bin = 1;
-
-	for(int i = start; i < end; i++) bin *= 2;
-	for(int i = start; i <= end; i++)
-	{
-		if(value >= bin)
-		{
-			value -= bin;
-			arr[i] = 1;
-		}
-		bin /= 2;
-	}
 }
 
 char *read_full_line(FILE *in)
@@ -230,19 +174,6 @@ uint8_t register_string_to_int(char *reg)
 	}
 
 	return(reg_int);
-}
-
-void remove_sign(char *str)
-{
-	int i = 0;
-
-	while(str[i + 1] != '\0')
-	{
-		str[i] = str[i + 1];
-		i++;
-	}
-
-	str[i] = '\0';
 }
 
 int32_t sign_extend(int32_t value, uint8_t bits)
