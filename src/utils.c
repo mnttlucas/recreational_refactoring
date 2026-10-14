@@ -117,84 +117,54 @@ char *read_full_line(FILE *in)
 	return(line);
 }
 
-uint8_t register_string_to_int(char *reg)
+typedef struct
 {
-	int reg_value;
-	size_t reg_length = strlen(reg);
-	uint8_t reg_1 = (uint8_t) (reg[1] - '0'), reg_2 = 0, reg_int = INVALID_REGISTER, reg_is_only_numbers = 1;
+	const char *name;
+	uint8_t index;
+} register_alias;
 
-	for(size_t i = 0; i < reg_length; i++)
+/* Register names (without the leading '$'), see MIPS32 o32 ABI */
+static const register_alias register_aliases[] = {
+	{"zero", REG_ZERO}, {"at", REG_AT},
+	{"v0", REG_V0}, {"v1", REG_V1},
+	{"a0", REG_A0}, {"a1", REG_A1}, {"a2", REG_A2}, {"a3", REG_A3},
+	{"t0", REG_T0}, {"t1", REG_T1}, {"t2", REG_T2}, {"t3", REG_T3},
+	{"t4", REG_T4}, {"t5", REG_T5}, {"t6", REG_T6}, {"t7", REG_T7},
+	{"s0", REG_S0}, {"s1", REG_S1}, {"s2", REG_S2}, {"s3", REG_S3},
+	{"s4", REG_S4}, {"s5", REG_S5}, {"s6", REG_S6}, {"s7", REG_S7},
+	{"t8", REG_T8}, {"t9", REG_T9},
+	{"k0", REG_K0}, {"k1", REG_K1},
+	{"gp", REG_GP}, {"sp", REG_SP}, {"fp", REG_FP}, {"ra", REG_RA}};
+
+/* Parses a register number made of one or two digits ("5", "05", "31").
+   Returns INVALID_REGISTER if there is anything else or if it is out of range. */
+static uint8_t parse_register_number(const char *str)
+{
+	size_t length = strlen(str);
+	int value = 0;
+
+	if(length == 0 || length > 2) return(INVALID_REGISTER);
+	for(size_t i = 0; i < length; i++)
 	{
-		if(isalpha(reg[i]))
-		{
-			reg_is_only_numbers = 0;
-			break;
-		}
-	}
-	
-	if(reg_is_only_numbers)
-	{
-		reg_value = atoi(reg);
-		if(reg_value >= 0 && reg_value < REGISTER_COUNT) reg_int = (uint8_t) reg_value;
-		else reg_int = INVALID_REGISTER;
-	}
-	else
-	{
-		if(!mystrcasecmp(reg, "zero")) reg_int = REG_ZERO;
-		else if(!mystrcasecmp(reg, "at"))	reg_int = REG_AT;
-		else if(!mystrcasecmp(reg, "gp"))	reg_int = REG_GP;
-		else if(!mystrcasecmp(reg, "sp"))	reg_int = REG_SP;
-		else if(!mystrcasecmp(reg, "fp"))	reg_int = REG_FP;
-		else if(!mystrcasecmp(reg, "ra"))	reg_int = REG_RA;
-		else if(reg[0] == 'a' || reg[0] == 'A')
-		{
-			if('0' <= reg[1] && reg[1] <= '3') reg_int = REG_A0 + reg_1;
-			else reg_int = INVALID_REGISTER;
-		}
-		else if(reg[0] == 'f' || reg[0] == 'F')
-		{
-			if('0' <= reg[1] && reg[1] <= '9')
-			{
-				if('0' <= reg[2] && reg[2] <= '9' && !reg[3])
-				{
-					reg_1 *= 10;
-					reg_2 = (uint8_t) (reg[2] - '0');
-					reg_int = reg_1 + reg_2;
-				}
-				else if(!reg[2]) reg_int = reg_1;
-				else reg_int = INVALID_REGISTER;
-			}
-			else reg_int = INVALID_REGISTER;
-		}
-		else if(reg[0] == 'k' || reg[0] == 'K')
-		{
-			if(reg[1] == '0' || reg[1] == '1') reg_int = REG_K0 + reg_1;
-			else reg_int = INVALID_REGISTER;
-		}
-		else if(reg[0] == 's' || reg[0] == 'S')
-		{
-			if('0' <= reg[1] && reg[1] <= '7') reg_int = REG_S0 + reg_1;
-			else reg_int = INVALID_REGISTER;
-		}
-		else if(reg[0] == 't' || reg[0] == 'T')
-		{
-			if('0' <= reg[1] && reg[1] <= '7') reg_int = REG_T0 + reg_1;
-			else if(reg[1] == '8' || reg[1] == '9') reg_int = (uint8_t) (REG_T8 + (reg_1 - 8));
-			else reg_int = INVALID_REGISTER;
-		}
-		else if(reg[0] == 'v' || reg[0] == 'V')
-		{
-			if(reg[1] == '0' || reg[1] == '1') reg_int = REG_V0 + reg_1;
-			else reg_int = INVALID_REGISTER;
-		}
-		else fprintf(stderr, "[!] Unknown register : %c not recognized as an alias\n", reg[0]);
+		if(!isdigit((unsigned char) str[i])) return(INVALID_REGISTER);
+		value = value * 10 + (str[i] - '0');
 	}
 
-	if(reg_int >= REGISTER_COUNT)
-	{
-		fprintf(stderr, "[!] Unknown register : %d not a valid index\n", reg_int);
-		reg_int = INVALID_REGISTER;
-	}
+	return(value < REGISTER_COUNT ? (uint8_t) value : INVALID_REGISTER);
+}
+
+/* Accepts "$5", "$t0", "$T0", "$f12" without the '$' : number, alias or FPR name.
+   Returns INVALID_REGISTER (and prints the reason) when the name is not a register. */
+uint8_t register_string_to_int(const char *reg)
+{
+	uint8_t reg_int = parse_register_number(reg);
+
+	if(reg_int == INVALID_REGISTER && (reg[0] == 'f' || reg[0] == 'F')) reg_int = parse_register_number(reg + 1);
+
+	for(size_t i = 0; reg_int == INVALID_REGISTER && i < ARR_SIZE(register_aliases); i++)
+		if(!mystrcasecmp(reg, register_aliases[i].name)) reg_int = register_aliases[i].index;
+
+	if(reg_int == INVALID_REGISTER) fprintf(stderr, "[!] Unknown register : '%s'\n", reg);
 
 	return(reg_int);
 }

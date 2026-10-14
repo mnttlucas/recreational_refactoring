@@ -8,18 +8,32 @@
 #include "mips_registers.h"
 #include "utils.h"
 
-#define compact_branch_delay_slot \
-{ \
-	compact = 1; \
-	cpu->PC += ((uint32_t) instr.offset << 2) + 4; \
-} \
+/* PC-relative branch target : the offset is counted in instructions, from the one following the branch */
+static uint32_t branch_target(const CPU *cpu, int32_t offset)
+{
+	return(cpu->PC + ((uint32_t) offset << 2) + 4);
+}
 
-#define compact_branch_delay_slot_link \
-{ \
-	compact = 1; \
-	gpr_write_32(cpu, REG_RA, cpu->PC + 4); \
-	cpu->PC += ((uint32_t) instr.offset << 2) + 4; \
-} \
+/* Branch with a delay slot : the jump is applied after the next instruction has been executed */
+static void branch_delay_slot(CPU *cpu, int32_t offset)
+{
+	cpu->next_PC = branch_target(cpu, offset);
+}
+
+/* MIPS32 Release 6 compact branch : no delay slot, the PC is updated immediately.
+   Returns 1 so that the caller skips the final PC += 4 */
+static uint8_t branch_compact(CPU *cpu, int32_t offset)
+{
+	cpu->PC = branch_target(cpu, offset);
+	return(1);
+}
+
+/* Same as branch_compact(), and stores the return address in $ra */
+static uint8_t branch_compact_link(CPU *cpu, int32_t offset)
+{
+	gpr_write_32(cpu, REG_RA, cpu->PC + 4);
+	return(branch_compact(cpu, offset));
+}
 
 void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 {
@@ -74,54 +88,52 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			break;
 		case OP_BAL :
 			gpr_write_32(cpu, REG_RA, cpu->PC + 8);
-			cpu->next_PC = cpu->PC + ((uint32_t) instr.offset << 2) + 4;
+			branch_delay_slot(cpu, instr.offset);
 			break;
 		case OP_BALC :
-			compact = 1;
-			gpr_write_32(cpu, REG_RA, cpu->PC + 4);
-			cpu->PC += ((uint32_t) instr.offset << 2) + 4;
+			compact = branch_compact_link(cpu, instr.offset);
 			break;
 		case OP_BC :
-			compact_branch_delay_slot
+			compact = branch_compact(cpu, instr.offset);
 			break;
 		case OP_BEQ :
 			if(gpr_read_32(cpu, instr.rs) == gpr_read_32(cpu, instr.rt))
-				cpu->next_PC = cpu->PC + ((uint32_t) instr.offset << 2) + 4;
+				branch_delay_slot(cpu, instr.offset);
 			break;
 		case OP_BEQC :
-			if(gpr_read_32(cpu, instr.rs) == gpr_read_32(cpu, instr.rt)) compact_branch_delay_slot
+			if(gpr_read_32(cpu, instr.rs) == gpr_read_32(cpu, instr.rt)) compact = branch_compact(cpu, instr.offset);
 			break;
 		case OP_BEQZALC :
-			if(gpr_read_32(cpu, instr.rt) == 0) compact_branch_delay_slot_link
+			if(gpr_read_32(cpu, instr.rt) == 0) compact = branch_compact_link(cpu, instr.offset);
 			break;
 		case OP_BEQZC :
-			if(gpr_read_32(cpu, instr.rs) == 0) compact_branch_delay_slot
+			if(gpr_read_32(cpu, instr.rs) == 0) compact = branch_compact(cpu, instr.offset);
 			break;
 		case OP_BGEC :
-			if((int32_t) gpr_read_32(cpu, instr.rs) >= (int32_t) gpr_read_32(cpu, instr.rt)) compact_branch_delay_slot
+			if((int32_t) gpr_read_32(cpu, instr.rs) >= (int32_t) gpr_read_32(cpu, instr.rt)) compact = branch_compact(cpu, instr.offset);
 			break;
 		case OP_BGEUC :
-			if(gpr_read_32(cpu, instr.rs) >= gpr_read_32(cpu, instr.rt)) compact_branch_delay_slot
+			if(gpr_read_32(cpu, instr.rs) >= gpr_read_32(cpu, instr.rt)) compact = branch_compact(cpu, instr.offset);
 			break;
 		case OP_BGEZ :
 			if((int32_t) gpr_read_32(cpu, instr.rs) >= 0)
-				cpu->next_PC = cpu->PC + ((uint32_t) instr.offset << 2) + 4;
+				branch_delay_slot(cpu, instr.offset);
 			break;
 		case OP_BGEZALC :
-			if((int32_t) gpr_read_32(cpu, instr.rt) >= 0) compact_branch_delay_slot_link
+			if((int32_t) gpr_read_32(cpu, instr.rt) >= 0) compact = branch_compact_link(cpu, instr.offset);
 			break;
 		case OP_BGEZC :
-			if((int32_t) gpr_read_32(cpu, instr.rt) >= 0) compact_branch_delay_slot
+			if((int32_t) gpr_read_32(cpu, instr.rt) >= 0) compact = branch_compact(cpu, instr.offset);
 			break;
 		case OP_BGTZ :
 			if((int32_t) gpr_read_32(cpu, instr.rs) > 0)
-				cpu->next_PC = cpu->PC + ((uint32_t) instr.offset << 2) + 4;
+				branch_delay_slot(cpu, instr.offset);
 			break;
 		case OP_BGTZALC :
-			if((int32_t) gpr_read_32(cpu, instr.rt) > 0) compact_branch_delay_slot_link
+			if((int32_t) gpr_read_32(cpu, instr.rt) > 0) compact = branch_compact_link(cpu, instr.offset);
 			break;
 		case OP_BGTZC :
-			if((int32_t) gpr_read_32(cpu, instr.rt) > 0) compact_branch_delay_slot
+			if((int32_t) gpr_read_32(cpu, instr.rt) > 0) compact = branch_compact(cpu, instr.offset);
 			break;
 		case OP_BITSWAP :
 			/* Optimized algorithm I thought was interesting */
@@ -133,50 +145,50 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 			break;
 		case OP_BLEZ :
 			if((int32_t) gpr_read_32(cpu, instr.rs) <= 0)
-				cpu->next_PC = cpu->PC + ((uint32_t) instr.offset << 2) + 4;
+				branch_delay_slot(cpu, instr.offset);
 			break;
 		case OP_BLEZALC :
-			if((int32_t) gpr_read_32(cpu, instr.rt) <= 0) compact_branch_delay_slot_link
+			if((int32_t) gpr_read_32(cpu, instr.rt) <= 0) compact = branch_compact_link(cpu, instr.offset);
 			break;
 		case OP_BLEZC :
-			if((int32_t) gpr_read_32(cpu, instr.rt) <= 0) compact_branch_delay_slot
+			if((int32_t) gpr_read_32(cpu, instr.rt) <= 0) compact = branch_compact(cpu, instr.offset);
 			break;
 		case OP_BLTC :
-			if((int32_t) gpr_read_32(cpu, instr.rs) < (int32_t) gpr_read_32(cpu, instr.rt)) compact_branch_delay_slot
+			if((int32_t) gpr_read_32(cpu, instr.rs) < (int32_t) gpr_read_32(cpu, instr.rt)) compact = branch_compact(cpu, instr.offset);
 			break;
 		case OP_BLTUC :
-			if(gpr_read_32(cpu, instr.rs) < gpr_read_32(cpu, instr.rt)) compact_branch_delay_slot
+			if(gpr_read_32(cpu, instr.rs) < gpr_read_32(cpu, instr.rt)) compact = branch_compact(cpu, instr.offset);
 			break;
 		case OP_BLTZ :
 			if((int32_t) gpr_read_32(cpu, instr.rs) < 0)
-				cpu->next_PC = cpu->PC + ((uint32_t) instr.offset << 2) + 4;
+				branch_delay_slot(cpu, instr.offset);
 			break;
 		case OP_BLTZALC :
-			if((int32_t) gpr_read_32(cpu, instr.rt) < 0) compact_branch_delay_slot_link
+			if((int32_t) gpr_read_32(cpu, instr.rt) < 0) compact = branch_compact_link(cpu, instr.offset);
 			break;
 		case OP_BLTZC :
-			if((int32_t) gpr_read_32(cpu, instr.rt) < 0) compact_branch_delay_slot
+			if((int32_t) gpr_read_32(cpu, instr.rt) < 0) compact = branch_compact(cpu, instr.offset);
 			break;
 		case OP_BNE :
 			if(gpr_read_32(cpu, instr.rs) != gpr_read_32(cpu, instr.rt))
-				cpu->next_PC = cpu->PC + ((uint32_t) instr.offset << 2) + 4;
+				branch_delay_slot(cpu, instr.offset);
 			break;
 		case OP_BNEC :
-			if(gpr_read_32(cpu, instr.rs) != gpr_read_32(cpu, instr.rt)) compact_branch_delay_slot
+			if(gpr_read_32(cpu, instr.rs) != gpr_read_32(cpu, instr.rt)) compact = branch_compact(cpu, instr.offset);
 			break;
 		case OP_BNEZALC :
-			if((int32_t) gpr_read_32(cpu, instr.rt) != 0) compact_branch_delay_slot_link
+			if((int32_t) gpr_read_32(cpu, instr.rt) != 0) compact = branch_compact_link(cpu, instr.offset);
 			break;
 		case OP_BNEZC :
-			if((int32_t) gpr_read_32(cpu, instr.rs) != 0) compact_branch_delay_slot
+			if((int32_t) gpr_read_32(cpu, instr.rs) != 0) compact = branch_compact(cpu, instr.offset);
 			break;
 		case OP_BNVC :
 			i64 = (int64_t) (int32_t) gpr_read_32(cpu, instr.rs) + (int64_t) (int32_t) gpr_read_32(cpu, instr.rt);
-			if(i64 <= INT32_MAX && i64 >= INT32_MIN) compact_branch_delay_slot
+			if(i64 <= INT32_MAX && i64 >= INT32_MIN) compact = branch_compact(cpu, instr.offset);
 			break;
 		case OP_BOVC :
 			i64 = (int64_t) (int32_t) gpr_read_32(cpu, instr.rs) + (int64_t) (int32_t) gpr_read_32(cpu, instr.rt);
-			if(i64 > INT32_MAX || i64 < INT32_MIN) compact_branch_delay_slot
+			if(i64 > INT32_MAX || i64 < INT32_MIN) compact = branch_compact(cpu, instr.offset);
 			break;
 		case OP_CLO :
 			/* Naive OP_CLO/Z implementation, didn't want to just

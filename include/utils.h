@@ -19,7 +19,7 @@ void log_instruction(instruction *instr);
 void log_usage(char *prog_name);
 int mystrcasecmp(const char *a, const char *b);
 char *read_full_line(FILE *in);
-uint8_t register_string_to_int(char *str);
+uint8_t register_string_to_int(const char *str);
 int32_t sign_extend(int32_t value, uint8_t bits);
 void wait_for_enter();
 
