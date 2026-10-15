@@ -454,5 +454,5 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 
 	if(pending_PC != INVALID_PC) cpu->PC = pending_PC;
 
-	if(cfg->verbose) printf("%s", instr.to_string);
+	if(cfg->verbose) printf("[#] Executed : %s", instr.to_string);
 }

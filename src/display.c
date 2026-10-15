@@ -34,7 +34,7 @@ static void dump_grid(CPU *cpu, int count, dump_cell print_cell)
 
 void clear_output(void)
 {
-	printf("\033[2J\033[H\n");
+	printf("\033[H\033[2J\033[3J");
 }
 
 void cpu_dump(CPU *cpu)

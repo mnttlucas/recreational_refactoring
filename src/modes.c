@@ -94,7 +94,7 @@ static void run_program(CPU *cpu, Config *cfg, const Program *prog)
 {
 	uint32_t pc_index = 0;
 
-	printf("\n-- Instruction  execute --");
+	printf("\n-- Instruction  execute --\n\n");
 	while(pc_index < prog->count)
 	{
 		if(cfg->step) clear_output();
