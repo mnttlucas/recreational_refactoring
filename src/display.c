@@ -60,8 +60,8 @@ void log_usage(char *prog_name)
 {
 fprintf(stderr, "\n[!] Usage:\n \
 - %s for interactive mode\n \
-- %s -step {pathfile instructions file} for batch mode (step by step)\n \
-- %s {pathfile instructions file} {pathfile hex instructions output} {pathfile registers output} for batch mode\n",
+- %s -step <prog.asm> for batch mode (step by step execution)\n \
+- %s <prog.asm> <out.hex> <out.regs> for batch mode\n",
 prog_name, prog_name, prog_name);
 }
 
