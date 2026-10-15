@@ -7,6 +7,7 @@
 #include "config.h"
 #include "cpu.h"
 #include "decode.h"
+#include "display.h"
 #include "execute.h"
 #include "instruction.h"
 #include "mips_registers.h"
@@ -56,13 +57,13 @@ static int load_program(const char *path, Program *prog)
 
 	if(!in) return(0);
 
-	printf("\n--- Instruction decode ---\n");
+	printf("\n--- Instruction decode ---\n\n");
 	while(1)
 	{
 		cur = decode_instruction(BATCH, in);
 		line_no++;
 		if(cur.exit) break;
-		if(cur.error)
+		if(cur.error != NO_ERR)
 		{
 			fprintf(stderr, "[!] batch_mode : line %u invalid\n", line_no);
 			error_cnt++;
@@ -93,7 +94,7 @@ static void run_program(CPU *cpu, Config *cfg, const Program *prog)
 {
 	uint32_t pc_index = 0;
 
-	printf("\n-- Instruction  execute --\n");
+	printf("\n-- Instruction  execute --");
 	while(pc_index < prog->count)
 	{
 		if(cfg->step) clear_output();

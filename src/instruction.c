@@ -1,6 +1,7 @@
 #include <string.h>
 
 #include "instruction.h"
+#include "mips_encoding.h"
 #include "utils.h"
 
 static const instruction_desc instruction_table[] =

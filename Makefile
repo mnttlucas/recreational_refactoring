@@ -13,6 +13,7 @@ TARGET = emul-mips
 SRC = src/main.c \
       src/modes.c \
       src/decode.c \
+      src/display.c \
       src/execute.c \
       src/instruction.c \
       src/mips_memory.c \

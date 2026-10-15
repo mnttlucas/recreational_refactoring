@@ -7,7 +7,9 @@
 #include <string.h>
 
 #include "decode.h"
+#include "display.h"
 #include "instruction.h"
+#include "mips_encoding.h"
 #include "mips_registers.h"
 #include "utils.h"
 
@@ -93,7 +95,7 @@ static void build_cmd_instruction(instruction *instr, int funct_code, int op_cod
 	instr->encoding = encode_r((uint32_t) op_code, (uint32_t) rs_value, (uint32_t) rt_value, (uint32_t) rd_value, (uint32_t) shamt_value, (uint32_t) funct_code);
 }
 
-void build_offset_16_instruction(instruction *instr, int op_code)
+static void build_offset_16_instruction(instruction *instr, int op_code)
 {
 	uint32_t rt_value = 0;
 	if(instr->opcode == OP_BAL) rt_value = BAL_RT;
@@ -101,25 +103,25 @@ void build_offset_16_instruction(instruction *instr, int op_code)
 	instr->encoding = encode_i((uint32_t) op_code, 0, rt_value, instr->offset, OFFSET_16_SIZE);
 }
 
-void build_offset_26_instruction(instruction *instr, int op_code)
+static void build_offset_26_instruction(instruction *instr, int op_code)
 {
 	instr->offset = check_field(instr, instr->offset, OFFSET_26_SIZE);
 	instr->encoding = ((uint32_t) op_code << OPCODE_SHIFT) | field(instr->offset, 0, OFFSET_26_SIZE);
 }
 
-void build_rd_instruction(instruction *instr, int funct_code)
+static void build_rd_instruction(instruction *instr, int funct_code)
 {
 	instr->encoding = encode_r(OPCODE_SPECIAL, 0, 0, instr->rd, 0, (uint32_t) funct_code);
 }
 
-void build_rd_rs_instruction(instruction *instr, int funct_code)
+static void build_rd_rs_instruction(instruction *instr, int funct_code)
 {
 	uint32_t shamt_value = 0;
 	if(instr->opcode == OP_CLO || instr->opcode == OP_CLZ) shamt_value = CLO_CLZ_SA;
 	instr->encoding = encode_r(OPCODE_SPECIAL, instr->rs, 0, instr->rd, shamt_value, (uint32_t) funct_code);
 }
 
-void build_rd_rs_rt_instruction(instruction *instr, int funct_code)
+static void build_rd_rs_rt_instruction(instruction *instr, int funct_code)
 {
 	uint32_t shamt_value = 0;
 	if(instr->opcode == OP_DIV || instr->opcode == OP_DIVU) shamt_value = DIV_DIVU_SA;
@@ -129,7 +131,7 @@ void build_rd_rs_rt_instruction(instruction *instr, int funct_code)
 	instr->encoding = encode_r(OPCODE_SPECIAL, instr->rs, instr->rt, instr->rd, shamt_value, (uint32_t) funct_code);
 }
 
-void build_rd_rt_instruction(instruction *instr, int funct_code)
+static void build_rd_rt_instruction(instruction *instr, int funct_code)
 {
 	uint32_t shamt_value = 0;
 	if(instr->opcode == OP_SEB) shamt_value = SEB_SA;
@@ -137,26 +139,26 @@ void build_rd_rt_instruction(instruction *instr, int funct_code)
 	instr->encoding = encode_r(OPCODE_SPECIAL3, 0, instr->rt, instr->rd, shamt_value, (uint32_t) funct_code);
 }
 
-void build_rd_rt_rs_instruction(instruction *instr, int funct_code)
+static void build_rd_rt_rs_instruction(instruction *instr, int funct_code)
 {
 	uint32_t shamt_value = 0;
 	if(instr->opcode == OP_ROTRV) shamt_value = ROTRV_SA;
 	instr->encoding = encode_r(OPCODE_SPECIAL, instr->rs, instr->rt, instr->rd, shamt_value, (uint32_t) funct_code);
 }
 
-void build_rd_rt_sa_instruction(instruction *instr, int funct_code)
+static void build_rd_rt_sa_instruction(instruction *instr, int funct_code)
 {
 	uint32_t rs_value = 0;
 	if(instr->opcode == OP_ROTR) rs_value = ROTR_RS;
 	instr->encoding = encode_r(OPCODE_SPECIAL, rs_value, instr->rt, instr->rd, instr->sa, (uint32_t) funct_code);
 }
 
-void build_rs_instruction(instruction *instr, int funct_code)
+static void build_rs_instruction(instruction *instr, int funct_code)
 {
 	instr->encoding = encode_r(OPCODE_SPECIAL, instr->rs, 0, 0, 0, (uint32_t) funct_code);
 }
 
-void build_rs_immediate_16_instruction(instruction *instr, int op_code)
+static void build_rs_immediate_16_instruction(instruction *instr, int op_code)
 {
 	uint32_t rt_value = 0;
 	if(instr->opcode == OP_AUIPC) rt_value = AUIPC_RT;
@@ -165,13 +167,13 @@ void build_rs_immediate_16_instruction(instruction *instr, int op_code)
 	instr->encoding = encode_i((uint32_t) op_code, instr->rs, rt_value, instr->immediate, IMM_16_SIZE);
 }
 
-void build_rs_immediate_19_instruction(instruction *instr, int op_code)
+static void build_rs_immediate_19_instruction(instruction *instr, int op_code)
 {
 	instr->immediate = check_field(instr, instr->immediate, IMM_19_SIZE);
 	instr->encoding = encode_i((uint32_t) op_code, instr->rs, 0, instr->immediate, IMM_19_SIZE);
 }
 
-void build_rs_offset_16_instruction(instruction *instr, int op_code)
+static void build_rs_offset_16_instruction(instruction *instr, int op_code)
 {
 	uint32_t rt_value = 0;
 	if(instr->opcode == OP_BGEZ) rt_value = BGEZ_RT;
@@ -179,7 +181,7 @@ void build_rs_offset_16_instruction(instruction *instr, int op_code)
 	instr->encoding = encode_i((uint32_t) op_code, instr->rs, rt_value, instr->offset, OFFSET_16_SIZE);
 }
 
-void build_rs_offset_19_instruction(instruction *instr, int op_code)
+static void build_rs_offset_19_instruction(instruction *instr, int op_code)
 {
 	uint32_t rt_value = 0;
 	if(instr->opcode == OP_LWPC) rt_value = LWPC_RT;
@@ -187,53 +189,53 @@ void build_rs_offset_19_instruction(instruction *instr, int op_code)
 	instr->encoding = encode_i((uint32_t) op_code, instr->rs, rt_value, instr->offset, OFFSET_19_SIZE);
 }
 
-void build_rs_offset_21_instruction(instruction *instr, int op_code)
+static void build_rs_offset_21_instruction(instruction *instr, int op_code)
 {
 	instr->offset = check_field(instr, instr->offset, OFFSET_21_SIZE);
 	instr->encoding = encode_i((uint32_t) op_code, instr->rs, 0, instr->offset, OFFSET_21_SIZE);
 }
 
-void build_rs_rt_instruction(instruction *instr, int funct_code)
+static void build_rs_rt_instruction(instruction *instr, int funct_code)
 {
 	instr->encoding = encode_r(OPCODE_SPECIAL, instr->rs, instr->rt, 0, 0, (uint32_t) funct_code);
 }
 
-void build_rs_rt_offset_16_instruction(instruction *instr, int op_code)
+static void build_rs_rt_offset_16_instruction(instruction *instr, int op_code)
 {
 	instr->offset = check_field(instr, instr->offset, OFFSET_16_SIZE);
 	instr->encoding = encode_i((uint32_t) op_code, instr->rs, instr->rt, instr->offset, OFFSET_16_SIZE);
 }
 
-void build_rt_immediate_16_instruction(instruction *instr, int op_code)
+static void build_rt_immediate_16_instruction(instruction *instr, int op_code)
 {
 	instr->immediate = check_field(instr, instr->immediate, IMM_16_SIZE);
 	instr->encoding = encode_i((uint32_t) op_code, 0, instr->rt, instr->immediate, IMM_16_SIZE);
 }
 
-void build_rt_offset_16_instruction(instruction *instr, int op_code)
+static void build_rt_offset_16_instruction(instruction *instr, int op_code)
 {
 	instr->offset = check_field(instr, instr->offset, OFFSET_16_SIZE);
 	instr->encoding = encode_i((uint32_t) op_code, 0, instr->rt, instr->offset, OFFSET_16_SIZE);
 }
 
-void build_rt_offset_base_instruction(instruction *instr, int op_code)
+static void build_rt_offset_base_instruction(instruction *instr, int op_code)
 {
 	instr->offset = check_field(instr, instr->offset, OFFSET_16_SIZE);
 	instr->encoding = encode_i((uint32_t) op_code, instr->base, instr->rt, instr->offset, OFFSET_16_SIZE);
 }
 
-void build_rt_rs_immediate_16_instruction(instruction *instr, int op_code)
+static void build_rt_rs_immediate_16_instruction(instruction *instr, int op_code)
 {
 	instr->immediate = check_field(instr, instr->immediate, IMM_16_SIZE);
 	instr->encoding = encode_i((uint32_t) op_code, instr->rs, instr->rt, instr->immediate, IMM_16_SIZE);
 }
 
-void build_target_instruction(instruction *instr, int op_code)
+static void build_target_instruction(instruction *instr, int op_code)
 {
 	instr->encoding = ((uint32_t) op_code << OPCODE_SHIFT) | field(instr->target, 0, OFFSET_26_SIZE);
 }
 
-void decode_offset_operand(char *line, instruction *instr)
+static void decode_offset_operand(char *line, instruction *instr)
 {
 	char offset[16];
 	if(sscanf(line, " %15s ", offset) != 1)
@@ -244,7 +246,7 @@ void decode_offset_operand(char *line, instruction *instr)
 	instr->offset = parse_integer(offset, instr);
 }
 
-void decode_rd_operand(char *line, instruction *instr)
+static void decode_rd_operand(char *line, instruction *instr)
 {
 	char rd[8];
 	if(sscanf(line, " $%7s ", rd) != 1)
@@ -256,7 +258,7 @@ void decode_rd_operand(char *line, instruction *instr)
 	if(instr->rd == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
-void decode_rd_rs_operands(char *line, instruction *instr)
+static void decode_rd_rs_operands(char *line, instruction *instr)
 {
 	char rd[8], rs[8];
 	/* Handling case of OP_JALR having two formats (quote from specification) :
@@ -298,7 +300,7 @@ void decode_rd_rs_operands(char *line, instruction *instr)
 	if(instr->rd == INVALID_REGISTER || instr->rs == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
-void decode_rd_rs_rt_operands(char *line, instruction *instr)
+static void decode_rd_rs_rt_operands(char *line, instruction *instr)
 {
 	char rd[8], rs[8], rt[8];
 	if(sscanf(line, " $%7[^,] , $%7[^,] , $%7s ", rd, rs, rt) != 3)
@@ -312,7 +314,7 @@ void decode_rd_rs_rt_operands(char *line, instruction *instr)
 	if(instr->rd == INVALID_REGISTER || instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
-void decode_rd_rt_operands(char *line, instruction *instr)
+static void decode_rd_rt_operands(char *line, instruction *instr)
 {
 	char rd[8], rt[8];
 	if(sscanf(line, " $%7[^,] , $%7s ", rd, rt) != 2)
@@ -325,7 +327,7 @@ void decode_rd_rt_operands(char *line, instruction *instr)
 	if(instr->rd == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
-void decode_rd_rt_rs_operands(char *line, instruction *instr)
+static void decode_rd_rt_rs_operands(char *line, instruction *instr)
 {
 	char rd[8], rs[8], rt[8];
 	if(sscanf(line, " $%7[^,] , $%7[^,] , $%7s ", rd, rt, rs) != 3)
@@ -339,7 +341,7 @@ void decode_rd_rt_rs_operands(char *line, instruction *instr)
 	if(instr->rd == INVALID_REGISTER || instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
-void decode_rd_rt_sa_operands(char *line, instruction *instr)
+static void decode_rd_rt_sa_operands(char *line, instruction *instr)
 {
 	char rd[8], rt[8], sa[16];
 	if(sscanf(line, " $%7[^,] , $%7[^,] , %15s ", rd, rt, sa) != 3)
@@ -360,7 +362,7 @@ void decode_rd_rt_sa_operands(char *line, instruction *instr)
 	if(instr->rd == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
-void decode_rs_operand(char *line, instruction *instr)
+static void decode_rs_operand(char *line, instruction *instr)
 {
 	char rs[8];
 	if(sscanf(line, " $%7s ", rs) != 1)
@@ -372,7 +374,7 @@ void decode_rs_operand(char *line, instruction *instr)
 	if(instr->rs == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
-void decode_rs_immediate_operands(char *line, instruction *instr)
+static void decode_rs_immediate_operands(char *line, instruction *instr)
 {
 	char imm[16], rs[8];
 	if(sscanf(line, " $%7[^,], %15s ", rs, imm) != 2)
@@ -385,7 +387,7 @@ void decode_rs_immediate_operands(char *line, instruction *instr)
 	if(instr->rs == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
-void decode_rs_offset_operands(char *line, instruction *instr)
+static void decode_rs_offset_operands(char *line, instruction *instr)
 {
 	char offset[16], rs[8];
 	if(sscanf(line, " $%7[^,]  , %15s ", rs, offset) != 2)
@@ -398,7 +400,7 @@ void decode_rs_offset_operands(char *line, instruction *instr)
 	if(instr->rs == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
-void decode_rs_rt_operands(char *line, instruction *instr)
+static void decode_rs_rt_operands(char *line, instruction *instr)
 {
 	char rs[8], rt[8];
 	if(sscanf(line, " $%7[^,] , $%7s ", rs, rt) != 2)
@@ -411,7 +413,7 @@ void decode_rs_rt_operands(char *line, instruction *instr)
 	if(instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
-void decode_rs_rt_offset_operands(char *line, instruction *instr)
+static void decode_rs_rt_offset_operands(char *line, instruction *instr)
 {
 	char offset[16], rs[8], rt[8];
 	if(sscanf(line, " $%7[^,] , $%7[^,] , %15s ", rs, rt, offset) != 3)
@@ -425,7 +427,7 @@ void decode_rs_rt_offset_operands(char *line, instruction *instr)
 	if(instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
-void decode_rt_immediate_operands(char *line, instruction *instr)
+static void decode_rt_immediate_operands(char *line, instruction *instr)
 {
 	char imm[16], rt[8];
 	if(sscanf(line, " $%7[^,] , %15s ", rt, imm) != 2)
@@ -438,7 +440,7 @@ void decode_rt_immediate_operands(char *line, instruction *instr)
 	if(instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
-void decode_rt_offset_operands(char *line, instruction *instr)
+static void decode_rt_offset_operands(char *line, instruction *instr)
 {
 	char offset[16], rt[8];
 	if(sscanf(line, " $%7[^,] , %15s ", rt, offset) != 2)
@@ -451,7 +453,7 @@ void decode_rt_offset_operands(char *line, instruction *instr)
 	if(instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
-void decode_rt_offset_base_operands(char *line, instruction *instr)
+static void decode_rt_offset_base_operands(char *line, instruction *instr)
 {
 	char base[8], offset[16], rt[8];
 	if(sscanf(line, " $%7[^,] , %15[^(] ($%7[^)]) ", rt, offset, base) != 3)
@@ -465,7 +467,7 @@ void decode_rt_offset_base_operands(char *line, instruction *instr)
 	if(instr->base == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
-void decode_rt_rs_immediate_operands(char *line, instruction *instr)
+static void decode_rt_rs_immediate_operands(char *line, instruction *instr)
 {
 	char imm[16], rs[8], rt[8];
 	if(sscanf(line, " $%7[^,] , $%7[^,] , %15s ", rt, rs, imm) != 3)
@@ -479,7 +481,7 @@ void decode_rt_rs_immediate_operands(char *line, instruction *instr)
 	if(instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
-void decode_rt_rs_offset_operands(char *line, instruction *instr)
+static void decode_rt_rs_offset_operands(char *line, instruction *instr)
 {
 	char offset[16], rs[8], rt[8];
 	if(sscanf(line, " $%7[^,] , $%7[^,] , %15s ", rt, rs, offset) != 3)
@@ -493,7 +495,7 @@ void decode_rt_rs_offset_operands(char *line, instruction *instr)
 	if(instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
-void decode_target_operands(char *line, instruction *instr)
+static void decode_target_operands(char *line, instruction *instr)
 {
 	char target[16];
 	if(sscanf(line, " %15s ", target) != 1)
@@ -667,7 +669,7 @@ instruction decode_instruction(int mode, FILE *input)
 				snprintf(instr.to_string, sizeof(instr.to_string), "%s %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.target, instr.encoding);
 				break;
 		}
-		if(instr.error)
+		if(instr.error != NO_ERR)
 		{
 			fprintf(stderr, "[!] Instruction rejected : %s\n", line);
 			instr.opcode = OP_MIN;

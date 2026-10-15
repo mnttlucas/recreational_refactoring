@@ -2,6 +2,7 @@
 
 #include "config.h"
 #include "cpu.h"
+#include "display.h"
 #include "mips_memory.h"
 #include "modes.h"
 #include "mips_registers.h"
