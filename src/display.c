@@ -59,9 +59,9 @@ void log_instruction(instruction *instr)
 void log_usage(char *prog_name)
 {
 fprintf(stderr, "\n[!] Usage:\n \
-- %s for interactive mode\n \
-- %s -step <prog.asm> for batch mode (step by step execution)\n \
-- %s <prog.asm> <out.hex> <out.regs> for batch mode\n",
+- %s : for interactive mode\n \
+- %s <prog.asm> -step : for batch mode (step by step execution)\n \
+- %s <prog.asm> <out.hex> <out.regs> : for batch mode\n",
 prog_name, prog_name, prog_name);
 }
 
