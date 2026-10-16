@@ -134,9 +134,10 @@ void interactive_mode(Cpu *cpu, Config *cfg)
 	}
 }
 
-void batch_mode(Cpu *cpu, Config *cfg, char *path_in, char *path_out_hex, char *path_out_regs)
+int batch_mode(Cpu *cpu, Config *cfg, char *path_in, char *path_out_hex, char *path_out_regs)
 {
 	FILE *out_hex = NULL, *out_regs = NULL;
+	int status = EXIT_FAILURE;
 	Program prog = {0};
 
 	if(load_program(path_in, &prog))
@@ -155,10 +156,11 @@ void batch_mode(Cpu *cpu, Config *cfg, char *path_in, char *path_out_hex, char *
 				cpu_dump(cpu);
 				write_regs(out_regs, cpu);
 			}
+		status = EXIT_SUCCESS;
 		}
 	}
 
-	if(out_hex) fclose(out_hex);
-	if(out_regs) fclose(out_regs);
+	if(out_hex && fclose(out_hex) != 0) status = EXIT_FAILURE;
+	if(out_regs && fclose(out_regs) != 0) status = EXIT_FAILURE; 
 	free(prog.items);
 }

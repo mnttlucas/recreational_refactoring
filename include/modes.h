@@ -6,6 +6,6 @@
 #include "instruction.h"
 
 void interactive_mode(Cpu *cpu, Config *cfg);
-void batch_mode(Cpu *cpu, Config *cfg, char *path_in, char *path_out_hex, char *path_out_regs);
+int batch_mode(Cpu *cpu, Config *cfg, char *path_in, char *path_out_hex, char *path_out_regs);
 
 #endif /* MODES_H */
