@@ -526,7 +526,7 @@ Instruction decode_instruction(int mode, FILE *input)
 
 	if(id)
 	{
-		// if(chunk[0] == '.') printf("[!] Directives are currently not supported.\n");
+		// if(chunk[0] == '.') printf("[!] Directives are currently not supported.\n"); TODO
 		instr.opcode = id->op;
 		switch(id->format)
 		{
