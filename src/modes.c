@@ -156,11 +156,13 @@ int batch_mode(Cpu *cpu, Config *cfg, char *path_in, char *path_out_hex, char *p
 				cpu_dump(cpu);
 				write_regs(out_regs, cpu);
 			}
-		status = EXIT_SUCCESS;
+			status = EXIT_SUCCESS;
 		}
 	}
 
 	if(out_hex && fclose(out_hex) != 0) status = EXIT_FAILURE;
-	if(out_regs && fclose(out_regs) != 0) status = EXIT_FAILURE; 
+	if(out_regs && fclose(out_regs) != 0) status = EXIT_FAILURE;
 	free(prog.items);
+
+	return(status);
 }
