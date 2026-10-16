@@ -522,8 +522,8 @@ Instruction decode_instruction(int mode, FILE *input)
 	sscanf(ptr, "%15s%n", mnemonic, &consumed);
 	ptr += consumed;
 
-	const Instruction_desc *id = find_instruction(mnemonic);
-	
+	const InstructionDesc *id = find_instruction(mnemonic);
+
 	if(id)
 	{
 		// if(chunk[0] == '.') printf("[!] Directives are currently not supported.\n");

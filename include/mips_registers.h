@@ -22,7 +22,7 @@ so INVALID_REGISTER = REGISTER_COUNT, but are separated for clarity */
 #define REG_T2 10
 #define REG_T3 11
 #define REG_T4 12
-#define REG_T5 13 
+#define REG_T5 13
 #define REG_T6 14
 #define REG_T7 15
 #define REG_S0 16

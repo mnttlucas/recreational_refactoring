@@ -60,7 +60,7 @@ uint32_t gpr_read_32(Cpu *cpu, int id)
 
 	if(id >= 0 && id < REGISTER_COUNT) value = cpu->GPR[id];
 	else fprintf(stderr, "[!] gpr_read_32() : invalid register %d\n", id);
-	
+
 	return(value);
 }
 

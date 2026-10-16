@@ -19,7 +19,7 @@ uint16_t memory_read_16(Cpu *cpu, uint32_t address)
 		value |= (uint16_t) cpu->memory[address + 1];
 	}
 	else fprintf(stderr, "[!] memory_read_16() : invalid memory address @ %08" PRIx32 "\n", address);
-	
+
 	return(value);
 }
 
@@ -35,7 +35,7 @@ uint32_t memory_read_32(Cpu *cpu, uint32_t address)
 		value |= (uint32_t) cpu->memory[address + 3];
 	}
 	else fprintf(stderr, "[!] memory_read_32() : invalid memory address @ %08" PRIx32 "\n", address);
-	
+
 	return(value);
 }
 

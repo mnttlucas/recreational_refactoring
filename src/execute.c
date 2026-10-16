@@ -257,11 +257,11 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction instr)
 		case OP_JIALC :
 			compact = 1;
 			gpr_write_32(cpu, REG_RA, cpu->PC + 4);
-			cpu->PC = gpr_read_32(cpu, instr.rt) + (uint32_t) sign_extend(instr.offset, OFFSET_16_SIZE);
+			cpu->PC = gpr_read_32(cpu, instr.rt) + (uint32_t) instr.offset;
 			break;
 		case OP_JIC :
 			compact = 1;
-			cpu->PC = gpr_read_32(cpu, instr.rt) + (uint32_t) sign_extend(instr.offset, OFFSET_16_SIZE);
+			cpu->PC = gpr_read_32(cpu, instr.rt) + (uint32_t) instr.offset;
 			break;
 		case OP_LB :
 			address = gpr_read_32(cpu, instr.base) + (uint32_t) instr.offset;

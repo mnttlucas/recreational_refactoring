@@ -4,7 +4,7 @@
 #include "mips_encoding.h"
 #include "utils.h"
 
-static const Instruction_desc instruction_table[] =
+static const InstructionDesc instruction_table[] =
 {
 	{"ADD", FMT_RD_RS_RT, FUNCT_ADD, OP_ADD},
 	{"ADDIU", FMT_RT_RS_IMMEDIATE_16, OPCODE_ADDIU, OP_ADDIU},
@@ -50,7 +50,7 @@ static const Instruction_desc instruction_table[] =
 	{"BNEZC", FMT_RS_OFFSET_21, OPCODE_POP76, OP_BNEZC},
 	{"BNVC", FMT_RS_RT_OFFSET_16, OPCODE_POP30, OP_BNVC},
 	{"BOVC", FMT_RS_RT_OFFSET_16, OPCODE_POP10, OP_BOVC},
-	{"CLO", FMT_RD_RS, FUNCT_CLO, OP_CLO}, 
+	{"CLO", FMT_RD_RS, FUNCT_CLO, OP_CLO},
 	{"CLZ", FMT_RD_RS, FUNCT_CLZ, OP_CLZ},
 	{"DIV", FMT_RD_RS_RT, FUNCT_SOP32, OP_DIV},
 	{"DIVU", FMT_RD_RS_RT, FUNCT_SOP33, OP_DIVU},
@@ -104,7 +104,7 @@ static const Instruction_desc instruction_table[] =
 	{"XORI", FMT_RT_RS_IMMEDIATE_16, OPCODE_XORI, OP_XORI}
 };
 
-const Instruction_desc *find_instruction(const char *mnemonic)
+const InstructionDesc *find_instruction(const char *mnemonic)
 {
 	for(size_t i = 0; i < ARR_SIZE(instruction_table); i++) if(!mystrcasecmp(mnemonic, instruction_table[i].mnemonic)) return(&instruction_table[i]);
 	return(NULL);

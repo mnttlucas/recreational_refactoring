@@ -14,8 +14,8 @@
 typedef enum
 {
 	OP_MIN,
-	/* instruction object will be initialized to 0, 
-	when line is fully skipped because of a comment, 
+	/* instruction object will be initialized to 0,
+	when line is fully skipped because of a comment,
 	opcode field will be equal to this dummy value for now */
 	OP_ADD,
 	OP_ADDIU,
@@ -142,7 +142,7 @@ typedef struct
 	Format format;
 	int code;
 	Opcode op;
-} Instruction_desc;
+} InstructionDesc;
 
 typedef struct
 {
@@ -160,6 +160,6 @@ typedef struct
 	uint8_t sa;
 } Instruction;
 
-const Instruction_desc *find_instruction(const char *mnemonic);
+const InstructionDesc *find_instruction(const char *mnemonic);
 
 #endif	/* INSTRUCTION_H */

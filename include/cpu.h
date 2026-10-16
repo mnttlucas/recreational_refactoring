@@ -8,7 +8,7 @@
 #define	REGISTER_COUNT 32
 #define WORD_SIZE 4
 
-typedef struct 
+typedef struct
 {
 	uint64_t FPR[REGISTER_COUNT];
 	uint32_t GPR[REGISTER_COUNT];

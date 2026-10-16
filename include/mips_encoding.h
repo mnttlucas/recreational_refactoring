@@ -82,7 +82,7 @@
 #define OFFSET_21_SIZE   21
 #define OFFSET_26_SIZE   26
 
-/* Special register values for some operations 
+/* Special register values for some operations
 This exists for clarity and to match MIPS32 R6 specification
 When values are zero, it will be implicit */
 #define ALUIPC_RT     31
