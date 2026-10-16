@@ -56,9 +56,9 @@ void fpr_write_64(Cpu *cpu, int id, uint64_t value)
 
 uint32_t gpr_read_32(Cpu *cpu, int id)
 {
-	uint32_t value = 0;
+	uint32_t value = REG_ZERO;
 
-	if(id >= 0 && id < REGISTER_COUNT) value = cpu->GPR[id];
+	if(id >= REG_ZERO && id < REGISTER_COUNT) value = cpu->GPR[id];
 	else fprintf(stderr, "[!] gpr_read_32() : invalid register %d\n", id);
 
 	return(value);
@@ -66,9 +66,8 @@ uint32_t gpr_read_32(Cpu *cpu, int id)
 
 void gpr_write_32(Cpu *cpu, int id, uint32_t value)
 {
-	if(id > 0 && id < REGISTER_COUNT) cpu->GPR[id] = value;
-	else if(id == 0);
-	else fprintf(stderr, "[!] gpr_write_32() : invalid register %d\n", id);
+	if(id > REG_ZERO && id < REGISTER_COUNT) cpu->GPR[id] = value;
+	else if(id != REG_ZERO) fprintf(stderr, "[!] gpr_write_32() : invalid register %d\n", id);
 }
 
 /* Register names (without the leading '$'), see MIPS32 o32 ABI */

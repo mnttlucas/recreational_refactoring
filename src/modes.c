@@ -98,7 +98,7 @@ static void run_program(Cpu *cpu, Config *cfg, const Program *prog)
 	while(pc_index < prog->count)
 	{
 		if(cfg->step) clear_output();
-		execute_instruction(cpu, cfg, prog->items[pc_index]);
+		execute_instruction(cpu, cfg, &prog->items[pc_index]);
 		if(cfg->step)
 		{
 			cpu_dump(cpu);
@@ -128,7 +128,7 @@ void interactive_mode(Cpu *cpu, Config *cfg)
 		cur = decode_instruction(INTERACTIVE, NULL);
 		if(!cur.exit && cur.opcode > OP_MIN && cur.opcode < OP_MAX)
 		{
-			execute_instruction(cpu, cfg, cur);
+			execute_instruction(cpu, cfg, &cur);
 			cpu_dump(cpu);
 		}
 	}
