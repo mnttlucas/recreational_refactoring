@@ -101,17 +101,34 @@ static uint8_t parse_register_number(const char *str)
 	return(value < REGISTER_COUNT ? (uint8_t) value : INVALID_REGISTER);
 }
 
-/* Accepts "$5", "$t0", "$T0", "$f12" without the '$' : number, alias or FPR name.
-   Returns INVALID_REGISTER (and prints the reason) when the name is not a register. */
-uint8_t register_string_to_int(const char *reg)
+/* Parses an FPR name made of 'f' followed by a register number ("f0", "F12", "f31").
+   Returns INVALID_REGISTER if there is anything else or if it is out of range. */
+static uint8_t parse_fpr_name(const char *str)
 {
-	uint8_t reg_int = parse_register_number(reg);
+	if(str[0] != 'f' && str[0] != 'F') return(INVALID_REGISTER);
 
-	if(reg_int == INVALID_REGISTER && (reg[0] == 'f' || reg[0] == 'F')) reg_int = parse_register_number(reg + 1);
+	return(parse_register_number(str + 1));
+}
 
-	for(size_t i = 0; reg_int == INVALID_REGISTER && i < ARR_SIZE(register_aliases); i++) if(!mystrcasecmp(reg, register_aliases[i].name)) reg_int = register_aliases[i].index;
+/* Parses a GPR name : a number ("5") or an alias ("t0", "T0"). */
+static uint8_t parse_gpr_name(const char *str)
+{
+	uint8_t reg_int = parse_register_number(str);
 
-	if(reg_int == INVALID_REGISTER) fprintf(stderr, "[!] Unknown register : '%s'\n", reg);
+	for(size_t i = 0; reg_int == INVALID_REGISTER && i < ARR_SIZE(register_aliases); i++)
+		if(!mystrcasecmp(str, register_aliases[i].name)) reg_int = register_aliases[i].index;
+
+	return(reg_int);
+}
+
+/* Name of a register without the leading '$', of the expected kind :
+   REG_KIND_GPR accepts "5", "t0", "T0" ; REG_KIND_FPR accepts "f12", "F12" only.
+   Returns INVALID_REGISTER (and prints the reason) when the name is not a register of this kind. */
+uint8_t register_string_to_int(const char *str, RegisterKind kind)
+{
+	uint8_t reg_int = (kind == REG_KIND_FPR) ? parse_fpr_name(str) : parse_gpr_name(str);
+
+	if(reg_int == INVALID_REGISTER) fprintf(stderr, "[!] Unknown %s : '%s'\n", (kind == REG_KIND_FPR) ? "FPR" : "GPR", str);
 
 	return(reg_int);
 }

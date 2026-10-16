@@ -258,7 +258,7 @@ static void decode_rd_rs_operands(char *line, Instruction *instr)
 				syntax_error(instr);
 				return;
 			}
-			instr->rd = register_string_to_int(rd);
+			instr->rd = register_string_to_int(rd, REG_KIND_GPR);
 		}
 		else
 		{
@@ -277,9 +277,9 @@ static void decode_rd_rs_operands(char *line, Instruction *instr)
 			syntax_error(instr);
 			return;
 		}
-		instr->rd = register_string_to_int(rd);
+		instr->rd = register_string_to_int(rd, REG_KIND_GPR);
 	}
-	instr->rs = register_string_to_int(rs);
+	instr->rs = register_string_to_int(rs, REG_KIND_GPR);
 	if(instr->rd == INVALID_REGISTER || instr->rs == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
@@ -291,9 +291,9 @@ static void decode_rd_rs_rt_operands(char *line, Instruction *instr)
 		syntax_error(instr);
 		return;
 	}
-	instr->rd = register_string_to_int(rd);
-	instr->rs = register_string_to_int(rs);
-	instr->rt = register_string_to_int(rt);
+	instr->rd = register_string_to_int(rd, REG_KIND_GPR);
+	instr->rs = register_string_to_int(rs, REG_KIND_GPR);
+	instr->rt = register_string_to_int(rt, REG_KIND_GPR);
 	if(instr->rd == INVALID_REGISTER || instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
@@ -305,8 +305,8 @@ static void decode_rd_rt_operands(char *line, Instruction *instr)
 		syntax_error(instr);
 		return;
 	}
-	instr->rd = register_string_to_int(rd);
-	instr->rt = register_string_to_int(rt);
+	instr->rd = register_string_to_int(rd, REG_KIND_GPR);
+	instr->rt = register_string_to_int(rt, REG_KIND_GPR);
 	if(instr->rd == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
@@ -318,9 +318,9 @@ static void decode_rd_rt_rs_operands(char *line, Instruction *instr)
 		syntax_error(instr);
 		return;
 	}
-	instr->rd = register_string_to_int(rd);
-	instr->rs = register_string_to_int(rs);
-	instr->rt = register_string_to_int(rt);
+	instr->rd = register_string_to_int(rd, REG_KIND_GPR);
+	instr->rs = register_string_to_int(rs, REG_KIND_GPR);
+	instr->rt = register_string_to_int(rt, REG_KIND_GPR);
 	if(instr->rd == INVALID_REGISTER || instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
@@ -332,8 +332,8 @@ static void decode_rd_rt_sa_operands(char *line, Instruction *instr)
 		syntax_error(instr);
 		return;
 	}
-	instr->rd = register_string_to_int(rd);
-	instr->rt = register_string_to_int(rt);
+	instr->rd = register_string_to_int(rd, REG_KIND_GPR);
+	instr->rt = register_string_to_int(rt, REG_KIND_GPR);
 	int32_t sa_value = parse_integer(sa, instr);
 	if(sa_value < 0 || sa_value > SA_MAX)
 	{
@@ -353,7 +353,7 @@ static void decode_rs_operand(char *line, Instruction *instr)
 		syntax_error(instr);
 		return;
 	}
-	instr->rs = register_string_to_int(rs);
+	instr->rs = register_string_to_int(rs, REG_KIND_GPR);
 	if(instr->rs == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
@@ -366,7 +366,7 @@ static void decode_rs_immediate_operands(char *line, Instruction *instr)
 		return;
 	}
 	instr->immediate = parse_integer(imm, instr);
-	instr->rs = register_string_to_int(rs);
+	instr->rs = register_string_to_int(rs, REG_KIND_GPR);
 	if(instr->rs == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
@@ -379,7 +379,7 @@ static void decode_rs_offset_operands(char *line, Instruction *instr)
 		return;
 	}
 	instr->offset = parse_integer(offset, instr);
-	instr->rs = register_string_to_int(rs);
+	instr->rs = register_string_to_int(rs, REG_KIND_GPR);
 	if(instr->rs == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
@@ -391,8 +391,8 @@ static void decode_rs_rt_operands(char *line, Instruction *instr)
 		syntax_error(instr);
 		return;
 	}
-	instr->rs = register_string_to_int(rs);
-	instr->rt = register_string_to_int(rt);
+	instr->rs = register_string_to_int(rs, REG_KIND_GPR);
+	instr->rt = register_string_to_int(rt, REG_KIND_GPR);
 	if(instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
@@ -405,8 +405,8 @@ static void decode_rs_rt_offset_operands(char *line, Instruction *instr)
 		return;
 	}
 	instr->offset = parse_integer(offset, instr);
-	instr->rs = register_string_to_int(rs);
-	instr->rt = register_string_to_int(rt);
+	instr->rs = register_string_to_int(rs, REG_KIND_GPR);
+	instr->rt = register_string_to_int(rt, REG_KIND_GPR);
 	if(instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
@@ -419,7 +419,7 @@ static void decode_rt_immediate_operands(char *line, Instruction *instr)
 		return;
 	}
 	instr->immediate = parse_integer(imm, instr);
-	instr->rt = register_string_to_int(rt);
+	instr->rt = register_string_to_int(rt, REG_KIND_GPR);
 	if(instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
@@ -432,7 +432,7 @@ static void decode_rt_offset_operands(char *line, Instruction *instr)
 		return;
 	}
 	instr->offset = parse_integer(offset, instr);
-	instr->rt = register_string_to_int(rt);
+	instr->rt = register_string_to_int(rt, REG_KIND_GPR);
 	if(instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
@@ -444,9 +444,9 @@ static void decode_rt_offset_base_operands(char *line, Instruction *instr)
 		syntax_error(instr);
 		return;
 	}
-	instr->base = register_string_to_int(base);
+	instr->base = register_string_to_int(base, REG_KIND_GPR);
 	instr->offset = parse_integer(offset, instr);
-	instr->rt = register_string_to_int(rt);
+	instr->rt = register_string_to_int(rt, REG_KIND_GPR);
 	if(instr->base == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
@@ -459,8 +459,8 @@ static void decode_rt_rs_immediate_operands(char *line, Instruction *instr)
 		return;
 	}
 	instr->immediate = parse_integer(imm, instr);
-	instr->rs = register_string_to_int(rs);
-	instr->rt = register_string_to_int(rt);
+	instr->rs = register_string_to_int(rs, REG_KIND_GPR);
+	instr->rt = register_string_to_int(rt, REG_KIND_GPR);
 	if(instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
@@ -473,8 +473,8 @@ static void decode_rt_rs_offset_operands(char *line, Instruction *instr)
 		return;
 	}
 	instr->offset = parse_integer(offset, instr);
-	instr->rs = register_string_to_int(rs);
-	instr->rt = register_string_to_int(rt);
+	instr->rs = register_string_to_int(rs, REG_KIND_GPR);
+	instr->rt = register_string_to_int(rt, REG_KIND_GPR);
 	if(instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
