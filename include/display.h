@@ -8,8 +8,8 @@
 #define DUMP_MEMORY_WORDS 40
 
 void clear_output(void);
-void cpu_dump(CPU *cpu);
-void log_instruction(instruction *instr);
+void cpu_dump(Cpu *cpu);
+void log_instruction(Instruction *instr);
 void log_usage(char *prog_name);
 void wait_for_enter(void);
 

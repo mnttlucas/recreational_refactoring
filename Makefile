@@ -1,9 +1,8 @@
-#CFLAGS = -Wall -Wextra -Wpedantic -std=c11 -g
-
 CC = gcc
 
 CFLAGS = -Wall -Wextra -Wpedantic \
           -Wshadow -Wconversion \
+          -Wmissing-prototypes -Wstrict-prototypes \
           -std=c11 -g \
           -MMD -MP \
           -Iinclude

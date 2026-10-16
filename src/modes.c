@@ -18,7 +18,7 @@
 
 typedef struct
 {
-	instruction *items;
+	Instruction *items;
 	uint32_t count;
 	size_t capacity;
 } Program;
@@ -35,7 +35,7 @@ static FILE *open_file(const char *path, const char *mode)
 static int program_grow(Program *prog)
 {
 	size_t new_capacity = prog->capacity ? prog->capacity * 2 : INITIAL_CAPACITY;
-	instruction *new_items = realloc(prog->items, new_capacity * sizeof(instruction));
+	Instruction *new_items = realloc(prog->items, new_capacity * sizeof(Instruction));
 
 	if(!new_items)
 	{
@@ -52,7 +52,7 @@ static int program_grow(Program *prog)
 static int load_program(const char *path, Program *prog)
 {
 	FILE *in = open_file(path, "r");
-	instruction cur;
+	Instruction cur;
 	uint32_t error_cnt = 0, line_no = 0;
 
 	if(!in) return(0);
@@ -90,7 +90,7 @@ static int load_program(const char *path, Program *prog)
 	return(1);
 }
 
-static void run_program(CPU *cpu, Config *cfg, const Program *prog)
+static void run_program(Cpu *cpu, Config *cfg, const Program *prog)
 {
 	uint32_t pc_index = 0;
 
@@ -113,14 +113,14 @@ static void write_hex(FILE *out, const Program *prog)
 	for(uint32_t instr_id = 0; instr_id < prog->count; instr_id++) fprintf(out, "%08" PRIx32 "\n", prog->items[instr_id].encoding);
 }
 
-static void write_regs(FILE *out, CPU *cpu)
+static void write_regs(FILE *out, Cpu *cpu)
 {
 	for(uint8_t reg_id = 0; reg_id < REGISTER_COUNT; reg_id++) fprintf(out, "$%d : %d\n", reg_id, (int32_t) gpr_read_32(cpu, reg_id));
 }
 
-void interactive_mode(CPU *cpu, Config *cfg)
+void interactive_mode(Cpu *cpu, Config *cfg)
 {
-	instruction cur = {0};
+	Instruction cur = {0};
 
 	while(!cur.exit)
 	{
@@ -134,7 +134,7 @@ void interactive_mode(CPU *cpu, Config *cfg)
 	}
 }
 
-void batch_mode(CPU *cpu, Config *cfg, char *path_in, char *path_out_hex, char *path_out_regs)
+void batch_mode(Cpu *cpu, Config *cfg, char *path_in, char *path_out_hex, char *path_out_regs)
 {
 	FILE *out_hex = NULL, *out_regs = NULL;
 	Program prog = {0};

@@ -4,38 +4,39 @@
 #include "config.h"
 #include "cpu.h"
 #include "execute.h"
+#include "mips_encoding.h"
 #include "mips_memory.h"
 #include "mips_registers.h"
 #include "utils.h"
 
 /* PC-relative branch target : the offset is counted in instructions, from the one following the branch */
-static uint32_t branch_target(const CPU *cpu, int32_t offset)
+static uint32_t branch_target(const Cpu *cpu, int32_t offset)
 {
 	return(cpu->PC + ((uint32_t) offset << 2) + 4);
 }
 
 /* Branch with a delay slot : the jump is applied after the next instruction has been executed */
-static void branch_delay_slot(CPU *cpu, int32_t offset)
+static void branch_delay_slot(Cpu *cpu, int32_t offset)
 {
 	cpu->next_PC = branch_target(cpu, offset);
 }
 
 /* MIPS32 Release 6 compact branch : no delay slot, the PC is updated immediately.
    Returns 1 so that the caller skips the final PC += 4 */
-static uint8_t branch_compact(CPU *cpu, int32_t offset)
+static uint8_t branch_compact(Cpu *cpu, int32_t offset)
 {
 	cpu->PC = branch_target(cpu, offset);
 	return(1);
 }
 
 /* Same as branch_compact(), and stores the return address in $ra */
-static uint8_t branch_compact_link(CPU *cpu, int32_t offset)
+static uint8_t branch_compact_link(Cpu *cpu, int32_t offset)
 {
 	gpr_write_32(cpu, REG_RA, cpu->PC + 4);
 	return(branch_compact(cpu, offset));
 }
 
-void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
+void execute_instruction(Cpu *cpu, Config *cfg, Instruction instr)
 {
 	int32_t dividend, divisor, i32;
 	int64_t i64;
@@ -46,7 +47,7 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 
 	pending_PC = cpu->next_PC;
 	cpu->next_PC = INVALID_PC;
-	
+
 	switch(instr.opcode)
 	{
 		case OP_ADD :
@@ -201,7 +202,7 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 				while(u32 & 0x80000000)
 				{
 					u32 <<= 1;
-					u8++; 
+					u8++;
 				}
 				gpr_write_32(cpu, instr.rd, (uint32_t) u8);
 			}
@@ -215,7 +216,7 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 				while(!(u32 & 0x80000000))
 				{
 					u32 <<= 1;
-					u8++; 
+					u8++;
 				}
 				gpr_write_32(cpu, instr.rd, (uint32_t) u8);
 			}
@@ -256,11 +257,11 @@ void execute_instruction(CPU *cpu, Config *cfg, instruction instr)
 		case OP_JIALC :
 			compact = 1;
 			gpr_write_32(cpu, REG_RA, cpu->PC + 4);
-			cpu->PC = gpr_read_32(cpu, instr.rt) + ((uint32_t) instr.offset << 2);
+			cpu->PC = gpr_read_32(cpu, instr.rt) + (uint32_t) sign_extend(instr.offset, OFFSET_16_SIZE);
 			break;
 		case OP_JIC :
 			compact = 1;
-			cpu->PC = gpr_read_32(cpu, instr.rt) + ((uint32_t) instr.offset << 2);
+			cpu->PC = gpr_read_32(cpu, instr.rt) + (uint32_t) sign_extend(instr.offset, OFFSET_16_SIZE);
 			break;
 		case OP_LB :
 			address = gpr_read_32(cpu, instr.base) + (uint32_t) instr.offset;

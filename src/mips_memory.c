@@ -4,12 +4,12 @@
 
 #include "mips_memory.h"
 
-void memory_init(CPU *cpu)
+void memory_init(Cpu *cpu)
 {
 	for(int i = 0; i < MEMORY_SIZE; i++) cpu->memory[i] = 0;
 }
 
-uint16_t memory_read_16(CPU *cpu, uint32_t address)
+uint16_t memory_read_16(Cpu *cpu, uint32_t address)
 {
 	uint16_t value = 0;
 
@@ -23,7 +23,7 @@ uint16_t memory_read_16(CPU *cpu, uint32_t address)
 	return(value);
 }
 
-uint32_t memory_read_32(CPU *cpu, uint32_t address)
+uint32_t memory_read_32(Cpu *cpu, uint32_t address)
 {
 	uint32_t value = 0;
 
@@ -39,7 +39,7 @@ uint32_t memory_read_32(CPU *cpu, uint32_t address)
 	return(value);
 }
 
-uint8_t memory_read_8(CPU *cpu, uint32_t address)
+uint8_t memory_read_8(Cpu *cpu, uint32_t address)
 {
 	uint8_t value = 0;
 
@@ -49,7 +49,7 @@ uint8_t memory_read_8(CPU *cpu, uint32_t address)
 	return(value);
 }
 
-void memory_write_16(CPU *cpu, uint32_t address, uint16_t value)
+void memory_write_16(Cpu *cpu, uint32_t address, uint16_t value)
 {
 	if(address < MEMORY_SIZE - 1)
 	{
@@ -59,7 +59,7 @@ void memory_write_16(CPU *cpu, uint32_t address, uint16_t value)
 	else fprintf(stderr, "[!] memory_write_16() : invalid memory address @ %08" PRIx32 "\n", address);
 }
 
-void memory_write_32(CPU *cpu, uint32_t address, uint32_t value)
+void memory_write_32(Cpu *cpu, uint32_t address, uint32_t value)
 {
 	if(address < MEMORY_SIZE - 3)
 	{
@@ -71,7 +71,7 @@ void memory_write_32(CPU *cpu, uint32_t address, uint32_t value)
 	else fprintf(stderr, "[!] memory_write_32() : invalid memory address @ %08" PRIx32 "\n", address);
 }
 
-void memory_write_8(CPU *cpu, uint32_t address, uint8_t value)
+void memory_write_8(Cpu *cpu, uint32_t address, uint8_t value)
 {
 	if(address < MEMORY_SIZE) cpu->memory[address] = value;
 	else fprintf(stderr, "[!] memory_write_8() : invalid memory address @ %08" PRIx32 "\n", address);

@@ -44,7 +44,7 @@ char *read_full_line(FILE *in)
 		}
 		line = tmp;
 	}
-	
+
 	if(length == 0)
 	{
 		free(line);

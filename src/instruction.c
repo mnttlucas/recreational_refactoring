@@ -4,7 +4,7 @@
 #include "mips_encoding.h"
 #include "utils.h"
 
-static const instruction_desc instruction_table[] =
+static const Instruction_desc instruction_table[] =
 {
 	{"ADD", FMT_RD_RS_RT, FUNCT_ADD, OP_ADD},
 	{"ADDIU", FMT_RT_RS_IMMEDIATE_16, OPCODE_ADDIU, OP_ADDIU},
@@ -54,7 +54,7 @@ static const instruction_desc instruction_table[] =
 	{"CLZ", FMT_RD_RS, FUNCT_CLZ, OP_CLZ},
 	{"DIV", FMT_RD_RS_RT, FUNCT_SOP32, OP_DIV},
 	{"DIVU", FMT_RD_RS_RT, FUNCT_SOP33, OP_DIVU},
-	{"EXIT", CMD_EXIT, 0, 0},
+	{"EXIT", FMT_EXIT, 0, 0},
 	{"J", FMT_TARGET, OPCODE_J, OP_J},
 	{"JAL", FMT_TARGET, OPCODE_JAL, OP_JAL},
 	{"JALR", FMT_RD_RS, FUNCT_JALR, OP_JALR},
@@ -74,8 +74,8 @@ static const instruction_desc instruction_table[] =
 	{"MUHU", FMT_RD_RS_RT, FUNCT_SOP31, OP_MUHU},
 	{"MUL", FMT_RD_RS_RT, FUNCT_SOP30, OP_MUL},
 	{"MULU", FMT_RD_RS_RT, FUNCT_SOP31, OP_MULU},
-	{"NAL", CMD_NAL, OPCODE_REGIMM, OP_NAL},
-	{"NOP", CMD_NOP, FUNCT_SLL, OP_NOP},
+	{"NAL", FMT_NAL, OPCODE_REGIMM, OP_NAL},
+	{"NOP", FMT_NOP, FUNCT_SLL, OP_NOP},
 	{"NOR", FMT_RD_RS_RT, FUNCT_NOR, OP_NOR},
 	{"OR", FMT_RD_RS_RT, FUNCT_OR, OP_OR},
 	{"ORI", FMT_RT_RS_IMMEDIATE_16, OPCODE_ORI, OP_ORI},
@@ -104,7 +104,7 @@ static const instruction_desc instruction_table[] =
 	{"XORI", FMT_RT_RS_IMMEDIATE_16, OPCODE_XORI, OP_XORI}
 };
 
-const instruction_desc *find_instruction(const char *mnemonic)
+const Instruction_desc *find_instruction(const char *mnemonic)
 {
 	for(size_t i = 0; i < ARR_SIZE(instruction_table); i++) if(!mystrcasecmp(mnemonic, instruction_table[i].mnemonic)) return(&instruction_table[i]);
 	return(NULL);

@@ -42,13 +42,13 @@ so INVALID_REGISTER = REGISTER_COUNT, but are separated for clarity */
 #define REG_FP 30
 #define REG_RA 31
 
-void registers_init(CPU *cpu);
-uint32_t fpr_read_32(CPU *cpu, int id);
-uint64_t fpr_read_64(CPU *cpu, int id);
-void fpr_write_32(CPU *cpu, int id, uint32_t value);
-void fpr_write_64(CPU *cpu, int id, uint64_t value);
-uint32_t gpr_read_32(CPU *cpu, int id);
-void gpr_write_32(CPU *cpu, int id, uint32_t value);
+void registers_init(Cpu *cpu);
+uint32_t fpr_read_32(Cpu *cpu, int id);
+uint64_t fpr_read_64(Cpu *cpu, int id);
+void fpr_write_32(Cpu *cpu, int id, uint32_t value);
+void fpr_write_64(Cpu *cpu, int id, uint64_t value);
+uint32_t gpr_read_32(Cpu *cpu, int id);
+void gpr_write_32(Cpu *cpu, int id, uint32_t value);
 uint8_t register_string_to_int(const char *str);
 
 #endif	/* MIPS_REGISTERS_H */

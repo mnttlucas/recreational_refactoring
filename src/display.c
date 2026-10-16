@@ -5,25 +5,25 @@
 #include "mips_memory.h"
 #include "mips_registers.h"
 
-typedef void (*dump_cell)(CPU *cpu, int index);
+typedef void (*dump_cell)(Cpu *cpu, int index);
 
-static void print_gpr(CPU *cpu, int index)
+static void print_gpr(Cpu *cpu, int index)
 {
 	printf("$%02d : %-10d ", index, (int32_t) gpr_read_32(cpu, index));
 }
 
-static void print_fpr(CPU *cpu, int index)
+static void print_fpr(Cpu *cpu, int index)
 {
 	printf("$%02d : 0x%-16" PRIx64 " ", index, fpr_read_64(cpu, index));
 }
 
-static void print_memory_word(CPU *cpu, int index)
+static void print_memory_word(Cpu *cpu, int index)
 {
 	uint32_t address = (uint32_t) index * WORD_SIZE;
 	printf("@0000 %04" PRIx32 " : 0x%08" PRIx32 "       ", address, memory_read_32(cpu, address));
 }
 
-static void dump_grid(CPU *cpu, int count, dump_cell print_cell)
+static void dump_grid(Cpu *cpu, int count, dump_cell print_cell)
 {
 	for(int i = 0; i < count; i++)
 	{
@@ -37,7 +37,7 @@ void clear_output(void)
 	printf("\033[H\033[2J\033[3J");
 }
 
-void cpu_dump(CPU *cpu)
+void cpu_dump(Cpu *cpu)
 {
 	int words_to_show = (MEMORY_SIZE / WORD_SIZE < DUMP_MEMORY_WORDS) ? MEMORY_SIZE / WORD_SIZE : DUMP_MEMORY_WORDS;
 
@@ -51,7 +51,7 @@ void cpu_dump(CPU *cpu)
 	if(words_to_show < MEMORY_SIZE / WORD_SIZE) printf("\n\t\t\t\t\t[...] (%d other words not displayed)\n", MEMORY_SIZE / WORD_SIZE - words_to_show);
 }
 
-void log_instruction(instruction *instr)
+void log_instruction(Instruction *instr)
 {
 	if(!instr->exit) printf("%s", instr->to_string);
 }

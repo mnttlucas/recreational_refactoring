@@ -11,7 +11,7 @@
 int main(int argc, char **argv)
 {
 	Config cfg = {0};
-	CPU cpu;
+	Cpu cpu;
 
 	cpu_init(&cpu);
 

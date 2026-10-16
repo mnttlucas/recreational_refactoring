@@ -16,7 +16,7 @@ typedef enum
 	OP_MIN,
 	/* instruction object will be initialized to 0, 
 	when line is fully skipped because of a comment, 
-	OPCODE field will be equal to this dummy value for now */
+	opcode field will be equal to this dummy value for now */
 	OP_ADD,
 	OP_ADDIU,
 	OP_ADDIUPC,
@@ -110,24 +110,23 @@ typedef enum
 
 typedef enum
 {
-	CMD_EXIT,
-	CMD_NAL,
-	CMD_NOP,
+	FMT_EXIT,
+	FMT_NAL,
+	FMT_NOP,
 	FMT_OFFSET_16,
 	FMT_OFFSET_26,
-	FMT_RD, // Previously used by MFHI/MFLO instructions, unused for now, will remove it if no instruction use it
 	FMT_RD_RS,
 	FMT_RD_RT,
 	FMT_RD_RS_RT,
 	FMT_RD_RT_RS,
 	FMT_RD_RT_SA,
-	FMT_RS, // Previously used by MTHI/MTLO instructions, used by JR
+	FMT_RS,
 	FMT_RS_IMMEDIATE_16,
 	FMT_RS_IMMEDIATE_19,
 	FMT_RS_OFFSET_16,
 	FMT_RS_OFFSET_19,
 	FMT_RS_OFFSET_21,
-	FMT_RS_RT, // Previously used by OP_DIV/OP_MUL instructions, unused for now, will remove it if no instruction use it
+	FMT_RS_RT,
 	FMT_RS_RT_OFFSET_16,
 	FMT_RT_IMMEDIATE_16,
 	FMT_RT_OFFSET_16,
@@ -135,23 +134,22 @@ typedef enum
 	FMT_RT_RS_IMMEDIATE_16,
 	FMT_RT_RS_OFFSET_16,
 	FMT_TARGET
-} format;
+} Format;
 
 typedef struct
 {
 	const char *mnemonic;
-	format format;
+	Format format;
 	int code;
 	Opcode op;
-} instruction_desc;
+} Instruction_desc;
 
 typedef struct
 {
 	char to_string[256];
-	int label;
-	int target;
 	int32_t immediate;
 	int32_t offset;
+	int32_t target;
 	Opcode opcode;
 	uint32_t encoding;
 	uint8_t base;
@@ -160,8 +158,8 @@ typedef struct
 	uint8_t fd, fs, ft;
 	uint8_t rd, rs, rt;
 	uint8_t sa;
-} instruction;
+} Instruction;
 
-const instruction_desc *find_instruction(const char *mnemonic);
+const Instruction_desc *find_instruction(const char *mnemonic);
 
 #endif	/* INSTRUCTION_H */

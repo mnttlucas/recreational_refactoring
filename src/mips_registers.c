@@ -13,7 +13,7 @@ typedef struct
 	uint8_t index;
 } register_alias;
 
-void registers_init(CPU *cpu)
+void registers_init(Cpu *cpu)
 {
 	for(int i = 0; i < REGISTER_COUNT; i++)
 	{
@@ -22,7 +22,7 @@ void registers_init(CPU *cpu)
 	}
 }
 
-uint32_t fpr_read_32(CPU *cpu, int id)
+uint32_t fpr_read_32(Cpu *cpu, int id)
 {
 	uint32_t value = 0;
 
@@ -32,7 +32,7 @@ uint32_t fpr_read_32(CPU *cpu, int id)
 	return(value);
 }
 
-uint64_t fpr_read_64(CPU *cpu, int id)
+uint64_t fpr_read_64(Cpu *cpu, int id)
 {
 	uint64_t value = 0;
 
@@ -42,19 +42,19 @@ uint64_t fpr_read_64(CPU *cpu, int id)
 	return(value);
 }
 
-void fpr_write_32(CPU *cpu, int id, uint32_t value)
+void fpr_write_32(Cpu *cpu, int id, uint32_t value)
 {
 	if(id >= 0 && id < REGISTER_COUNT) cpu->FPR[id] = (uint64_t) value;
 	else fprintf(stderr, "[!] fpr_write_32() : invalid register %d\n", id);
 }
 
-void fpr_write_64(CPU *cpu, int id, uint64_t value)
+void fpr_write_64(Cpu *cpu, int id, uint64_t value)
 {
 	if(id >= 0 && id < REGISTER_COUNT) cpu->FPR[id] = value;
 	else fprintf(stderr, "[!] fpr_write_64() : invalid register %d\n", id);
 }
 
-uint32_t gpr_read_32(CPU *cpu, int id)
+uint32_t gpr_read_32(Cpu *cpu, int id)
 {
 	uint32_t value = 0;
 
@@ -64,7 +64,7 @@ uint32_t gpr_read_32(CPU *cpu, int id)
 	return(value);
 }
 
-void gpr_write_32(CPU *cpu, int id, uint32_t value)
+void gpr_write_32(Cpu *cpu, int id, uint32_t value)
 {
 	if(id > 0 && id < REGISTER_COUNT) cpu->GPR[id] = value;
 	else if(id == 0);

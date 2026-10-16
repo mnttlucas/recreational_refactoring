@@ -16,7 +16,7 @@
 #define SA_MAX     31
 #define TARGET_MAX ((INT32_C(1) << OFFSET_26_SIZE) - 1)
 
-static void syntax_error(instruction *instr)
+static void syntax_error(Instruction *instr)
 {
 	fprintf(stderr, "[!] Syntax error : missing or malformed operands\n");
 	instr->error |= ERR_SYNTAX;
@@ -24,7 +24,7 @@ static void syntax_error(instruction *instr)
 
 /* Parses a decimal integer (optional sign, optional trailing spaces).
    The whole token must be consumed, otherwise the instruction is rejected. */
-static int32_t parse_integer(const char *str, instruction *instr)
+static int32_t parse_integer(const char *str, Instruction *instr)
 {
 	char *end;
 	long value;
@@ -60,7 +60,7 @@ static int32_t parse_integer(const char *str, instruction *instr)
 
 /* A value is accepted if it fits in `size` bits either as signed or as unsigned,
    i.e. [-2^(size-1); 2^size - 1]. Returns it sign-extended, as the execution expects. */
-static int32_t check_field(instruction *instr, int32_t value, uint8_t size)
+static int32_t check_field(Instruction *instr, int32_t value, uint8_t size)
 {
 	int32_t min = -(INT32_C(1) << (size - 1)), max = (INT32_C(1) << size) - 1;
 
@@ -90,12 +90,12 @@ static uint32_t encode_i(uint32_t op, uint32_t rs, uint32_t rt, int32_t value, u
 	return((op << OPCODE_SHIFT) | (rs << RS_SHIFT) | (rt << RT_SHIFT) | field(value, 0, size));
 }
 
-static void build_cmd_instruction(instruction *instr, int funct_code, int op_code, int rs_value, int rt_value, int rd_value, int shamt_value)
+static void build_cmd_instruction(Instruction *instr, int funct_code, int op_code, int rs_value, int rt_value, int rd_value, int shamt_value)
 {
 	instr->encoding = encode_r((uint32_t) op_code, (uint32_t) rs_value, (uint32_t) rt_value, (uint32_t) rd_value, (uint32_t) shamt_value, (uint32_t) funct_code);
 }
 
-static void build_offset_16_instruction(instruction *instr, int op_code)
+static void build_offset_16_instruction(Instruction *instr, int op_code)
 {
 	uint32_t rt_value = 0;
 	if(instr->opcode == OP_BAL) rt_value = BAL_RT;
@@ -103,25 +103,20 @@ static void build_offset_16_instruction(instruction *instr, int op_code)
 	instr->encoding = encode_i((uint32_t) op_code, 0, rt_value, instr->offset, OFFSET_16_SIZE);
 }
 
-static void build_offset_26_instruction(instruction *instr, int op_code)
+static void build_offset_26_instruction(Instruction *instr, int op_code)
 {
 	instr->offset = check_field(instr, instr->offset, OFFSET_26_SIZE);
 	instr->encoding = ((uint32_t) op_code << OPCODE_SHIFT) | field(instr->offset, 0, OFFSET_26_SIZE);
 }
 
-static void build_rd_instruction(instruction *instr, int funct_code)
-{
-	instr->encoding = encode_r(OPCODE_SPECIAL, 0, 0, instr->rd, 0, (uint32_t) funct_code);
-}
-
-static void build_rd_rs_instruction(instruction *instr, int funct_code)
+static void build_rd_rs_instruction(Instruction *instr, int funct_code)
 {
 	uint32_t shamt_value = 0;
 	if(instr->opcode == OP_CLO || instr->opcode == OP_CLZ) shamt_value = CLO_CLZ_SA;
 	instr->encoding = encode_r(OPCODE_SPECIAL, instr->rs, 0, instr->rd, shamt_value, (uint32_t) funct_code);
 }
 
-static void build_rd_rs_rt_instruction(instruction *instr, int funct_code)
+static void build_rd_rs_rt_instruction(Instruction *instr, int funct_code)
 {
 	uint32_t shamt_value = 0;
 	if(instr->opcode == OP_DIV || instr->opcode == OP_DIVU) shamt_value = DIV_DIVU_SA;
@@ -131,7 +126,7 @@ static void build_rd_rs_rt_instruction(instruction *instr, int funct_code)
 	instr->encoding = encode_r(OPCODE_SPECIAL, instr->rs, instr->rt, instr->rd, shamt_value, (uint32_t) funct_code);
 }
 
-static void build_rd_rt_instruction(instruction *instr, int funct_code)
+static void build_rd_rt_instruction(Instruction *instr, int funct_code)
 {
 	uint32_t shamt_value = 0;
 	if(instr->opcode == OP_SEB) shamt_value = SEB_SA;
@@ -139,26 +134,26 @@ static void build_rd_rt_instruction(instruction *instr, int funct_code)
 	instr->encoding = encode_r(OPCODE_SPECIAL3, 0, instr->rt, instr->rd, shamt_value, (uint32_t) funct_code);
 }
 
-static void build_rd_rt_rs_instruction(instruction *instr, int funct_code)
+static void build_rd_rt_rs_instruction(Instruction *instr, int funct_code)
 {
 	uint32_t shamt_value = 0;
 	if(instr->opcode == OP_ROTRV) shamt_value = ROTRV_SA;
 	instr->encoding = encode_r(OPCODE_SPECIAL, instr->rs, instr->rt, instr->rd, shamt_value, (uint32_t) funct_code);
 }
 
-static void build_rd_rt_sa_instruction(instruction *instr, int funct_code)
+static void build_rd_rt_sa_instruction(Instruction *instr, int funct_code)
 {
 	uint32_t rs_value = 0;
 	if(instr->opcode == OP_ROTR) rs_value = ROTR_RS;
 	instr->encoding = encode_r(OPCODE_SPECIAL, rs_value, instr->rt, instr->rd, instr->sa, (uint32_t) funct_code);
 }
 
-static void build_rs_instruction(instruction *instr, int funct_code)
+static void build_rs_instruction(Instruction *instr, int funct_code)
 {
 	instr->encoding = encode_r(OPCODE_SPECIAL, instr->rs, 0, 0, 0, (uint32_t) funct_code);
 }
 
-static void build_rs_immediate_16_instruction(instruction *instr, int op_code)
+static void build_rs_immediate_16_instruction(Instruction *instr, int op_code)
 {
 	uint32_t rt_value = 0;
 	if(instr->opcode == OP_AUIPC) rt_value = AUIPC_RT;
@@ -167,13 +162,13 @@ static void build_rs_immediate_16_instruction(instruction *instr, int op_code)
 	instr->encoding = encode_i((uint32_t) op_code, instr->rs, rt_value, instr->immediate, IMM_16_SIZE);
 }
 
-static void build_rs_immediate_19_instruction(instruction *instr, int op_code)
+static void build_rs_immediate_19_instruction(Instruction *instr, int op_code)
 {
 	instr->immediate = check_field(instr, instr->immediate, IMM_19_SIZE);
 	instr->encoding = encode_i((uint32_t) op_code, instr->rs, 0, instr->immediate, IMM_19_SIZE);
 }
 
-static void build_rs_offset_16_instruction(instruction *instr, int op_code)
+static void build_rs_offset_16_instruction(Instruction *instr, int op_code)
 {
 	uint32_t rt_value = 0;
 	if(instr->opcode == OP_BGEZ) rt_value = BGEZ_RT;
@@ -181,7 +176,7 @@ static void build_rs_offset_16_instruction(instruction *instr, int op_code)
 	instr->encoding = encode_i((uint32_t) op_code, instr->rs, rt_value, instr->offset, OFFSET_16_SIZE);
 }
 
-static void build_rs_offset_19_instruction(instruction *instr, int op_code)
+static void build_rs_offset_19_instruction(Instruction *instr, int op_code)
 {
 	uint32_t rt_value = 0;
 	if(instr->opcode == OP_LWPC) rt_value = LWPC_RT;
@@ -189,53 +184,53 @@ static void build_rs_offset_19_instruction(instruction *instr, int op_code)
 	instr->encoding = encode_i((uint32_t) op_code, instr->rs, rt_value, instr->offset, OFFSET_19_SIZE);
 }
 
-static void build_rs_offset_21_instruction(instruction *instr, int op_code)
+static void build_rs_offset_21_instruction(Instruction *instr, int op_code)
 {
 	instr->offset = check_field(instr, instr->offset, OFFSET_21_SIZE);
 	instr->encoding = encode_i((uint32_t) op_code, instr->rs, 0, instr->offset, OFFSET_21_SIZE);
 }
 
-static void build_rs_rt_instruction(instruction *instr, int funct_code)
+static void build_rs_rt_instruction(Instruction *instr, int funct_code)
 {
 	instr->encoding = encode_r(OPCODE_SPECIAL, instr->rs, instr->rt, 0, 0, (uint32_t) funct_code);
 }
 
-static void build_rs_rt_offset_16_instruction(instruction *instr, int op_code)
+static void build_rs_rt_offset_16_instruction(Instruction *instr, int op_code)
 {
 	instr->offset = check_field(instr, instr->offset, OFFSET_16_SIZE);
 	instr->encoding = encode_i((uint32_t) op_code, instr->rs, instr->rt, instr->offset, OFFSET_16_SIZE);
 }
 
-static void build_rt_immediate_16_instruction(instruction *instr, int op_code)
+static void build_rt_immediate_16_instruction(Instruction *instr, int op_code)
 {
 	instr->immediate = check_field(instr, instr->immediate, IMM_16_SIZE);
 	instr->encoding = encode_i((uint32_t) op_code, 0, instr->rt, instr->immediate, IMM_16_SIZE);
 }
 
-static void build_rt_offset_16_instruction(instruction *instr, int op_code)
+static void build_rt_offset_16_instruction(Instruction *instr, int op_code)
 {
 	instr->offset = check_field(instr, instr->offset, OFFSET_16_SIZE);
 	instr->encoding = encode_i((uint32_t) op_code, 0, instr->rt, instr->offset, OFFSET_16_SIZE);
 }
 
-static void build_rt_offset_base_instruction(instruction *instr, int op_code)
+static void build_rt_offset_base_instruction(Instruction *instr, int op_code)
 {
 	instr->offset = check_field(instr, instr->offset, OFFSET_16_SIZE);
 	instr->encoding = encode_i((uint32_t) op_code, instr->base, instr->rt, instr->offset, OFFSET_16_SIZE);
 }
 
-static void build_rt_rs_immediate_16_instruction(instruction *instr, int op_code)
+static void build_rt_rs_immediate_16_instruction(Instruction *instr, int op_code)
 {
 	instr->immediate = check_field(instr, instr->immediate, IMM_16_SIZE);
 	instr->encoding = encode_i((uint32_t) op_code, instr->rs, instr->rt, instr->immediate, IMM_16_SIZE);
 }
 
-static void build_target_instruction(instruction *instr, int op_code)
+static void build_target_instruction(Instruction *instr, int op_code)
 {
 	instr->encoding = ((uint32_t) op_code << OPCODE_SHIFT) | field(instr->target, 0, OFFSET_26_SIZE);
 }
 
-static void decode_offset_operand(char *line, instruction *instr)
+static void decode_offset_operand(char *line, Instruction *instr)
 {
 	char offset[16];
 	if(sscanf(line, " %15s ", offset) != 1)
@@ -246,19 +241,7 @@ static void decode_offset_operand(char *line, instruction *instr)
 	instr->offset = parse_integer(offset, instr);
 }
 
-static void decode_rd_operand(char *line, instruction *instr)
-{
-	char rd[8];
-	if(sscanf(line, " $%7s ", rd) != 1)
-	{
-		syntax_error(instr);
-		return;
-	}
-	instr->rd = register_string_to_int(rd);
-	if(instr->rd == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
-}
-
-static void decode_rd_rs_operands(char *line, instruction *instr)
+static void decode_rd_rs_operands(char *line, Instruction *instr)
 {
 	char rd[8], rs[8];
 	/* Handling case of OP_JALR having two formats (quote from specification) :
@@ -300,7 +283,7 @@ static void decode_rd_rs_operands(char *line, instruction *instr)
 	if(instr->rd == INVALID_REGISTER || instr->rs == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
-static void decode_rd_rs_rt_operands(char *line, instruction *instr)
+static void decode_rd_rs_rt_operands(char *line, Instruction *instr)
 {
 	char rd[8], rs[8], rt[8];
 	if(sscanf(line, " $%7[^,] , $%7[^,] , $%7s ", rd, rs, rt) != 3)
@@ -314,7 +297,7 @@ static void decode_rd_rs_rt_operands(char *line, instruction *instr)
 	if(instr->rd == INVALID_REGISTER || instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
-static void decode_rd_rt_operands(char *line, instruction *instr)
+static void decode_rd_rt_operands(char *line, Instruction *instr)
 {
 	char rd[8], rt[8];
 	if(sscanf(line, " $%7[^,] , $%7s ", rd, rt) != 2)
@@ -327,7 +310,7 @@ static void decode_rd_rt_operands(char *line, instruction *instr)
 	if(instr->rd == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
-static void decode_rd_rt_rs_operands(char *line, instruction *instr)
+static void decode_rd_rt_rs_operands(char *line, Instruction *instr)
 {
 	char rd[8], rs[8], rt[8];
 	if(sscanf(line, " $%7[^,] , $%7[^,] , $%7s ", rd, rt, rs) != 3)
@@ -341,7 +324,7 @@ static void decode_rd_rt_rs_operands(char *line, instruction *instr)
 	if(instr->rd == INVALID_REGISTER || instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
-static void decode_rd_rt_sa_operands(char *line, instruction *instr)
+static void decode_rd_rt_sa_operands(char *line, Instruction *instr)
 {
 	char rd[8], rt[8], sa[16];
 	if(sscanf(line, " $%7[^,] , $%7[^,] , %15s ", rd, rt, sa) != 3)
@@ -362,7 +345,7 @@ static void decode_rd_rt_sa_operands(char *line, instruction *instr)
 	if(instr->rd == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
-static void decode_rs_operand(char *line, instruction *instr)
+static void decode_rs_operand(char *line, Instruction *instr)
 {
 	char rs[8];
 	if(sscanf(line, " $%7s ", rs) != 1)
@@ -374,7 +357,7 @@ static void decode_rs_operand(char *line, instruction *instr)
 	if(instr->rs == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
-static void decode_rs_immediate_operands(char *line, instruction *instr)
+static void decode_rs_immediate_operands(char *line, Instruction *instr)
 {
 	char imm[16], rs[8];
 	if(sscanf(line, " $%7[^,], %15s ", rs, imm) != 2)
@@ -387,7 +370,7 @@ static void decode_rs_immediate_operands(char *line, instruction *instr)
 	if(instr->rs == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
-static void decode_rs_offset_operands(char *line, instruction *instr)
+static void decode_rs_offset_operands(char *line, Instruction *instr)
 {
 	char offset[16], rs[8];
 	if(sscanf(line, " $%7[^,]  , %15s ", rs, offset) != 2)
@@ -400,7 +383,7 @@ static void decode_rs_offset_operands(char *line, instruction *instr)
 	if(instr->rs == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
-static void decode_rs_rt_operands(char *line, instruction *instr)
+static void decode_rs_rt_operands(char *line, Instruction *instr)
 {
 	char rs[8], rt[8];
 	if(sscanf(line, " $%7[^,] , $%7s ", rs, rt) != 2)
@@ -413,7 +396,7 @@ static void decode_rs_rt_operands(char *line, instruction *instr)
 	if(instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
-static void decode_rs_rt_offset_operands(char *line, instruction *instr)
+static void decode_rs_rt_offset_operands(char *line, Instruction *instr)
 {
 	char offset[16], rs[8], rt[8];
 	if(sscanf(line, " $%7[^,] , $%7[^,] , %15s ", rs, rt, offset) != 3)
@@ -427,7 +410,7 @@ static void decode_rs_rt_offset_operands(char *line, instruction *instr)
 	if(instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
-static void decode_rt_immediate_operands(char *line, instruction *instr)
+static void decode_rt_immediate_operands(char *line, Instruction *instr)
 {
 	char imm[16], rt[8];
 	if(sscanf(line, " $%7[^,] , %15s ", rt, imm) != 2)
@@ -440,7 +423,7 @@ static void decode_rt_immediate_operands(char *line, instruction *instr)
 	if(instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
-static void decode_rt_offset_operands(char *line, instruction *instr)
+static void decode_rt_offset_operands(char *line, Instruction *instr)
 {
 	char offset[16], rt[8];
 	if(sscanf(line, " $%7[^,] , %15s ", rt, offset) != 2)
@@ -453,7 +436,7 @@ static void decode_rt_offset_operands(char *line, instruction *instr)
 	if(instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
-static void decode_rt_offset_base_operands(char *line, instruction *instr)
+static void decode_rt_offset_base_operands(char *line, Instruction *instr)
 {
 	char base[8], offset[16], rt[8];
 	if(sscanf(line, " $%7[^,] , %15[^(] ($%7[^)]) ", rt, offset, base) != 3)
@@ -467,7 +450,7 @@ static void decode_rt_offset_base_operands(char *line, instruction *instr)
 	if(instr->base == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
-static void decode_rt_rs_immediate_operands(char *line, instruction *instr)
+static void decode_rt_rs_immediate_operands(char *line, Instruction *instr)
 {
 	char imm[16], rs[8], rt[8];
 	if(sscanf(line, " $%7[^,] , $%7[^,] , %15s ", rt, rs, imm) != 3)
@@ -481,7 +464,7 @@ static void decode_rt_rs_immediate_operands(char *line, instruction *instr)
 	if(instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
-static void decode_rt_rs_offset_operands(char *line, instruction *instr)
+static void decode_rt_rs_offset_operands(char *line, Instruction *instr)
 {
 	char offset[16], rs[8], rt[8];
 	if(sscanf(line, " $%7[^,] , $%7[^,] , %15s ", rt, rs, offset) != 3)
@@ -495,7 +478,7 @@ static void decode_rt_rs_offset_operands(char *line, instruction *instr)
 	if(instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
-static void decode_target_operands(char *line, instruction *instr)
+static void decode_target_operands(char *line, Instruction *instr)
 {
 	char target[16];
 	if(sscanf(line, " %15s ", target) != 1)
@@ -513,11 +496,11 @@ static void decode_target_operands(char *line, instruction *instr)
 	instr->target = target_value;
 }
 
-instruction decode_instruction(int mode, FILE *input)
+Instruction decode_instruction(int mode, FILE *input)
 {
 	char mnemonic[16], *line, *ptr;
-	FILE *in = (!mode) ? stdin : input;
-	instruction instr = {0};
+	FILE *in = mode == INTERACTIVE ? stdin : input;
+	Instruction instr = {0};
 	int consumed = 0;
 
 	line = read_full_line(in);
@@ -539,7 +522,7 @@ instruction decode_instruction(int mode, FILE *input)
 	sscanf(ptr, "%15s%n", mnemonic, &consumed);
 	ptr += consumed;
 
-	const instruction_desc *id = find_instruction(mnemonic);
+	const Instruction_desc *id = find_instruction(mnemonic);
 	
 	if(id)
 	{
@@ -547,14 +530,14 @@ instruction decode_instruction(int mode, FILE *input)
 		instr.opcode = id->op;
 		switch(id->format)
 		{
-			case CMD_EXIT :
+			case FMT_EXIT :
 				instr.exit = 1;
 				break;
-			case CMD_NAL :
+			case FMT_NAL :
 				build_cmd_instruction(&instr, 0, OPCODE_REGIMM, 0, NAL_RT, 0, 0);
 				snprintf(instr.to_string, sizeof(instr.to_string), "NAL -> 0x%08" PRIx32 "\n", instr.encoding);
 				break;
-			case CMD_NOP :
+			case FMT_NOP :
 				build_cmd_instruction(&instr, FUNCT_SLL, OPCODE_SPECIAL, 0, 0, 0, 0);
 				snprintf(instr.to_string, sizeof(instr.to_string), "NOP -> 0x%08" PRIx32 "\n", instr.encoding);
 				break;
@@ -567,11 +550,6 @@ instruction decode_instruction(int mode, FILE *input)
 				decode_offset_operand(ptr, &instr);
 				build_offset_26_instruction(&instr, id->code);
 				snprintf(instr.to_string, sizeof(instr.to_string), "%s %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.offset, instr.encoding);
-				break;
-			case FMT_RD :
-				decode_rd_operand(ptr, &instr);
-				build_rd_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rd, instr.encoding);
 				break;
 			case FMT_RD_RS :
 				decode_rd_rs_operands(ptr, &instr);
