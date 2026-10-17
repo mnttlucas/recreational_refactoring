@@ -1,5 +1,7 @@
+#include <math.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "config.h"
 #include "cpu.h"
@@ -8,6 +10,32 @@
 #include "mips_memory.h"
 #include "mips_registers.h"
 #include "utils.h"
+
+/* An invalid operation (inf - inf, 0 / 0...) produces the MIPS default quiet NaN, whereas the host
+   produces its own NaN pattern. A NaN operand is propagated as it is, so the host result is kept. */
+static float fp_result_float(float result, float a, float b)
+{
+	const uint32_t default_nan = 0x7FC00000u;
+	float nan;
+
+	if(!isnan(result) || isnan(a) || isnan(b)) return(result);
+
+	memcpy(&nan, &default_nan, sizeof(nan));
+
+	return(nan);
+}
+
+static double fp_result_double(double result, double a, double b)
+{
+	const uint64_t default_nan = 0x7FF8000000000000u;
+	double nan;
+
+	if(!isnan(result) || isnan(a) || isnan(b)) return(result);
+
+	memcpy(&nan, &default_nan, sizeof(nan));
+
+	return(nan);
+}
 
 /* PC-relative branch target : the offset is counted in instructions, from the one following the branch */
 static uint32_t branch_target(const Cpu *cpu, int32_t offset)
@@ -38,6 +66,8 @@ static uint8_t branch_compact_link(Cpu *cpu, int32_t offset)
 
 void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 {
+	double double_a, double_b;
+	float single_a, single_b;
 	int32_t dividend, divisor, i32;
 	int64_t i64;
 	uint16_t u16;
@@ -50,6 +80,14 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 
 	switch(instr->opcode)
 	{
+		case OP_ABS_D :
+			u64 = fpr_read_64(cpu, instr->fs) & 0x7FFFFFFFFFFFFFFFu;
+			fpr_write_64(cpu, instr->fd, u64);
+			break;
+		case OP_ABS_S :
+			u32 = fpr_read_32(cpu, instr->fs) & 0x7FFFFFFFu;
+			fpr_write_32(cpu, instr->fd, u32);
+			break;
 		case OP_ADD :
 			i64 = (int64_t) (int32_t) gpr_read_32(cpu, instr->rs) + (int64_t) (int32_t) gpr_read_32(cpu, instr->rt);
 			if(i64 > INT32_MAX || i64 < INT32_MIN) fprintf(stderr, "[!] Exception : Integer Overflow\n");
@@ -66,6 +104,16 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 		case OP_ADDU :
 			u32 = gpr_read_32(cpu, instr->rs) + gpr_read_32(cpu, instr->rt);
 			gpr_write_32(cpu, instr->rd, u32);
+			break;
+		case OP_ADD_D :
+			double_a = fpr_read_double(cpu, instr->fs);
+			double_b = fpr_read_double(cpu, instr->ft);
+			fpr_write_double(cpu, instr->fd, fp_result_double(double_a + double_b, double_a, double_b));
+			break;
+		case OP_ADD_S :
+			single_a = fpr_read_float(cpu, instr->fs);
+			single_b = fpr_read_float(cpu, instr->ft);
+			fpr_write_float(cpu, instr->fd, fp_result_float(single_a + single_b, single_a, single_b));
 			break;
 		case OP_ALUIPC :
 			u32 = ~0xFFFFu & (cpu->PC + ((uint32_t) instr->immediate << 16));
@@ -242,6 +290,16 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			else u32 = raw_dividend / raw_divisor;
 			gpr_write_32(cpu, instr->rd, u32);
 			break;
+		case OP_DIV_D :
+			double_a = fpr_read_double(cpu, instr->fs);
+			double_b = fpr_read_double(cpu, instr->ft);
+			fpr_write_double(cpu, instr->fd, fp_result_double(double_a / double_b, double_a, double_b));
+			break;
+		case OP_DIV_S :
+			single_a = fpr_read_float(cpu, instr->fs);
+			single_b = fpr_read_float(cpu, instr->ft);
+			fpr_write_float(cpu, instr->fd, fp_result_float(single_a / single_b, single_a, single_b));
+			break;
 		case OP_J :
 			cpu->next_PC = ((cpu->PC + 4) & 0xF0000000u) | ((uint32_t) (instr->target << 2) & 0x0FFFFFFCu);
 			break;
@@ -273,6 +331,11 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			u8 = memory_read_8(cpu, address);
 			gpr_write_32(cpu, instr->rt, (uint32_t) u8);
 			break;
+		case OP_LDC1 :
+			address = gpr_read_32(cpu, instr->base) + (uint32_t) instr->offset;
+			u64 = memory_read_64(cpu, address);
+			fpr_write_64(cpu, instr->ft, u64);
+			break;
 		case OP_LH :
 			address = gpr_read_32(cpu, instr->base) + (uint32_t) instr->offset;
 			i32 = sign_extend(memory_read_16(cpu, address), 16);
@@ -288,10 +351,21 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			u32 = memory_read_32(cpu, address);
 			gpr_write_32(cpu, instr->rt, u32);
 			break;
+		case OP_LWC1 :
+			address = gpr_read_32(cpu, instr->base) + (uint32_t) instr->offset;
+			u32 = memory_read_32(cpu, address);
+			fpr_write_32(cpu, instr->ft, u32);
+			break;
 		case OP_LWPC :
 			address = cpu->PC + ((uint32_t) instr->offset << 2);
 			u32 = memory_read_32(cpu, address);
 			gpr_write_32(cpu, instr->rs, u32);
+			break;
+		case OP_MFC1 :
+			gpr_write_32(cpu, instr->rt, fpr_read_32(cpu, instr->fs));
+			break;
+		case OP_MFHC1 :
+			gpr_write_32(cpu, instr->rt, (uint32_t) (fpr_read_64(cpu, instr->fs) >> 32));
 			break;
 		case OP_MOD :
 			dividend = (int32_t) gpr_read_32(cpu, instr->rs);
@@ -314,6 +388,19 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			else u32 = raw_dividend % raw_divisor;
 			gpr_write_32(cpu, instr->rd, u32);
 			break;
+		case OP_MOV_D :
+			fpr_write_64(cpu, instr->fd, fpr_read_64(cpu, instr->fs));
+			break;
+		case OP_MOV_S :
+			fpr_write_32(cpu, instr->fd, fpr_read_32(cpu, instr->fs));
+			break;
+		case OP_MTC1 :
+			fpr_write_32(cpu, instr->fs, gpr_read_32(cpu, instr->rt));
+			break;
+		case OP_MTHC1 :
+			u64 = ((uint64_t) gpr_read_32(cpu, instr->rt) << 32) | fpr_read_32(cpu, instr->fs);
+			fpr_write_64(cpu, instr->fs, u64);
+			break;
 		case OP_MUH :
 			i64 = (int64_t) (int32_t) gpr_read_32(cpu, instr->rs) * (int64_t) (int32_t) gpr_read_32(cpu, instr->rt);
 			gpr_write_32(cpu, instr->rd, (uint32_t) (i64 >> 32));
@@ -330,8 +417,26 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			u64 = (uint64_t) gpr_read_32(cpu, instr->rs) * (uint64_t) gpr_read_32(cpu, instr->rt);
 			gpr_write_32(cpu, instr->rd, (uint32_t) u64);
 			break;
+		case OP_MUL_D :
+			double_a = fpr_read_double(cpu, instr->fs);
+			double_b = fpr_read_double(cpu, instr->ft);
+			fpr_write_double(cpu, instr->fd, fp_result_double(double_a * double_b, double_a, double_b));
+			break;
+		case OP_MUL_S :
+			single_a = fpr_read_float(cpu, instr->fs);
+			single_b = fpr_read_float(cpu, instr->ft);
+			fpr_write_float(cpu, instr->fd, fp_result_float(single_a * single_b, single_a, single_b));
+			break;
 		case OP_NAL :
 			gpr_write_32(cpu, REG_RA, cpu->PC + 8);
+			break;
+		case OP_NEG_D :
+			u64 = fpr_read_64(cpu, instr->fs) ^ 0x8000000000000000u;
+			fpr_write_64(cpu, instr->fd, u64);
+			break;
+		case OP_NEG_S :
+			u32 = fpr_read_32(cpu, instr->fs) ^ 0x80000000u;
+			fpr_write_32(cpu, instr->fd, u32);
 			break;
 		case OP_NOP :
 			break;
@@ -361,6 +466,10 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 		case OP_SB :
 			address = gpr_read_32(cpu, instr->base) + (uint32_t) instr->offset;
 			memory_write_8(cpu, address, (uint8_t) gpr_read_32(cpu, instr->rt));
+			break;
+		case OP_SDC1 :
+			address = gpr_read_32(cpu, instr->base) + (uint32_t) instr->offset;
+			memory_write_64(cpu, address, fpr_read_64(cpu, instr->ft));
 			break;
 		case OP_SEB :
 			i32 = sign_extend((int32_t) gpr_read_32(cpu, instr->rt), 8);
@@ -432,10 +541,24 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			u32 = gpr_read_32(cpu, instr->rs) - gpr_read_32(cpu, instr->rt);
 			gpr_write_32(cpu, instr->rd, u32);
 			break;
+		case OP_SUB_D :
+			double_a = fpr_read_double(cpu, instr->fs);
+			double_b = fpr_read_double(cpu, instr->ft);
+			fpr_write_double(cpu, instr->fd, fp_result_double(double_a - double_b, double_a, double_b));
+			break;
+		case OP_SUB_S :
+			single_a = fpr_read_float(cpu, instr->fs);
+			single_b = fpr_read_float(cpu, instr->ft);
+			fpr_write_float(cpu, instr->fd, fp_result_float(single_a - single_b, single_a, single_b));
+			break;
 		case OP_SW :
 			u32 = gpr_read_32(cpu, instr->rt);
 			address = gpr_read_32(cpu, instr->base) + (uint32_t) instr->offset;
 			memory_write_32(cpu, address, u32);
+			break;
+		case OP_SWC1 :
+			address = gpr_read_32(cpu, instr->base) + (uint32_t) instr->offset;
+			memory_write_32(cpu, address, fpr_read_32(cpu, instr->ft));
 			break;
 		case OP_XOR :
 			u32 = gpr_read_32(cpu, instr->rs) ^ gpr_read_32(cpu, instr->rt);

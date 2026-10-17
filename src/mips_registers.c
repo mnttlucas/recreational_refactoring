@@ -54,6 +54,42 @@ void fpr_write_64(Cpu *cpu, int id, uint64_t value)
 	else fprintf(stderr, "[!] fpr_write_64() : invalid register %d\n", id);
 }
 
+float fpr_read_float(Cpu *cpu, int id)
+{
+	uint32_t bits = fpr_read_32(cpu, id);
+	float value;
+
+	memcpy(&value, &bits, sizeof(value));
+
+	return(value);
+}
+
+double fpr_read_double(Cpu *cpu, int id)
+{
+	uint64_t bits = fpr_read_64(cpu, id);
+	double value;
+
+	memcpy(&value, &bits, sizeof(value));
+
+	return(value);
+}
+
+void fpr_write_float(Cpu *cpu, int id, float value)
+{
+	uint32_t bits;
+
+	memcpy(&bits, &value, sizeof(bits));
+	fpr_write_32(cpu, id, bits);
+}
+
+void fpr_write_double(Cpu *cpu, int id, double value)
+{
+	uint64_t bits;
+
+	memcpy(&bits, &value, sizeof(bits));
+	fpr_write_64(cpu, id, bits);
+}
+
 uint32_t gpr_read_32(Cpu *cpu, int id)
 {
 	uint32_t value = REG_ZERO;

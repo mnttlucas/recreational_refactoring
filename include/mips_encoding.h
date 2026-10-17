@@ -9,7 +9,22 @@
 #define RS_SHIFT        21
 #define OPCODE_SHIFT    26
 
+/* COP1 (floating point unit) : the `fmt` field sits in the rs position */
+#define COP1_FMT_S     16
+#define COP1_FMT_D     17
+#define COP1_MF         0
+#define COP1_MFH        3
+#define COP1_MT         4
+#define COP1_MTH        7
+
 /* Function codes */
+#define FUNCT_FADD    0
+#define FUNCT_FSUB    1
+#define FUNCT_FMUL    2
+#define FUNCT_FDIV    3
+#define FUNCT_FABS    5
+#define FUNCT_FMOV    6
+#define FUNCT_FNEG    7
 #define FUNCT_ADD    32
 #define FUNCT_ADDU   33
 #define FUNCT_AND    36
@@ -44,15 +59,18 @@
 #define OPCODE_BALC      58
 #define OPCODE_BC        50
 #define OPCODE_BEQ        4
+#define OPCODE_COP1      17
 #define OPCODE_BGTZ       7
 #define OPCODE_BLEZ       6
 #define OPCODE_BNE        5
 #define OPCODE_J          2
 #define OPCODE_JAL        3
+#define OPCODE_LDC1      53
 #define OPCODE_LB        32
 #define OPCODE_LBU       36
 #define OPCODE_LH        33
 #define OPCODE_LHU       37
+#define OPCODE_LWC1      49
 #define OPCODE_LW        35
 #define OPCODE_ORI       13
 #define OPCODE_PCREL     59
@@ -66,11 +84,13 @@
 #define OPCODE_POP76     62
 #define OPCODE_REGIMM     1
 #define OPCODE_SB        40
+#define OPCODE_SDC1      61
 #define OPCODE_SH        41
 #define OPCODE_SLTI      10
 #define OPCODE_SLTIU     11
 #define OPCODE_SPECIAL    0
 #define OPCODE_SPECIAL3  31
+#define OPCODE_SWC1      57
 #define OPCODE_SW        43
 #define OPCODE_XORI      14
 

@@ -213,6 +213,45 @@ static void build_rt_offset_16_instruction(Instruction *instr, int op_code)
 	instr->encoding = encode_i((uint32_t) op_code, 0, instr->rt, instr->offset, OFFSET_16_SIZE);
 }
 
+/* COP1 `fmt` field : single (S) or double (D) precision, deduced from the instruction */
+static uint32_t cop1_format(Opcode opcode)
+{
+	switch(opcode)
+	{
+		case OP_ABS_D :
+		case OP_ADD_D :
+		case OP_DIV_D :
+		case OP_MOV_D :
+		case OP_MUL_D :
+		case OP_NEG_D :
+		case OP_SUB_D :
+			return(COP1_FMT_D);
+		default :
+			return(COP1_FMT_S);
+	}
+}
+
+static void build_fd_fs_instruction(Instruction *instr, int funct_code)
+{
+	instr->encoding = encode_r(OPCODE_COP1, cop1_format(instr->opcode), 0, instr->fs, instr->fd, (uint32_t) funct_code);
+}
+
+static void build_fd_fs_ft_instruction(Instruction *instr, int funct_code)
+{
+	instr->encoding = encode_r(OPCODE_COP1, cop1_format(instr->opcode), instr->ft, instr->fs, instr->fd, (uint32_t) funct_code);
+}
+
+static void build_ft_offset_base_instruction(Instruction *instr, int op_code)
+{
+	instr->offset = check_field(instr, instr->offset, OFFSET_16_SIZE);
+	instr->encoding = encode_i((uint32_t) op_code, instr->base, instr->ft, instr->offset, OFFSET_16_SIZE);
+}
+
+static void build_rt_fs_instruction(Instruction *instr, int sub_code)
+{
+	instr->encoding = encode_r(OPCODE_COP1, (uint32_t) sub_code, instr->rt, instr->fs, 0, 0);
+}
+
 static void build_rt_offset_base_instruction(Instruction *instr, int op_code)
 {
 	instr->offset = check_field(instr, instr->offset, OFFSET_16_SIZE);
@@ -281,6 +320,60 @@ static void decode_rd_rs_operands(char *line, Instruction *instr)
 	}
 	instr->rs = register_string_to_int(rs, REG_KIND_GPR);
 	if(instr->rd == INVALID_REGISTER || instr->rs == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
+}
+
+static void decode_fd_fs_operands(char *line, Instruction *instr)
+{
+	char fd[8], fs[8];
+	if(sscanf(line, " $%7[^,] , $%7s ", fd, fs) != 2)
+	{
+		syntax_error(instr);
+		return;
+	}
+	instr->fd = register_string_to_int(fd, REG_KIND_FPR);
+	instr->fs = register_string_to_int(fs, REG_KIND_FPR);
+	if(instr->fd == INVALID_REGISTER || instr->fs == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
+}
+
+static void decode_fd_fs_ft_operands(char *line, Instruction *instr)
+{
+	char fd[8], fs[8], ft[8];
+	if(sscanf(line, " $%7[^,] , $%7[^,] , $%7s ", fd, fs, ft) != 3)
+	{
+		syntax_error(instr);
+		return;
+	}
+	instr->fd = register_string_to_int(fd, REG_KIND_FPR);
+	instr->fs = register_string_to_int(fs, REG_KIND_FPR);
+	instr->ft = register_string_to_int(ft, REG_KIND_FPR);
+	if(instr->fd == INVALID_REGISTER || instr->fs == INVALID_REGISTER || instr->ft == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
+}
+
+static void decode_ft_offset_base_operands(char *line, Instruction *instr)
+{
+	char base[8], ft[8], offset[16];
+	if(sscanf(line, " $%7[^,] , %15[^(] ($%7[^)]) ", ft, offset, base) != 3)
+	{
+		syntax_error(instr);
+		return;
+	}
+	instr->base = register_string_to_int(base, REG_KIND_GPR);
+	instr->offset = parse_integer(offset, instr);
+	instr->ft = register_string_to_int(ft, REG_KIND_FPR);
+	if(instr->base == INVALID_REGISTER || instr->ft == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
+}
+
+static void decode_rt_fs_operands(char *line, Instruction *instr)
+{
+	char fs[8], rt[8];
+	if(sscanf(line, " $%7[^,] , $%7s ", rt, fs) != 2)
+	{
+		syntax_error(instr);
+		return;
+	}
+	instr->rt = register_string_to_int(rt, REG_KIND_GPR);
+	instr->fs = register_string_to_int(fs, REG_KIND_FPR);
+	if(instr->rt == INVALID_REGISTER || instr->fs == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
 static void decode_rd_rs_rt_operands(char *line, Instruction *instr)
@@ -540,6 +633,26 @@ Instruction decode_instruction(int mode, FILE *input)
 			case FMT_NOP :
 				build_cmd_instruction(&instr, FUNCT_SLL, OPCODE_SPECIAL, 0, 0, 0, 0);
 				snprintf(instr.to_string, sizeof(instr.to_string), "NOP -> 0x%08" PRIx32 "\n", instr.encoding);
+				break;
+			case FMT_FD_FS :
+				decode_fd_fs_operands(ptr, &instr);
+				build_fd_fs_instruction(&instr, id->code);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $f%d, $f%d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.fd, instr.fs, instr.encoding);
+				break;
+			case FMT_FD_FS_FT :
+				decode_fd_fs_ft_operands(ptr, &instr);
+				build_fd_fs_ft_instruction(&instr, id->code);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $f%d, $f%d, $f%d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.fd, instr.fs, instr.ft, instr.encoding);
+				break;
+			case FMT_FT_OFFSET_BASE :
+				decode_ft_offset_base_operands(ptr, &instr);
+				build_ft_offset_base_instruction(&instr, id->code);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $f%d, %d($%d) -> 0x%08" PRIx32 "\n", id->mnemonic, instr.ft, instr.offset, instr.base, instr.encoding);
+				break;
+			case FMT_RT_FS :
+				decode_rt_fs_operands(ptr, &instr);
+				build_rt_fs_instruction(&instr, id->code);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $f%d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rt, instr.fs, instr.encoding);
 				break;
 			case FMT_OFFSET_16 :
 				decode_offset_operand(ptr, &instr);
