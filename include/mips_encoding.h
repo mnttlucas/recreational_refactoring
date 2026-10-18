@@ -27,6 +27,10 @@
 #define FUNCT_FABS    5
 #define FUNCT_FADD    0
 #define FUNCT_FDIV    3
+#define FUNCT_FMAX   30
+#define FUNCT_FMAXA  31
+#define FUNCT_FMIN   28
+#define FUNCT_FMINA  29
 #define FUNCT_FMOV    6
 #define FUNCT_FMUL    2
 #define FUNCT_FNEG    7

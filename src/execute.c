@@ -64,10 +64,42 @@ static uint8_t branch_compact_link(Cpu *cpu, int32_t offset)
 	return(branch_compact(cpu, offset));
 }
 
+static int fp_min_picks_fs(double a, double b)
+{
+	if(isnan(a)) return(0);
+	if(isnan(b)) return(1);
+	if(a == b) return(signbit(a) != 0);
+	return(a < b);
+}
+
+static int fp_max_picks_fs(double a, double b)
+{
+	if(isnan(a)) return(0);
+	if(isnan(b)) return(1);
+	if(a == b) return(signbit(a) == 0);
+	return(a > b);
+}
+
+static int fp_mina_picks_fs(double a, double b)
+{
+	if(isnan(a)) return(0);
+	if(isnan(b)) return(1);
+	if(fabs(a) == fabs(b)) return(fp_min_picks_fs(a, b));
+	return(fabs(a) < fabs(b));
+}
+
+static int fp_maxa_picks_fs(double a, double b)
+{
+	if(isnan(a)) return(0);
+	if(isnan(b)) return(1);
+	if(fabs(a) == fabs(b)) return(fp_max_picks_fs(a, b));
+	return(fabs(a) > fabs(b));
+}
+
 void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 {
 	double double_a, double_b;
-	float single_a, single_b;
+	float float_a, float_b;
 	int32_t dividend, divisor, i32;
 	int64_t i64;
 	uint16_t u16;
@@ -111,9 +143,9 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			fpr_write_double(cpu, instr->fd, fp_result_double(double_a + double_b, double_a, double_b));
 			break;
 		case OP_ADD_S :
-			single_a = fpr_read_float(cpu, instr->fs);
-			single_b = fpr_read_float(cpu, instr->ft);
-			fpr_write_float(cpu, instr->fd, fp_result_float(single_a + single_b, single_a, single_b));
+			float_a = fpr_read_float(cpu, instr->fs);
+			float_b = fpr_read_float(cpu, instr->ft);
+			fpr_write_float(cpu, instr->fd, fp_result_float(float_a + float_b, float_a, float_b));
 			break;
 		case OP_ALUIPC :
 			u32 = ~0xFFFFu & (cpu->PC + ((uint32_t) instr->immediate << 16));
@@ -303,9 +335,9 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			fpr_write_double(cpu, instr->fd, fp_result_double(double_a / double_b, double_a, double_b));
 			break;
 		case OP_DIV_S :
-			single_a = fpr_read_float(cpu, instr->fs);
-			single_b = fpr_read_float(cpu, instr->ft);
-			fpr_write_float(cpu, instr->fd, fp_result_float(single_a / single_b, single_a, single_b));
+			float_a = fpr_read_float(cpu, instr->fs);
+			float_b = fpr_read_float(cpu, instr->ft);
+			fpr_write_float(cpu, instr->fd, fp_result_float(float_a / float_b, float_a, float_b));
 			break;
 		case OP_J :
 			cpu->next_PC = ((cpu->PC + 4) & 0xF0000000u) | ((uint32_t) (instr->target << 2) & 0x0FFFFFFCu);
@@ -368,11 +400,59 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			u32 = memory_read_32(cpu, address);
 			gpr_write_32(cpu, instr->rs, u32);
 			break;
+		case OP_MAX_D :
+			double_a = fpr_read_double(cpu, instr->fs);
+			double_b = fpr_read_double(cpu, instr->ft);
+			if(fp_max_picks_fs(double_a, double_b)) fpr_write_64(cpu, instr->fd, fpr_read_64(cpu, instr->fs));
+			else fpr_write_64(cpu, instr->fd, fpr_read_64(cpu, instr->ft));
+			break;
+		case OP_MAX_S :
+			float_a = fpr_read_float(cpu, instr->fs);
+			float_b = fpr_read_float(cpu, instr->ft);
+			if(fp_max_picks_fs(float_a, float_b)) fpr_write_32(cpu, instr->fd, fpr_read_32(cpu, instr->fs));
+			else fpr_write_32(cpu, instr->fd, fpr_read_32(cpu, instr->ft));
+			break;
+		case OP_MAXA_D :
+			double_a = fpr_read_double(cpu, instr->fs);
+			double_b = fpr_read_double(cpu, instr->ft);
+			if(fp_maxa_picks_fs(double_a, double_b)) fpr_write_64(cpu, instr->fd, fpr_read_64(cpu, instr->fs));
+			else fpr_write_64(cpu, instr->fd, fpr_read_64(cpu, instr->ft));
+			break;
+		case OP_MAXA_S :
+			float_a = fpr_read_float(cpu, instr->fs);
+			float_b = fpr_read_float(cpu, instr->ft);
+			if(fp_maxa_picks_fs(float_a, float_b)) fpr_write_32(cpu, instr->fd, fpr_read_32(cpu, instr->fs));
+			else fpr_write_32(cpu, instr->fd, fpr_read_32(cpu, instr->ft));
+			break;
 		case OP_MFC1 :
 			gpr_write_32(cpu, instr->rt, fpr_read_32(cpu, instr->fs));
 			break;
 		case OP_MFHC1 :
 			gpr_write_32(cpu, instr->rt, (uint32_t) (fpr_read_64(cpu, instr->fs) >> 32));
+			break;
+		case OP_MIN_D :
+			double_a = fpr_read_double(cpu, instr->fs);
+			double_b = fpr_read_double(cpu, instr->ft);
+			if(fp_min_picks_fs(double_a, double_b)) fpr_write_64(cpu, instr->fd, fpr_read_64(cpu, instr->fs));
+			else fpr_write_64(cpu, instr->fd, fpr_read_64(cpu, instr->ft));
+			break;
+		case OP_MIN_S :
+			float_a = fpr_read_float(cpu, instr->fs);
+			float_b = fpr_read_float(cpu, instr->ft);
+			if(fp_min_picks_fs(float_a, float_b)) fpr_write_32(cpu, instr->fd, fpr_read_32(cpu, instr->fs));
+			else fpr_write_32(cpu, instr->fd, fpr_read_32(cpu, instr->ft));
+			break;
+		case OP_MINA_D :
+			double_a = fpr_read_double(cpu, instr->fs);
+			double_b = fpr_read_double(cpu, instr->ft);
+			if(fp_mina_picks_fs(double_a, double_b)) fpr_write_64(cpu, instr->fd, fpr_read_64(cpu, instr->fs));
+			else fpr_write_64(cpu, instr->fd, fpr_read_64(cpu, instr->ft));
+			break;
+		case OP_MINA_S :
+			float_a = fpr_read_float(cpu, instr->fs);
+			float_b = fpr_read_float(cpu, instr->ft);
+			if(fp_mina_picks_fs(float_a, float_b)) fpr_write_32(cpu, instr->fd, fpr_read_32(cpu, instr->fs));
+			else fpr_write_32(cpu, instr->fd, fpr_read_32(cpu, instr->ft));
 			break;
 		case OP_MOD :
 			dividend = (int32_t) gpr_read_32(cpu, instr->rs);
@@ -430,9 +510,9 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			fpr_write_double(cpu, instr->fd, fp_result_double(double_a * double_b, double_a, double_b));
 			break;
 		case OP_MUL_S :
-			single_a = fpr_read_float(cpu, instr->fs);
-			single_b = fpr_read_float(cpu, instr->ft);
-			fpr_write_float(cpu, instr->fd, fp_result_float(single_a * single_b, single_a, single_b));
+			float_a = fpr_read_float(cpu, instr->fs);
+			float_b = fpr_read_float(cpu, instr->ft);
+			fpr_write_float(cpu, instr->fd, fp_result_float(float_a * float_b, float_a, float_b));
 			break;
 		case OP_NAL :
 			gpr_write_32(cpu, REG_RA, cpu->PC + 8);
@@ -554,9 +634,9 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			fpr_write_double(cpu, instr->fd, fp_result_double(double_a - double_b, double_a, double_b));
 			break;
 		case OP_SUB_S :
-			single_a = fpr_read_float(cpu, instr->fs);
-			single_b = fpr_read_float(cpu, instr->ft);
-			fpr_write_float(cpu, instr->fd, fp_result_float(single_a - single_b, single_a, single_b));
+			float_a = fpr_read_float(cpu, instr->fs);
+			float_b = fpr_read_float(cpu, instr->ft);
+			fpr_write_float(cpu, instr->fd, fp_result_float(float_a - float_b, float_a, float_b));
 			break;
 		case OP_SW :
 			u32 = gpr_read_32(cpu, instr->rt);
