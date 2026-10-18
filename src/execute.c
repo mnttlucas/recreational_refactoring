@@ -145,9 +145,16 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 		case OP_BC :
 			compact = branch_compact(cpu, instr->offset);
 			break;
+		case OP_BC1EQZ :
+			u64 = fpr_read_64(cpu, instr->ft);
+			if(!(u64 & 0x1)) branch_delay_slot(cpu, instr->offset);
+			break;
+		case OP_BC1NEZ :
+			u64 = fpr_read_64(cpu, instr->ft);
+			if(u64 & 0x1) branch_delay_slot(cpu, instr->offset);
+			break;
 		case OP_BEQ :
-			if(gpr_read_32(cpu, instr->rs) == gpr_read_32(cpu, instr->rt))
-				branch_delay_slot(cpu, instr->offset);
+			if(gpr_read_32(cpu, instr->rs) == gpr_read_32(cpu, instr->rt)) branch_delay_slot(cpu, instr->offset);
 			break;
 		case OP_BEQC :
 			if(gpr_read_32(cpu, instr->rs) == gpr_read_32(cpu, instr->rt)) compact = branch_compact(cpu, instr->offset);

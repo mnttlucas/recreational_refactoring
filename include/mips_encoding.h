@@ -10,27 +10,27 @@
 #define OPCODE_SHIFT    26
 
 /* COP1 (floating point unit) : the `fmt` field sits in the rs position */
-#define COP1_FMT_S     16
 #define COP1_FMT_D     17
+#define COP1_FMT_S     16
 #define COP1_MF         0
 #define COP1_MFH        3
 #define COP1_MT         4
 #define COP1_MTH        7
 
 /* Function codes */
-#define FUNCT_FADD    0
-#define FUNCT_FSUB    1
-#define FUNCT_FMUL    2
-#define FUNCT_FDIV    3
-#define FUNCT_FABS    5
-#define FUNCT_FMOV    6
-#define FUNCT_FNEG    7
 #define FUNCT_ADD    32
 #define FUNCT_ADDU   33
 #define FUNCT_AND    36
 #define FUNCT_BSHFL  32
 #define FUNCT_CLO    17
 #define FUNCT_CLZ    16
+#define FUNCT_FABS    5
+#define FUNCT_FADD    0
+#define FUNCT_FDIV    3
+#define FUNCT_FMOV    6
+#define FUNCT_FMUL    2
+#define FUNCT_FNEG    7
+#define FUNCT_FSUB    1
 #define FUNCT_JALR    9
 #define FUNCT_SOP30  24
 #define FUNCT_SOP31  25
@@ -106,18 +106,20 @@
 This exists for clarity and to match MIPS32 R6 specification
 When values are zero, it will be implicit */
 #define ALUIPC_RT     31
-#define LWPC_RT        8
-#define ROTR_RS        1
-#define ROTRV_SA       1
 #define AUIPC_RT      30
 #define BAL_RT        17
+#define BC1EQZ_FS      9
+#define BC1NEZ_FS     13
 #define BGEZ_RT        1
 #define CLO_CLZ_SA     1
 #define DIV_DIVU_SA    2
+#define LWPC_RT        8
 #define MOD_MODU_SA    3
 #define MUH_MUHU_SA    3
 #define MUL_MULU_SA    2
 #define NAL_RT        16
+#define ROTR_RS        1
+#define ROTRV_SA       1
 #define SEB_SA        16
 #define SEH_SA        24
 
