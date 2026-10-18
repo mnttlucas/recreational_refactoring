@@ -667,12 +667,12 @@ Instruction decode_instruction(int mode, FILE *input)
 				snprintf(instr.to_string, sizeof(instr.to_string), "%s $f%d, $f%d, $f%d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.fd, instr.fs, instr.ft, instr.encoding);
 				break;
 			case FMT_FT_OFFSET_16 :
-				decode_ft_offset_16_operands(ptr, &instr);
+				decode_ft_offset_operands(ptr, &instr);
 				build_ft_offset_16_instruction(&instr, id->code);
 				snprintf(instr.to_string, sizeof(instr.to_string), "%s $f%d, %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.ft, instr.offset, instr.encoding);
 				break;
 			case FMT_FT_OFFSET_16_BASE :
-				decode_ft_offset_16_base_operands(ptr, &instr);
+				decode_ft_offset_base_operands(ptr, &instr);
 				build_ft_offset_16_base_instruction(&instr, id->code);
 				snprintf(instr.to_string, sizeof(instr.to_string), "%s $f%d, %d($%d) -> 0x%08" PRIx32 "\n", id->mnemonic, instr.ft, instr.offset, instr.base, instr.encoding);
 				break;
