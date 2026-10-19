@@ -633,9 +633,29 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			if((int32_t) gpr_read_32(cpu, instr->rt) == 0) gpr_write_32(cpu, instr->rd, gpr_read_32(cpu, instr->rs));
 			else gpr_write_32(cpu, instr->rd, 0);
 			break;
+		case OP_SELEQZ_D :
+			u64 = fpr_read_64(cpu, instr->ft);
+			if(u64 & 0x1) fpr_write_64(cpu, instr->fd, 0);
+			else fpr_write_64(cpu, instr->fd, fpr_read_64(cpu, instr->fs));
+			break;
+		case OP_SELEQZ_S :
+			u32 = fpr_read_32(cpu, instr->ft);
+			if(u32 & 0x1) fpr_write_32(cpu, instr->fd, 0);
+			else fpr_write_32(cpu, instr->fd, fpr_read_32(cpu, instr->fs));
+			break;
 		case OP_SELNEZ :
 			if((int32_t) gpr_read_32(cpu, instr->rt) != 0) gpr_write_32(cpu, instr->rd, gpr_read_32(cpu, instr->rs));
 			else gpr_write_32(cpu, instr->rd, 0);
+			break;
+		case OP_SELNEZ_D :
+			u64 = fpr_read_64(cpu, instr->ft);
+			if(u64 & 0x1) fpr_write_64(cpu, instr->fd, fpr_read_64(cpu, instr->fs));
+			else fpr_write_64(cpu, instr->fd, 0);
+			break;
+		case OP_SELNEZ_S :
+			u32 = fpr_read_32(cpu, instr->ft);
+			if(u32 & 0x1) fpr_write_32(cpu, instr->fd, fpr_read_32(cpu, instr->fs));
+			else fpr_write_32(cpu, instr->fd, 0);
 			break;
 		case OP_SH :
 			address = gpr_read_32(cpu, instr->base) + (uint32_t) instr->offset;

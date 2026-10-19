@@ -32,6 +32,8 @@ static uint32_t cop1_format(Opcode opcode)
 		case OP_MUL_D :
 		case OP_NEG_D :
 		case OP_SEL_D :
+		case OP_SELEQZ_D :
+		case OP_SELNEZ_D :
 		case OP_SUB_D :
 			return(COP1_FMT_D);
 		default :
