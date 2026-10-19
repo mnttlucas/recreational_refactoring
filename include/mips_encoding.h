@@ -42,6 +42,7 @@
 #define FUNCT_SOP33  27
 #define FUNCT_NOR    39
 #define FUNCT_OR     37
+#define FUNCT_SEL    16
 #define FUNCT_SELEQZ 53
 #define FUNCT_SELNEZ 55
 #define FUNCT_SLL     0

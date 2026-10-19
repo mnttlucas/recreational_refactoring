@@ -116,6 +116,8 @@ typedef enum
 	OP_SDC1,
 	OP_SEB,
 	OP_SEH,
+	OP_SEL_D,
+	OP_SEL_S,
 	OP_SELEQZ,
 	OP_SELNEZ,
 	OP_SH,
