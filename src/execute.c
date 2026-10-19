@@ -622,12 +622,12 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 		case OP_SEL_D :
 			u64 = fpr_read_64(cpu, instr->fd);
 			if(u64 & 0x1) fpr_write_64(cpu, instr->fd, fpr_read_64(cpu, instr->ft));
-			else fpr_write_64(cpu, instr->fd, fpr_read_64(cpu, instr->ft));
+			else fpr_write_64(cpu, instr->fd, fpr_read_64(cpu, instr->fs));
 			break;
 		case OP_SEL_S :
 			u32 = fpr_read_32(cpu, instr->fd);
 			if(u32 & 0x1) fpr_write_32(cpu, instr->fd, fpr_read_32(cpu, instr->ft));
-			else fpr_write_32(cpu, instr->fd, fpr_read_32(cpu, instr->ft));
+			else fpr_write_32(cpu, instr->fd, fpr_read_32(cpu, instr->fs));
 			break;
 		case OP_SELEQZ :
 			if((int32_t) gpr_read_32(cpu, instr->rt) == 0) gpr_write_32(cpu, instr->rd, gpr_read_32(cpu, instr->rs));
