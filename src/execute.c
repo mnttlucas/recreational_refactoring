@@ -11,11 +11,14 @@
 #include "mips_registers.h"
 #include "utils.h"
 
+#define FP_DEFAULT_NAN_32 UINT32_C(0x7FC00000)
+#define FP_DEFAULT_NAN_64 UINT64_C(0x7FF8000000000000)
+
 /* An invalid operation (inf - inf, 0 / 0...) produces the MIPS default quiet NaN, whereas the host
    produces its own NaN pattern. A NaN operand is propagated as it is, so the host result is kept. */
 static float fp_result_float(float result, float a, float b)
 {
-	const uint32_t default_nan = 0x7FC00000u;
+	const uint32_t default_nan = FP_DEFAULT_NAN_32;
 	float nan;
 
 	if(!isnan(result) || isnan(a) || isnan(b)) return(result);
@@ -27,7 +30,7 @@ static float fp_result_float(float result, float a, float b)
 
 static double fp_result_double(double result, double a, double b)
 {
-	const uint64_t default_nan = 0x7FF8000000000000u;
+	const uint64_t default_nan = FP_DEFAULT_NAN_64;
 	double nan;
 
 	if(!isnan(result) || isnan(a) || isnan(b)) return(result);
@@ -35,6 +38,42 @@ static double fp_result_double(double result, double a, double b)
 	memcpy(&nan, &default_nan, sizeof(nan));
 
 	return(nan);
+}
+
+/* Signaling NaN : exponent all ones, non-zero mantissa, quiet bit (most significant mantissa bit) clear.
+   It has to be tested on the raw register bits, since converting a signaling NaN to another host type quiets it. */
+static int fp_is_snan_32(uint32_t bits)
+{
+	return((bits & UINT32_C(0x7F800000)) == UINT32_C(0x7F800000) && (bits & UINT32_C(0x007FFFFF)) != 0 && (bits & UINT32_C(0x00400000)) == 0);
+}
+
+static int fp_is_snan_64(uint64_t bits)
+{
+	return((bits & UINT64_C(0x7FF0000000000000)) == UINT64_C(0x7FF0000000000000) && (bits & UINT64_C(0x000FFFFFFFFFFFFF)) != 0 && (bits & UINT64_C(0x0008000000000000)) == 0);
+}
+
+/* Invalid Operation on a signaling NaN operand (fs or ft) : the default quiet NaN is written in fd and 1 is returned.
+   The FCSR is not emulated, so there is no flag and no trap. */
+static int fp_invalid_32(Cpu *cpu, const Instruction *instr)
+{
+	if(!fp_is_snan_32(fpr_read_32(cpu, instr->fs)) && !fp_is_snan_32(fpr_read_32(cpu, instr->ft))) return(0);
+
+	fprintf(stderr, "[!] Exception : Floating Point Invalid Operation\n");
+
+	fpr_write_32(cpu, instr->fd, FP_DEFAULT_NAN_32);
+
+	return(1);
+}
+
+static int fp_invalid_64(Cpu *cpu, const Instruction *instr)
+{
+	if(!fp_is_snan_64(fpr_read_64(cpu, instr->fs)) && !fp_is_snan_64(fpr_read_64(cpu, instr->ft))) return(0);
+
+	fprintf(stderr, "[!] Exception : Floating Point Invalid Operation\n");
+
+	fpr_write_64(cpu, instr->fd, FP_DEFAULT_NAN_64);
+
+	return(1);
 }
 
 /* PC-relative branch target : the offset is counted in instructions, from the one following the branch */
@@ -138,11 +177,13 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			gpr_write_32(cpu, instr->rd, u32);
 			break;
 		case OP_ADD_D :
+			if(fp_invalid_64(cpu, instr)) break;
 			double_a = fpr_read_double(cpu, instr->fs);
 			double_b = fpr_read_double(cpu, instr->ft);
 			fpr_write_double(cpu, instr->fd, fp_result_double(double_a + double_b, double_a, double_b));
 			break;
 		case OP_ADD_S :
+			if(fp_invalid_32(cpu, instr)) break;
 			float_a = fpr_read_float(cpu, instr->fs);
 			float_b = fpr_read_float(cpu, instr->ft);
 			fpr_write_float(cpu, instr->fd, fp_result_float(float_a + float_b, float_a, float_b));
@@ -330,11 +371,13 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			gpr_write_32(cpu, instr->rd, u32);
 			break;
 		case OP_DIV_D :
+			if(fp_invalid_64(cpu, instr)) break;
 			double_a = fpr_read_double(cpu, instr->fs);
 			double_b = fpr_read_double(cpu, instr->ft);
 			fpr_write_double(cpu, instr->fd, fp_result_double(double_a / double_b, double_a, double_b));
 			break;
 		case OP_DIV_S :
+			if(fp_invalid_32(cpu, instr)) break;
 			float_a = fpr_read_float(cpu, instr->fs);
 			float_b = fpr_read_float(cpu, instr->ft);
 			fpr_write_float(cpu, instr->fd, fp_result_float(float_a / float_b, float_a, float_b));
@@ -401,24 +444,28 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			gpr_write_32(cpu, instr->rs, u32);
 			break;
 		case OP_MAX_D :
+			if(fp_invalid_64(cpu, instr)) break;
 			double_a = fpr_read_double(cpu, instr->fs);
 			double_b = fpr_read_double(cpu, instr->ft);
 			if(fp_max_picks_fs(double_a, double_b)) fpr_write_64(cpu, instr->fd, fpr_read_64(cpu, instr->fs));
 			else fpr_write_64(cpu, instr->fd, fpr_read_64(cpu, instr->ft));
 			break;
 		case OP_MAX_S :
+			if(fp_invalid_32(cpu, instr)) break;
 			float_a = fpr_read_float(cpu, instr->fs);
 			float_b = fpr_read_float(cpu, instr->ft);
 			if(fp_max_picks_fs(float_a, float_b)) fpr_write_32(cpu, instr->fd, fpr_read_32(cpu, instr->fs));
 			else fpr_write_32(cpu, instr->fd, fpr_read_32(cpu, instr->ft));
 			break;
 		case OP_MAXA_D :
+			if(fp_invalid_64(cpu, instr)) break;
 			double_a = fpr_read_double(cpu, instr->fs);
 			double_b = fpr_read_double(cpu, instr->ft);
 			if(fp_maxa_picks_fs(double_a, double_b)) fpr_write_64(cpu, instr->fd, fpr_read_64(cpu, instr->fs));
 			else fpr_write_64(cpu, instr->fd, fpr_read_64(cpu, instr->ft));
 			break;
 		case OP_MAXA_S :
+			if(fp_invalid_32(cpu, instr)) break;
 			float_a = fpr_read_float(cpu, instr->fs);
 			float_b = fpr_read_float(cpu, instr->ft);
 			if(fp_maxa_picks_fs(float_a, float_b)) fpr_write_32(cpu, instr->fd, fpr_read_32(cpu, instr->fs));
@@ -431,24 +478,28 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			gpr_write_32(cpu, instr->rt, (uint32_t) (fpr_read_64(cpu, instr->fs) >> 32));
 			break;
 		case OP_MIN_D :
+			if(fp_invalid_64(cpu, instr)) break;
 			double_a = fpr_read_double(cpu, instr->fs);
 			double_b = fpr_read_double(cpu, instr->ft);
 			if(fp_min_picks_fs(double_a, double_b)) fpr_write_64(cpu, instr->fd, fpr_read_64(cpu, instr->fs));
 			else fpr_write_64(cpu, instr->fd, fpr_read_64(cpu, instr->ft));
 			break;
 		case OP_MIN_S :
+			if(fp_invalid_32(cpu, instr)) break;
 			float_a = fpr_read_float(cpu, instr->fs);
 			float_b = fpr_read_float(cpu, instr->ft);
 			if(fp_min_picks_fs(float_a, float_b)) fpr_write_32(cpu, instr->fd, fpr_read_32(cpu, instr->fs));
 			else fpr_write_32(cpu, instr->fd, fpr_read_32(cpu, instr->ft));
 			break;
 		case OP_MINA_D :
+			if(fp_invalid_64(cpu, instr)) break;
 			double_a = fpr_read_double(cpu, instr->fs);
 			double_b = fpr_read_double(cpu, instr->ft);
 			if(fp_mina_picks_fs(double_a, double_b)) fpr_write_64(cpu, instr->fd, fpr_read_64(cpu, instr->fs));
 			else fpr_write_64(cpu, instr->fd, fpr_read_64(cpu, instr->ft));
 			break;
 		case OP_MINA_S :
+			if(fp_invalid_32(cpu, instr)) break;
 			float_a = fpr_read_float(cpu, instr->fs);
 			float_b = fpr_read_float(cpu, instr->ft);
 			if(fp_mina_picks_fs(float_a, float_b)) fpr_write_32(cpu, instr->fd, fpr_read_32(cpu, instr->fs));
@@ -505,11 +556,13 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			gpr_write_32(cpu, instr->rd, (uint32_t) u64);
 			break;
 		case OP_MUL_D :
+			if(fp_invalid_64(cpu, instr)) break;
 			double_a = fpr_read_double(cpu, instr->fs);
 			double_b = fpr_read_double(cpu, instr->ft);
 			fpr_write_double(cpu, instr->fd, fp_result_double(double_a * double_b, double_a, double_b));
 			break;
 		case OP_MUL_S :
+			if(fp_invalid_32(cpu, instr)) break;
 			float_a = fpr_read_float(cpu, instr->fs);
 			float_b = fpr_read_float(cpu, instr->ft);
 			fpr_write_float(cpu, instr->fd, fp_result_float(float_a * float_b, float_a, float_b));
@@ -629,11 +682,13 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			gpr_write_32(cpu, instr->rd, u32);
 			break;
 		case OP_SUB_D :
+			if(fp_invalid_64(cpu, instr)) break;
 			double_a = fpr_read_double(cpu, instr->fs);
 			double_b = fpr_read_double(cpu, instr->ft);
 			fpr_write_double(cpu, instr->fd, fp_result_double(double_a - double_b, double_a, double_b));
 			break;
 		case OP_SUB_S :
+			if(fp_invalid_32(cpu, instr)) break;
 			float_a = fpr_read_float(cpu, instr->fs);
 			float_b = fpr_read_float(cpu, instr->ft);
 			fpr_write_float(cpu, instr->fd, fp_result_float(float_a - float_b, float_a, float_b));
