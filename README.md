@@ -2,4 +2,21 @@
 
 Just a fun little project that took me on a nostalgic trip
 
-The desire to make this code readable, the thrill of seeing this little project run again, not to mention the feeling of surprise: how on earth did I write that this bad?
+The desire to make this code readable, the thrill of seeing this little project run again, not to mention 'how on earth did I write that this bad'?
+
+-----
+
+Try it with committed secret.asm :
+```console
+make re; ./emul-mips secret.asm output.hex output.regs
+```
+
+Or in interactive mode :
+```console
+make re; ./emul-mips
+```
+
+Better, if you want to see each of ~700 instructions step by step :
+```console
+make re; ./emul-mips secret.asm -step
+```
