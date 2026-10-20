@@ -76,6 +76,55 @@ static int fp_invalid_64(Cpu *cpu, const Instruction *instr)
 	return(1);
 }
 
+/* Round to nearest, ties to even (the FCSR rounding mode is not emulated, RN is the reset value).
+   Done by hand : libm is not linked. Above 2^52 every double is already an integer. */
+static double fp_round_nearest_even(double x)
+{
+	const double two_52 = 4503599627370496.0;
+	volatile double rounded;
+
+	if(!(fabs(x) < two_52)) return(x);
+
+	if(x >= 0.0) rounded = (x + two_52) - two_52;
+	else rounded = (x - two_52) + two_52;
+
+	return(rounded);
+}
+
+/* CVT.W : a NaN gives 0, an infinity or a value out of range gives the nearest bound (FCSR.NAN2008 = 1, as required by R6).
+   The Invalid Operation is not signaled, there is no FCSR. */
+static int32_t fp_to_int32(double x)
+{
+	double rounded;
+
+	if(isnan(x)) return(0);
+
+	rounded = fp_round_nearest_even(x);
+	if(rounded >= 2147483648.0) return(INT32_MAX);
+	if(rounded < -2147483648.0) return(INT32_MIN);
+
+	return((int32_t) rounded);
+}
+
+static int64_t fp_to_int64(double x)
+{
+	double rounded;
+
+	if(isnan(x)) return(0);
+
+	rounded = fp_round_nearest_even(x);
+	if(rounded >= 9223372036854775808.0) return(INT64_MAX);
+	if(rounded < -9223372036854775808.0) return(INT64_MIN);
+
+	return((int64_t) rounded);
+}
+
+/* CVT between floating point formats : a signaling NaN source is an Invalid Operation (default quiet NaN) */
+static void fp_report_invalid(void)
+{
+	fprintf(stderr, "[!] Exception : Floating Point Invalid Operation\n");
+}
+
 /* PC-relative branch target : the offset is counted in instructions, from the one following the branch */
 static uint32_t branch_target(const Cpu *cpu, int32_t offset)
 {
@@ -349,6 +398,46 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 				gpr_write_32(cpu, instr->rd, (uint32_t) u8);
 			}
 			break;
+		case OP_CVT_D_L :
+			fpr_write_double(cpu, instr->fd, (double) (int64_t) fpr_read_64(cpu, instr->fs));
+			break;
+		case OP_CVT_D_S :
+			if(fp_is_snan_32(fpr_read_32(cpu, instr->fs)))
+			{
+				fp_report_invalid();
+				fpr_write_64(cpu, instr->fd, FP_DEFAULT_NAN_64);
+			}
+			else fpr_write_double(cpu, instr->fd, (double) fpr_read_float(cpu, instr->fs));
+			break;
+		case OP_CVT_D_W :
+			fpr_write_double(cpu, instr->fd, (double) (int32_t) fpr_read_32(cpu, instr->fs));
+			break;
+		case OP_CVT_L_D :
+			fpr_write_64(cpu, instr->fd, (uint64_t) fp_to_int64(fpr_read_double(cpu, instr->fs)));
+			break;
+		case OP_CVT_L_S :
+			fpr_write_64(cpu, instr->fd, (uint64_t) fp_to_int64((double) fpr_read_float(cpu, instr->fs)));
+			break;
+		case OP_CVT_S_D :
+			if(fp_is_snan_64(fpr_read_64(cpu, instr->fs)))
+			{
+				fp_report_invalid();
+				fpr_write_32(cpu, instr->fd, FP_DEFAULT_NAN_32);
+			}
+			else fpr_write_float(cpu, instr->fd, (float) fpr_read_double(cpu, instr->fs));
+			break;
+		case OP_CVT_S_L :
+			fpr_write_float(cpu, instr->fd, (float) (int64_t) fpr_read_64(cpu, instr->fs));
+			break;
+		case OP_CVT_S_W :
+			fpr_write_float(cpu, instr->fd, (float) (int32_t) fpr_read_32(cpu, instr->fs));
+			break;
+		case OP_CVT_W_D :
+			fpr_write_32(cpu, instr->fd, (uint32_t) fp_to_int32(fpr_read_double(cpu, instr->fs)));
+			break;
+		case OP_CVT_W_S :
+			fpr_write_32(cpu, instr->fd, (uint32_t) fp_to_int32((double) fpr_read_float(cpu, instr->fs)));
+			break;
 		case OP_DIV :
 			dividend = (int32_t) gpr_read_32(cpu, instr->rs);
 			divisor = (int32_t) gpr_read_32(cpu, instr->rt);
@@ -592,6 +681,12 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			u32 = gpr_read_32(cpu, instr->rs) | ((uint32_t) instr->immediate & 0xFFFF);
 			gpr_write_32(cpu, instr->rt, u32);
 			break;
+		case OP_RECIP_D :
+			fpr_write_double(cpu, instr->fd, 1 / fpr_read_double(cpu, instr->fs));
+			break;
+		case OP_RECIP_S :
+			fpr_write_float(cpu, instr->fd, 1 / fpr_read_float(cpu, instr->fs));
+			break;
 		case OP_ROTR :
 			u32 = gpr_read_32(cpu, instr->rt);
 			u32 = (u32 >> instr->sa) | (u32 << ((32 - instr->sa) & 31));
@@ -602,6 +697,12 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			u32 = gpr_read_32(cpu, instr->rt);
 			u32 = u32 >> u8 | u32 << ((32 - u8) & 31);
 			gpr_write_32(cpu, instr->rd, u32);
+			break;
+		case OP_RSQRT_D :
+			fpr_write_double(cpu, instr->fd, 1 / sqrt(fpr_read_double(cpu, instr->fs)));
+			break;
+		case OP_RSQRT_S :
+			fpr_write_float(cpu, instr->fd, 1 / sqrtf(fpr_read_float(cpu, instr->fs)));
 			break;
 		case OP_SB :
 			address = gpr_read_32(cpu, instr->base) + (uint32_t) instr->offset;
@@ -681,6 +782,12 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			break;
 		case OP_SLTU :
 			gpr_write_32(cpu, instr->rd, gpr_read_32(cpu, instr->rs) < gpr_read_32(cpu, instr->rt));
+			break;
+		case OP_SQRT_D :
+			fpr_write_double(cpu, instr->fd, sqrt(fpr_read_double(cpu, instr->fs)));
+			break;
+		case OP_SQRT_S :
+			fpr_write_float(cpu, instr->fd, sqrtf(fpr_read_float(cpu, instr->fs)));
 			break;
 		case OP_SRA :
 			/* Implementation-defined for arithmetic shift :

@@ -16,13 +16,17 @@
 #define SA_MAX     31
 #define TARGET_MAX ((INT32_C(1) << OFFSET_26_SIZE) - 1)
 
-/* COP1 `fmt` field : single (S) or double (D) precision, deduced from the instruction */
+/* COP1 `fmt` field : single (S), double (D), word (W) or long (L), deduced from the instruction.
+   For the CVT family it is the format of the source operand (CVT.D.W : W). */
 static uint32_t cop1_format(Opcode opcode)
 {
 	switch(opcode)
 	{
 		case OP_ABS_D :
 		case OP_ADD_D :
+		case OP_CVT_L_D :
+		case OP_CVT_S_D :
+		case OP_CVT_W_D :
 		case OP_DIV_D :
 		case OP_MAX_D :
 		case OP_MAXA_D :
@@ -31,11 +35,20 @@ static uint32_t cop1_format(Opcode opcode)
 		case OP_MOV_D :
 		case OP_MUL_D :
 		case OP_NEG_D :
+		case OP_RECIP_D :
+		case OP_RSQRT_D :
 		case OP_SEL_D :
 		case OP_SELEQZ_D :
 		case OP_SELNEZ_D :
+		case OP_SQRT_D :
 		case OP_SUB_D :
 			return(COP1_FMT_D);
+		case OP_CVT_D_L :
+		case OP_CVT_S_L :
+			return(COP1_FMT_L);
+		case OP_CVT_D_W :
+		case OP_CVT_S_W :
+			return(COP1_FMT_W);
 		default :
 			return(COP1_FMT_S);
 	}

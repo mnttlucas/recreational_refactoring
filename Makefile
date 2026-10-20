@@ -26,7 +26,7 @@ DEP = $(OBJ:.o=.d)
 all: $(TARGET)
 
 $(TARGET): $(OBJ)
-	$(CC) $(OBJ) -o $(TARGET)
+	$(CC) $(OBJ) -o $(TARGET) -lm
 
 obj/%.o: src/%.c | obj
 	$(CC) $(CFLAGS) -c $< -o $@

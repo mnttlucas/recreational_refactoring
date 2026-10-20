@@ -11,7 +11,9 @@
 
 /* COP1 (floating point unit) : the `fmt` field sits in the rs position */
 #define COP1_FMT_D     17
+#define COP1_FMT_L     21
 #define COP1_FMT_S     16
+#define COP1_FMT_W     20
 #define COP1_MF         0
 #define COP1_MFH        3
 #define COP1_MT         4
@@ -26,6 +28,10 @@
 #define FUNCT_CLZ          16
 #define FUNCT_FABS          5
 #define FUNCT_FADD          0
+#define FUNCT_FCVT_D        33
+#define FUNCT_FCVT_L        37
+#define FUNCT_FCVT_S        32
+#define FUNCT_FCVT_W        36
 #define FUNCT_FDIV          3
 #define FUNCT_FMAX         30
 #define FUNCT_FMAXA        31
@@ -38,6 +44,8 @@
 #define FUNCT_FSELNEZ      23
 #define FUNCT_FSUB          1
 #define FUNCT_JALR          9
+#define FUNCT_RECIP        21
+#define FUNCT_RSQRT        22
 #define FUNCT_SOP30        24
 #define FUNCT_SOP31        25
 #define FUNCT_SOP32        26
@@ -51,6 +59,7 @@
 #define FUNCT_SLLV          4
 #define FUNCT_SLT          42
 #define FUNCT_SLTU         43
+#define FUNCT_SQRT          8
 #define FUNCT_SRA           3
 #define FUNCT_SRAV          7
 #define FUNCT_SRL           2
