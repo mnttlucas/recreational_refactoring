@@ -5,30 +5,101 @@
 #include "mips_memory.h"
 #include "mips_registers.h"
 
-typedef void (*dump_cell)(Cpu *cpu, int index);
+typedef void (*dump_cell)(Cpu *cpu, const Config *cfg, int index);
 
-static void print_gpr(Cpu *cpu, int index)
+/* Text of a float / double, from the raw bits. The host prints "nan" or "-nan" depending on the platform and
+   does not tell the quiet NaNs from the signaling ones : both are spelled out here. */
+static void format_single(char *out, size_t size, uint32_t bits, float value)
 {
-	printf("$%02d : %-10d ", index, (int32_t) gpr_read_32(cpu, index));
+	if((bits & UINT32_C(0x7F800000)) == UINT32_C(0x7F800000) && (bits & UINT32_C(0x007FFFFF)) != 0)
+		snprintf(out, size, "%s%s", (bits >> 31) ? "-" : "", (bits & UINT32_C(0x00400000)) ? "qnan" : "snan");
+	else snprintf(out, size, "%.9g", (double) value);
 }
 
-static void print_fpr(Cpu *cpu, int index)
+static void format_double(char *out, size_t size, uint64_t bits, double value)
 {
-	printf("$%02d : 0x%-16" PRIx64 " ", index, fpr_read_64(cpu, index));
+	if((bits & UINT64_C(0x7FF0000000000000)) == UINT64_C(0x7FF0000000000000) && (bits & UINT64_C(0x000FFFFFFFFFFFFF)) != 0)
+		snprintf(out, size, "%s%s", (bits >> 63) ? "-" : "", (bits & UINT64_C(0x0008000000000000)) ? "qnan" : "snan");
+	else snprintf(out, size, "%.17g", value);
 }
 
-static void print_memory_word(Cpu *cpu, int index)
+static void print_gpr(Cpu *cpu, const Config *cfg, int index)
+{
+	uint32_t value = gpr_read_32(cpu, index);
+
+	switch(cfg->gpr_format)
+	{
+		case GPR_HEX :
+			printf("$%02d : 0x%08" PRIx32 "     ", index, value);
+			break;
+		case GPR_BOTH :
+			printf("$%02d : %-11d 0x%08" PRIx32 "     ", index, (int32_t) value, value);
+			break;
+		default :
+			printf("$%02d : %-10d ", index, (int32_t) value);
+			break;
+	}
+}
+
+static void print_fpr(Cpu *cpu, const Config *cfg, int index)
+{
+	char text_double[32], text_single[32];
+	uint64_t bits = fpr_read_64(cpu, index);
+
+	switch(cfg->fpr_format)
+	{
+		case FPR_SINGLE :
+			format_single(text_single, sizeof(text_single), fpr_read_32(cpu, index), fpr_read_float(cpu, index));
+			printf("$%02d : %-15s ", index, text_single);
+			break;
+		case FPR_DOUBLE :
+			format_double(text_double, sizeof(text_double), bits, fpr_read_double(cpu, index));
+			printf("$%02d : %-24s ", index, text_double);
+			break;
+		case FPR_ALL :
+			format_double(text_double, sizeof(text_double), bits, fpr_read_double(cpu, index));
+			format_single(text_single, sizeof(text_single), fpr_read_32(cpu, index), fpr_read_float(cpu, index));
+			printf("$%02d : 0x%016" PRIx64 "  d=%-24s f=%s", index, bits, text_double, text_single);
+			break;
+		default :
+			printf("$%02d : 0x%-16" PRIx64 " ", index, bits);
+			break;
+	}
+}
+
+static void print_memory_word(Cpu *cpu, const Config *cfg, int index)
 {
 	uint32_t address = (uint32_t) index * WORD_SIZE;
+
+	(void) cfg;
 	printf("@0000 %04" PRIx32 " : 0x%08" PRIx32 "       ", address, memory_read_32(cpu, address));
 }
 
-static void dump_grid(Cpu *cpu, int count, dump_cell print_cell)
+/* Number of cells per line, so that a line stays about 100 characters wide */
+static int gpr_columns(const Config *cfg)
+{
+	return(cfg->gpr_format == GPR_BOTH ? 3 : DUMP_LINE_SIZE);
+}
+
+static int fpr_columns(const Config *cfg)
+{
+	switch(cfg->fpr_format)
+	{
+		case FPR_DOUBLE :
+			return(3);
+		case FPR_ALL :
+			return(1);
+		default :
+			return(DUMP_LINE_SIZE);
+	}
+}
+
+static void dump_grid(Cpu *cpu, const Config *cfg, int count, int columns, dump_cell print_cell)
 {
 	for(int i = 0; i < count; i++)
 	{
-		print_cell(cpu, i);
-		if((i + 1) % DUMP_LINE_SIZE == 0 || i == count - 1) printf("\n");
+		print_cell(cpu, cfg, i);
+		if((i + 1) % columns == 0 || i == count - 1) printf("\n");
 	}
 }
 
@@ -37,16 +108,16 @@ void clear_output(void)
 	printf("\033[H\033[2J\033[3J");
 }
 
-void cpu_dump(Cpu *cpu)
+void cpu_dump(Cpu *cpu, const Config *cfg)
 {
 	int words_to_show = (MEMORY_SIZE / WORD_SIZE < DUMP_MEMORY_WORDS) ? MEMORY_SIZE / WORD_SIZE : DUMP_MEMORY_WORDS;
 
 	printf("\n----------------------- GPR' status ----------------------\n");
-	dump_grid(cpu, REGISTER_COUNT, print_gpr);
+	dump_grid(cpu, cfg, REGISTER_COUNT, gpr_columns(cfg), print_gpr);
 	printf("\n------------------------------------ FPR' status -----------------------------------\n");
-	dump_grid(cpu, REGISTER_COUNT, print_fpr);
+	dump_grid(cpu, cfg, REGISTER_COUNT, fpr_columns(cfg), print_fpr);
 	printf("\n------------------------------------------------- Memory status -------------------------------------------------\n");
-	dump_grid(cpu, words_to_show, print_memory_word);
+	dump_grid(cpu, cfg, words_to_show, DUMP_LINE_SIZE, print_memory_word);
 
 	if(words_to_show < MEMORY_SIZE / WORD_SIZE) printf("\n\t\t\t\t\t[...] (%d other words not displayed)\n", MEMORY_SIZE / WORD_SIZE - words_to_show);
 }
@@ -59,9 +130,13 @@ void log_instruction(Instruction *instr)
 void log_usage(char *prog_name)
 {
 fprintf(stderr, "[!] Usage:\n \
-- interactive mode -> \t\t%s\n \
-- step-by-step batch mode -> \t%s <prog.asm> -step\n \
-- batch mode -> \t\t%s <prog.asm> <out.hex> <out.regs>\n",
+- interactive mode -> \t\t%s [options]\n \
+- step-by-step batch mode -> \t%s <prog.asm> -step [options]\n \
+- batch mode -> \t\t%s <prog.asm> <out.hex> <out.regs> [options]\n\n \
+Options (console display only, <out.regs> is not affected):\n \
+-gpr=dec|hex|both\t\tgeneral purpose registers (default : dec)\n \
+-fpr=hex|single|double|all\tfloating point registers (default : hex)\n \
+\t\t\t\t(single : low 32 bits as a float)\n",
 prog_name, prog_name, prog_name);
 }
 

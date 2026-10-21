@@ -101,7 +101,7 @@ static void run_program(Cpu *cpu, Config *cfg, const Program *prog)
 		execute_instruction(cpu, cfg, &prog->items[pc_index]);
 		if(cfg->step)
 		{
-			cpu_dump(cpu);
+			cpu_dump(cpu, cfg);
 			wait_for_enter();
 		}
 		pc_index = cpu->PC / 4;
@@ -129,7 +129,7 @@ void interactive_mode(Cpu *cpu, Config *cfg)
 		if(!cur.exit && cur.opcode > OP_MIN && cur.opcode < OP_MAX)
 		{
 			execute_instruction(cpu, cfg, &cur);
-			cpu_dump(cpu);
+			cpu_dump(cpu, cfg);
 		}
 	}
 }
@@ -153,7 +153,7 @@ int batch_mode(Cpu *cpu, Config *cfg, char *path_in, char *path_out_hex, char *p
 			if(!cfg->step)
 			{
 				write_hex(out_hex, &prog);
-				cpu_dump(cpu);
+				cpu_dump(cpu, cfg);
 				write_regs(out_regs, cpu);
 			}
 			status = EXIT_SUCCESS;

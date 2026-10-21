@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -9,29 +10,100 @@
 #include "mips_registers.h"
 #include "utils.h"
 
+#define MAX_FILES 3
+
+typedef struct
+{
+	const char *name;
+	int value;
+} OptionValue;
+
+/* Values accepted by -gpr= and -fpr=, the tables end with a NULL name */
+static const OptionValue gpr_formats[] =
+{
+	{"dec", GPR_DEC},
+	{"hex", GPR_HEX},
+	{"both", GPR_BOTH},
+	{NULL, 0}
+};
+
+static const OptionValue fpr_formats[] =
+{
+	{"hex", FPR_HEX},
+	{"single", FPR_SINGLE},
+	{"double", FPR_DOUBLE},
+	{"all", FPR_ALL},
+	{NULL, 0}
+};
+
+static int lookup_value(const OptionValue *table, const char *text, int *value)
+{
+	for(; table->name; table++)
+	{
+		if(!strcmp(table->name, text))
+		{
+			*value = table->value;
+			return(1);
+		}
+	}
+
+	return(0);
+}
+
+/* Handles one "-option" argument, returns 0 if it is unknown or if its value is invalid */
+static int parse_option(const char *arg, Config *cfg)
+{
+	int value;
+
+	if(!strcmp(arg, "-step")) cfg->step = 1;
+	else if(!strncmp(arg, "-gpr=", 5) && lookup_value(gpr_formats, arg + 5, &value)) cfg->gpr_format = (GprFormat) value;
+	else if(!strncmp(arg, "-fpr=", 5) && lookup_value(fpr_formats, arg + 5, &value)) cfg->fpr_format = (FprFormat) value;
+	else
+	{
+		fprintf(stderr, "[!] Unknown option or invalid value : '%s'\n", arg);
+		return(0);
+	}
+
+	return(1);
+}
+
 int main(int argc, char **argv)
 {
 	Config cfg = {0};
 	Cpu cpu;
-	int status = EXIT_SUCCESS;
+	char *files[MAX_FILES];
+	int file_count = 0, status = EXIT_SUCCESS;
 
-	cpu_init(&cpu);
-
-	if(argc == 1) interactive_mode(&cpu, &cfg);
-	else
+	/* Options can be anywhere, everything else is a file name */
+	for(int i = 1; i < argc; i++)
 	{
-		cfg.verbose = 1;
-		if(argc == 3 && !strcmp(argv[2], "-step"))
+		if(argv[i][0] == '-')
 		{
-			cfg.step = 1;
-			status = batch_mode(&cpu, &cfg, argv[1], NULL, NULL);
+			if(!parse_option(argv[i], &cfg))
+			{
+				log_usage(argv[0]);
+				return(EXIT_FAILURE);
+			}
 		}
-		else if(argc == 4) status = batch_mode(&cpu, &cfg, argv[1], argv[2], argv[3]);
+		else if(file_count < MAX_FILES) files[file_count++] = argv[i];
 		else
 		{
-			status = EXIT_FAILURE;
 			log_usage(argv[0]);
+			return(EXIT_FAILURE);
 		}
 	}
+
+	cpu_init(&cpu);
+	cfg.verbose = file_count > 0;
+
+	if(file_count == 0 && !cfg.step) interactive_mode(&cpu, &cfg);
+	else if(cfg.step && file_count == 1) status = batch_mode(&cpu, &cfg, files[0], NULL, NULL);
+	else if(!cfg.step && file_count == MAX_FILES) status = batch_mode(&cpu, &cfg, files[0], files[1], files[2]);
+	else
+	{
+		status = EXIT_FAILURE;
+		log_usage(argv[0]);
+	}
+
 	return(status);
 }
