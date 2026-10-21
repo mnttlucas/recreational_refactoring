@@ -53,9 +53,11 @@ static uint32_t cop1_format(Opcode opcode)
 		case OP_TRUNC_L_D :
 		case OP_TRUNC_W_D :
 			return(COP1_FMT_D);
+		case OP_CMP_D :
 		case OP_CVT_D_L :
 		case OP_CVT_S_L :
 			return(COP1_FMT_L);
+		case OP_CMP_S :
 		case OP_CVT_D_W :
 		case OP_CVT_S_W :
 			return(COP1_FMT_W);

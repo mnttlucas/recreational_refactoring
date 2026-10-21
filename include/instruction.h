@@ -68,6 +68,8 @@ typedef enum
 	OP_CEIL_W_S,
 	OP_CLO,
 	OP_CLZ,
+	OP_CMP_D,
+	OP_CMP_S,
 	OP_CVT_D_L,
 	OP_CVT_D_S,
 	OP_CVT_D_W,

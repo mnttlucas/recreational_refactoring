@@ -160,6 +160,80 @@ static int fp_fused_nan_64(Cpu *cpu, const Instruction *instr)
 	return(0);
 }
 
+/* CMP.cond.fmt : truth value of a condition, from the relation between the two operands.
+   Exactly one of less, equal, unordered is set, or none of them when fs > ft. */
+static int fp_compare_condition(uint32_t condition, int less, int equal, int unordered)
+{
+	switch(condition)
+	{
+		case FUNCT_FCMP_AF :
+		case FUNCT_FCMP_SAF :
+			return(0);
+		case FUNCT_FCMP_UN :
+		case FUNCT_FCMP_SUN :
+			return(unordered);
+		case FUNCT_FCMP_EQ :
+		case FUNCT_FCMP_SEQ :
+			return(equal);
+		case FUNCT_FCMP_UEQ :
+		case FUNCT_FCMP_SUEQ :
+			return(unordered || equal);
+		case FUNCT_FCMP_LT :
+		case FUNCT_FCMP_SLT :
+			return(less);
+		case FUNCT_FCMP_ULT :
+		case FUNCT_FCMP_SULT :
+			return(unordered || less);
+		case FUNCT_FCMP_LE :
+		case FUNCT_FCMP_SLE :
+			return(less || equal);
+		case FUNCT_FCMP_ULE :
+		case FUNCT_FCMP_SULE :
+			return(unordered || less || equal);
+		case FUNCT_FCMP_OR :
+		case FUNCT_FCMP_SOR :
+			return(!unordered);
+		case FUNCT_FCMP_UNE :
+		case FUNCT_FCMP_SUNE :
+			return(!equal);
+		case FUNCT_FCMP_NE :
+		case FUNCT_FCMP_SNE :
+			return(!unordered && !equal);
+		default :
+			return(0);
+	}
+}
+
+/* The result is all ones (true) or all zeros (false). An Invalid Operation is reported for a signaling NaN operand,
+   and for any NaN operand with the signaling conditions (SAF, SUN...). The result is still written : no trap, no FCSR. */
+static uint32_t fp_compare_32(Cpu *cpu, const Instruction *instr)
+{
+	const uint32_t bits_a = fpr_read_32(cpu, instr->fs);
+	const uint32_t bits_b = fpr_read_32(cpu, instr->ft);
+	const float a = fpr_read_float(cpu, instr->fs);
+	const float b = fpr_read_float(cpu, instr->ft);
+	const uint32_t condition = instr->encoding & 0x3F;
+	const int unordered = isnan(a) || isnan(b);
+
+	if(fp_is_snan_32(bits_a) || fp_is_snan_32(bits_b) || (unordered && (condition & FCMP_SIGNALING))) fp_report_invalid();
+
+	return(fp_compare_condition(condition, a < b, a == b, unordered) ? UINT32_MAX : 0);
+}
+
+static uint64_t fp_compare_64(Cpu *cpu, const Instruction *instr)
+{
+	const uint64_t bits_a = fpr_read_64(cpu, instr->fs);
+	const uint64_t bits_b = fpr_read_64(cpu, instr->ft);
+	const double a = fpr_read_double(cpu, instr->fs);
+	const double b = fpr_read_double(cpu, instr->ft);
+	const uint32_t condition = instr->encoding & 0x3F;
+	const int unordered = isnan(a) || isnan(b);
+
+	if(fp_is_snan_64(bits_a) || fp_is_snan_64(bits_b) || (unordered && (condition & FCMP_SIGNALING))) fp_report_invalid();
+
+	return(fp_compare_condition(condition, a < b, a == b, unordered) ? UINT64_MAX : 0);
+}
+
 /* Rounding of a double to an integral value (libm is not needed). The FCSR rounding mode is not emulated :
    CVT uses round to nearest even (RN, the reset value), the others have their own fixed mode.
    Above 2^52 every double is already an integer, which also covers the infinities. */
@@ -514,6 +588,12 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 				}
 				gpr_write_32(cpu, instr->rd, (uint32_t) u8);
 			}
+			break;
+		case OP_CMP_D :
+			fpr_write_64(cpu, instr->fd, fp_compare_64(cpu, instr));
+			break;
+		case OP_CMP_S :
+			fpr_write_32(cpu, instr->fd, fp_compare_32(cpu, instr));
 			break;
 		case OP_CVT_D_L :
 			fpr_write_double(cpu, instr->fd, (double) (int64_t) fpr_read_64(cpu, instr->fs));
