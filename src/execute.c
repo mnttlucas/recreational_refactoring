@@ -103,6 +103,63 @@ static int fp_invalid_unary_64(Cpu *cpu, const Instruction *instr)
 	return(1);
 }
 
+/* Fused multiply-add (MADDF / MSUBF) : fd is an operand too, so the three registers (fs, ft, fd) are checked.
+   A signaling NaN gives the default quiet NaN (Invalid Operation), otherwise the first quiet NaN found
+   (fs, ft, then fd) is propagated as it is. Returns 1 when the result has been written. */
+static int fp_fused_nan_32(Cpu *cpu, const Instruction *instr)
+{
+	const uint32_t operand[3] = {fpr_read_32(cpu, instr->fs), fpr_read_32(cpu, instr->ft), fpr_read_32(cpu, instr->fd)};
+	int i;
+
+	for(i = 0; i < 3; i++)
+	{
+		if(!fp_is_snan_32(operand[i])) continue;
+
+		fp_report_invalid();
+		fpr_write_32(cpu, instr->fd, FP_DEFAULT_NAN_32);
+
+		return(1);
+	}
+
+	for(i = 0; i < 3; i++)
+	{
+		if((operand[i] & UINT32_C(0x7FFFFFFF)) <= UINT32_C(0x7F800000)) continue;
+
+		fpr_write_32(cpu, instr->fd, operand[i]);
+
+		return(1);
+	}
+
+	return(0);
+}
+
+static int fp_fused_nan_64(Cpu *cpu, const Instruction *instr)
+{
+	const uint64_t operand[3] = {fpr_read_64(cpu, instr->fs), fpr_read_64(cpu, instr->ft), fpr_read_64(cpu, instr->fd)};
+	int i;
+
+	for(i = 0; i < 3; i++)
+	{
+		if(!fp_is_snan_64(operand[i])) continue;
+
+		fp_report_invalid();
+		fpr_write_64(cpu, instr->fd, FP_DEFAULT_NAN_64);
+
+		return(1);
+	}
+
+	for(i = 0; i < 3; i++)
+	{
+		if((operand[i] & UINT64_C(0x7FFFFFFFFFFFFFFF)) <= UINT64_C(0x7FF0000000000000)) continue;
+
+		fpr_write_64(cpu, instr->fd, operand[i]);
+
+		return(1);
+	}
+
+	return(0);
+}
+
 /* Rounding of a double to an integral value (libm is not needed). The FCSR rounding mode is not emulated :
    CVT uses round to nearest even (RN, the reset value), the others have their own fixed mode.
    Above 2^52 every double is already an integer, which also covers the infinities. */
@@ -604,6 +661,19 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			u32 = memory_read_32(cpu, address);
 			gpr_write_32(cpu, instr->rs, u32);
 			break;
+		case OP_MADDF_D :
+			if(fp_fused_nan_64(cpu, instr)) break;
+			double_a = fpr_read_double(cpu, instr->fs);
+			double_b = fpr_read_double(cpu, instr->ft);
+			/* No NaN operand here : a NaN result (inf * 0, inf - inf) is an invalid operation */
+			fpr_write_double(cpu, instr->fd, fp_result_double(fma(double_a, double_b, fpr_read_double(cpu, instr->fd)), double_a, double_b));
+			break;
+		case OP_MADDF_S :
+			if(fp_fused_nan_32(cpu, instr)) break;
+			float_a = fpr_read_float(cpu, instr->fs);
+			float_b = fpr_read_float(cpu, instr->ft);
+			fpr_write_float(cpu, instr->fd, fp_result_float(fmaf(float_a, float_b, fpr_read_float(cpu, instr->fd)), float_a, float_b));
+			break;
 		case OP_MAX_D :
 			if(fp_invalid_64(cpu, instr)) break;
 			double_a = fpr_read_double(cpu, instr->fs);
@@ -692,6 +762,18 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			break;
 		case OP_MOV_S :
 			fpr_write_32(cpu, instr->fd, fpr_read_32(cpu, instr->fs));
+			break;
+		case OP_MSUBF_D :
+			if(fp_fused_nan_64(cpu, instr)) break;
+			double_a = fpr_read_double(cpu, instr->fs);
+			double_b = fpr_read_double(cpu, instr->ft);
+			fpr_write_double(cpu, instr->fd, fp_result_double(fma(-double_a, double_b, fpr_read_double(cpu, instr->fd)), double_a, double_b));
+			break;
+		case OP_MSUBF_S :
+			if(fp_fused_nan_32(cpu, instr)) break;
+			float_a = fpr_read_float(cpu, instr->fs);
+			float_b = fpr_read_float(cpu, instr->ft);
+			fpr_write_float(cpu, instr->fd, fp_result_float(fmaf(-float_a, float_b, fpr_read_float(cpu, instr->fd)), float_a, float_b));
 			break;
 		case OP_MTC1 :
 			fpr_write_32(cpu, instr->fs, gpr_read_32(cpu, instr->rt));

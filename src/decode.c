@@ -32,11 +32,13 @@ static uint32_t cop1_format(Opcode opcode)
 		case OP_DIV_D :
 		case OP_FLOOR_L_D :
 		case OP_FLOOR_W_D :
+		case OP_MADDF_D :
 		case OP_MAX_D :
 		case OP_MAXA_D :
 		case OP_MIN_D :
 		case OP_MINA_D :
 		case OP_MOV_D :
+		case OP_MSUBF_D :
 		case OP_MUL_D :
 		case OP_NEG_D :
 		case OP_RECIP_D :

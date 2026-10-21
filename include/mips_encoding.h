@@ -37,11 +37,13 @@
 #define FUNCT_FDIV          3
 #define FUNCT_FFLOOR_L     11
 #define FUNCT_FFLOOR_W     15
+#define FUNCT_FMADDF       24
 #define FUNCT_FMAX         30
 #define FUNCT_FMAXA        31
 #define FUNCT_FMIN         28
 #define FUNCT_FMINA        29
 #define FUNCT_FMOV          6
+#define FUNCT_FMSUBF       25
 #define FUNCT_FMUL          2
 #define FUNCT_FNEG          7
 #define FUNCT_FROUND_L      8
