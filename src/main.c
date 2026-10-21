@@ -30,7 +30,7 @@ static const OptionValue gpr_formats[] =
 static const OptionValue fpr_formats[] =
 {
 	{"hex", FPR_HEX},
-	{"single", FPR_SINGLE},
+	{"float", FPR_FLOAT},
 	{"double", FPR_DOUBLE},
 	{"all", FPR_ALL},
 	{NULL, 0}

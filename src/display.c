@@ -48,7 +48,7 @@ static void print_fpr(Cpu *cpu, const Config *cfg, int index)
 
 	switch(cfg->fpr_format)
 	{
-		case FPR_SINGLE :
+		case FPR_FLOAT :
 			format_single(text_single, sizeof(text_single), fpr_read_32(cpu, index), fpr_read_float(cpu, index));
 			printf("$%02d : %-15s ", index, text_single);
 			break;
@@ -135,8 +135,8 @@ fprintf(stderr, "[!] Usage:\n \
 - batch mode -> \t\t%s <prog.asm> <out.hex> <out.regs> [options]\n\n \
 Options (console display only, <out.regs> is not affected):\n \
 -gpr=dec|hex|both\t\tgeneral purpose registers (default : dec)\n \
--fpr=hex|single|double|all\tfloating point registers (default : hex)\n \
-\t\t\t\t(single : low 32 bits as a float)\n",
+-fpr=hex|float|double|all\tfloating point registers (default : hex)\n \
+\t\t\t\t(float : low 32 bits as a float)\n",
 prog_name, prog_name, prog_name);
 }
 

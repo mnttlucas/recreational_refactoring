@@ -12,7 +12,7 @@ typedef enum
 typedef enum
 {
 	FPR_HEX,		/* 64 bits hexadecimal */
-	FPR_SINGLE,		/* low 32 bits as a float */
+	FPR_FLOAT,		/* low 32 bits as a float */
 	FPR_DOUBLE,		/* 64 bits as a double */
 	FPR_ALL			/* hexadecimal, double and float (low 32 bits), one register per line */
 } FprFormat;
