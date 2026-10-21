@@ -234,6 +234,72 @@ static uint64_t fp_compare_64(Cpu *cpu, const Instruction *instr)
 	return(fp_compare_condition(condition, a < b, a == b, unordered) ? UINT64_MAX : 0);
 }
 
+/* CLASS.fmt : one bit of fd is set, according to the class of fs (R6) */
+#define FP_CLASS_SNAN        UINT32_C(1 << 0)
+#define FP_CLASS_QNAN        UINT32_C(1 << 1)
+#define FP_CLASS_NEG_INF     UINT32_C(1 << 2)
+#define FP_CLASS_NEG_NORMAL  UINT32_C(1 << 3)
+#define FP_CLASS_NEG_SUBNORM UINT32_C(1 << 4)
+#define FP_CLASS_NEG_ZERO    UINT32_C(1 << 5)
+#define FP_CLASS_POS_INF     UINT32_C(1 << 6)
+#define FP_CLASS_POS_NORMAL  UINT32_C(1 << 7)
+#define FP_CLASS_POS_SUBNORM UINT32_C(1 << 8)
+#define FP_CLASS_POS_ZERO    UINT32_C(1 << 9)
+
+/* Raw bits are decoded; exponent_all_ones and quiet_bit depend on the format */
+static uint32_t fp_classify(uint64_t bits, int negative, uint64_t exponent, uint64_t exponent_all_ones, uint64_t mantissa, uint64_t quiet_bit)
+{
+	if(exponent == exponent_all_ones)
+	{
+		if(mantissa == 0) return(negative ? FP_CLASS_NEG_INF : FP_CLASS_POS_INF);
+		return((bits & quiet_bit) ? FP_CLASS_QNAN : FP_CLASS_SNAN);
+	}
+
+	if(exponent == 0)
+	{
+		if(mantissa == 0) return(negative ? FP_CLASS_NEG_ZERO : FP_CLASS_POS_ZERO);
+		return(negative ? FP_CLASS_NEG_SUBNORM : FP_CLASS_POS_SUBNORM);
+	}
+
+	return(negative ? FP_CLASS_NEG_NORMAL : FP_CLASS_POS_NORMAL);
+}
+
+static uint32_t fp_class_32(uint32_t bits)
+{
+	return(fp_classify(bits, (bits >> 31) != 0, (bits >> 23) & 0xFF, 0xFF, bits & UINT32_C(0x007FFFFF), UINT32_C(0x00400000)));
+}
+
+static uint32_t fp_class_64(uint64_t bits)
+{
+	return(fp_classify(bits, (bits >> 63) != 0, (bits >> 52) & 0x7FF, 0x7FF, bits & UINT64_C(0x000FFFFFFFFFFFFF), UINT64_C(0x0008000000000000)));
+}
+
+/* RINT.fmt : round to an integral value, kept in the floating point format (round to nearest even, no FCSR rounding mode).
+   A signaling NaN gives the default quiet NaN, a quiet NaN is propagated, and the sign is kept (-0.4 gives -0.0). */
+static int fp_rint_nan_32(Cpu *cpu, const Instruction *instr)
+{
+	const uint32_t bits = fpr_read_32(cpu, instr->fs);
+
+	if(fp_invalid_unary_32(cpu, instr)) return(1);
+	if((bits & UINT32_C(0x7FFFFFFF)) <= UINT32_C(0x7F800000)) return(0);
+
+	fpr_write_32(cpu, instr->fd, bits);
+
+	return(1);
+}
+
+static int fp_rint_nan_64(Cpu *cpu, const Instruction *instr)
+{
+	const uint64_t bits = fpr_read_64(cpu, instr->fs);
+
+	if(fp_invalid_unary_64(cpu, instr)) return(1);
+	if((bits & UINT64_C(0x7FFFFFFFFFFFFFFF)) <= UINT64_C(0x7FF0000000000000)) return(0);
+
+	fpr_write_64(cpu, instr->fd, bits);
+
+	return(1);
+}
+
 /* Rounding of a double to an integral value (libm is not needed). The FCSR rounding mode is not emulated :
    CVT uses round to nearest even (RN, the reset value), the others have their own fixed mode.
    Above 2^52 every double is already an integer, which also covers the infinities. */
@@ -558,6 +624,12 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			break;
 		case OP_CEIL_W_S :
 			fpr_write_32(cpu, instr->fd, (uint32_t) fp_to_int32((double) fpr_read_float(cpu, instr->fs), fp_ceil));
+			break;
+		case OP_CLASS_D :
+			fpr_write_64(cpu, instr->fd, fp_class_64(fpr_read_64(cpu, instr->fs)));
+			break;
+		case OP_CLASS_S :
+			fpr_write_32(cpu, instr->fd, fp_class_32(fpr_read_32(cpu, instr->fs)));
 			break;
 		case OP_CLO :
 			/* Naive OP_CLO/Z implementation, didn't want to just
@@ -924,6 +996,16 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			if(fp_invalid_unary_32(cpu, instr)) break;
 			float_a = fpr_read_float(cpu, instr->fs);
 			fpr_write_float(cpu, instr->fd, fp_result_float(1 / float_a, float_a, float_a));
+			break;
+		case OP_RINT_D :
+			if(fp_rint_nan_64(cpu, instr)) break;
+			double_a = fpr_read_double(cpu, instr->fs);
+			fpr_write_double(cpu, instr->fd, copysign(fp_round_nearest_even(double_a), double_a));
+			break;
+		case OP_RINT_S :
+			if(fp_rint_nan_32(cpu, instr)) break;
+			float_a = fpr_read_float(cpu, instr->fs);
+			fpr_write_float(cpu, instr->fd, copysignf((float) fp_round_nearest_even((double) float_a), float_a));
 			break;
 		case OP_ROTR :
 			u32 = gpr_read_32(cpu, instr->rt);

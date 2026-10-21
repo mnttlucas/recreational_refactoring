@@ -26,6 +26,7 @@ static uint32_t cop1_format(Opcode opcode)
 		case OP_ADD_D :
 		case OP_CEIL_L_D :
 		case OP_CEIL_W_D :
+		case OP_CLASS_D :
 		case OP_CVT_L_D :
 		case OP_CVT_S_D :
 		case OP_CVT_W_D :
@@ -42,6 +43,7 @@ static uint32_t cop1_format(Opcode opcode)
 		case OP_MUL_D :
 		case OP_NEG_D :
 		case OP_RECIP_D :
+		case OP_RINT_D :
 		case OP_ROUND_L_D :
 		case OP_ROUND_W_D :
 		case OP_RSQRT_D :

@@ -30,6 +30,7 @@
 #define FUNCT_FADD          0
 #define FUNCT_FCEIL_L      10
 #define FUNCT_FCEIL_W      14
+#define FUNCT_FCLASS       27
 #define FUNCT_FCMP_AF       0
 #define FUNCT_FCMP_EQ       2
 #define FUNCT_FCMP_LE       6
@@ -69,6 +70,7 @@
 #define FUNCT_FMSUBF       25
 #define FUNCT_FMUL          2
 #define FUNCT_FNEG          7
+#define FUNCT_FRINT        26
 #define FUNCT_FROUND_L      8
 #define FUNCT_FROUND_W     12
 #define FUNCT_FSELEQZ      20
