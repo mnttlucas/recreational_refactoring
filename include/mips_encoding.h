@@ -28,10 +28,10 @@
 #define FUNCT_CLZ          16
 #define FUNCT_FABS          5
 #define FUNCT_FADD          0
-#define FUNCT_FCVT_D        33
-#define FUNCT_FCVT_L        37
-#define FUNCT_FCVT_S        32
-#define FUNCT_FCVT_W        36
+#define FUNCT_FCVT_D       33
+#define FUNCT_FCVT_L       37
+#define FUNCT_FCVT_S       32
+#define FUNCT_FCVT_W       36
 #define FUNCT_FDIV          3
 #define FUNCT_FMAX         30
 #define FUNCT_FMAXA        31
@@ -59,7 +59,7 @@
 #define FUNCT_SLLV          4
 #define FUNCT_SLT          42
 #define FUNCT_SLTU         43
-#define FUNCT_SQRT          8
+#define FUNCT_SQRT          4
 #define FUNCT_SRA           3
 #define FUNCT_SRAV          7
 #define FUNCT_SRL           2
