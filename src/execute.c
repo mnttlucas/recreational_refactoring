@@ -103,43 +103,70 @@ static int fp_invalid_unary_64(Cpu *cpu, const Instruction *instr)
 	return(1);
 }
 
-/* Round to nearest, ties to even (the FCSR rounding mode is not emulated, RN is the reset value).
-   Done by hand : libm is not linked. Above 2^52 every double is already an integer. */
+/* Rounding of a double to an integral value (libm is not needed). The FCSR rounding mode is not emulated :
+   CVT uses round to nearest even (RN, the reset value), the others have their own fixed mode.
+   Above 2^52 every double is already an integer, which also covers the infinities. */
+#define FP_TWO_52 4503599627370496.0
+
 static double fp_round_nearest_even(double x)
 {
-	const double two_52 = 4503599627370496.0;
 	volatile double rounded;
 
-	if(!(fabs(x) < two_52)) return(x);
+	if(!(fabs(x) < FP_TWO_52)) return(x);
 
-	if(x >= 0.0) rounded = (x + two_52) - two_52;
-	else rounded = (x - two_52) + two_52;
+	if(x >= 0.0) rounded = (x + FP_TWO_52) - FP_TWO_52;
+	else rounded = (x - FP_TWO_52) + FP_TWO_52;
 
 	return(rounded);
 }
 
-/* CVT.W : a NaN gives 0, an infinity or a value out of range gives the nearest bound (FCSR.NAN2008 = 1, as required by R6).
-   The Invalid Operation is not signaled, there is no FCSR. */
-static int32_t fp_to_int32(double x)
+static double fp_trunc(double x)
+{
+	if(!(fabs(x) < FP_TWO_52)) return(x);
+
+	return((double) (int64_t) x);
+}
+
+static double fp_ceil(double x)
+{
+	double truncated = fp_trunc(x);
+
+	if(truncated < x) truncated += 1.0;
+
+	return(truncated);
+}
+
+static double fp_floor(double x)
+{
+	double truncated = fp_trunc(x);
+
+	if(truncated > x) truncated -= 1.0;
+
+	return(truncated);
+}
+
+/* Conversion to integer : a NaN gives 0, an infinity or a value out of range (after rounding) gives the nearest bound
+   (FCSR.NAN2008 = 1, as required by R6). The Invalid Operation is not signaled, there is no FCSR. */
+static int32_t fp_to_int32(double x, double (*round_function)(double))
 {
 	double rounded;
 
 	if(isnan(x)) return(0);
 
-	rounded = fp_round_nearest_even(x);
+	rounded = round_function(x);
 	if(rounded >= 2147483648.0) return(INT32_MAX);
 	if(rounded < -2147483648.0) return(INT32_MIN);
 
 	return((int32_t) rounded);
 }
 
-static int64_t fp_to_int64(double x)
+static int64_t fp_to_int64(double x, double (*round_function)(double))
 {
 	double rounded;
 
 	if(isnan(x)) return(0);
 
-	rounded = fp_round_nearest_even(x);
+	rounded = round_function(x);
 	if(rounded >= 9223372036854775808.0) return(INT64_MAX);
 	if(rounded < -9223372036854775808.0) return(INT64_MIN);
 
@@ -389,6 +416,18 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			i64 = (int64_t) (int32_t) gpr_read_32(cpu, instr->rs) + (int64_t) (int32_t) gpr_read_32(cpu, instr->rt);
 			if(i64 > INT32_MAX || i64 < INT32_MIN) compact = branch_compact(cpu, instr->offset);
 			break;
+		case OP_CEIL_L_D :
+			fpr_write_64(cpu, instr->fd, (uint64_t) fp_to_int64(fpr_read_double(cpu, instr->fs), fp_ceil));
+			break;
+		case OP_CEIL_L_S :
+			fpr_write_64(cpu, instr->fd, (uint64_t) fp_to_int64((double) fpr_read_float(cpu, instr->fs), fp_ceil));
+			break;
+		case OP_CEIL_W_D :
+			fpr_write_32(cpu, instr->fd, (uint32_t) fp_to_int32(fpr_read_double(cpu, instr->fs), fp_ceil));
+			break;
+		case OP_CEIL_W_S :
+			fpr_write_32(cpu, instr->fd, (uint32_t) fp_to_int32((double) fpr_read_float(cpu, instr->fs), fp_ceil));
+			break;
 		case OP_CLO :
 			/* Naive OP_CLO/Z implementation, didn't want to just
 			use C __builtin_clz/popu8 */
@@ -434,10 +473,10 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			fpr_write_double(cpu, instr->fd, (double) (int32_t) fpr_read_32(cpu, instr->fs));
 			break;
 		case OP_CVT_L_D :
-			fpr_write_64(cpu, instr->fd, (uint64_t) fp_to_int64(fpr_read_double(cpu, instr->fs)));
+			fpr_write_64(cpu, instr->fd, (uint64_t) fp_to_int64(fpr_read_double(cpu, instr->fs), fp_round_nearest_even));
 			break;
 		case OP_CVT_L_S :
-			fpr_write_64(cpu, instr->fd, (uint64_t) fp_to_int64((double) fpr_read_float(cpu, instr->fs)));
+			fpr_write_64(cpu, instr->fd, (uint64_t) fp_to_int64((double) fpr_read_float(cpu, instr->fs), fp_round_nearest_even));
 			break;
 		case OP_CVT_S_D :
 			if(fp_is_snan_64(fpr_read_64(cpu, instr->fs)))
@@ -454,10 +493,10 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			fpr_write_float(cpu, instr->fd, (float) (int32_t) fpr_read_32(cpu, instr->fs));
 			break;
 		case OP_CVT_W_D :
-			fpr_write_32(cpu, instr->fd, (uint32_t) fp_to_int32(fpr_read_double(cpu, instr->fs)));
+			fpr_write_32(cpu, instr->fd, (uint32_t) fp_to_int32(fpr_read_double(cpu, instr->fs), fp_round_nearest_even));
 			break;
 		case OP_CVT_W_S :
-			fpr_write_32(cpu, instr->fd, (uint32_t) fp_to_int32((double) fpr_read_float(cpu, instr->fs)));
+			fpr_write_32(cpu, instr->fd, (uint32_t) fp_to_int32((double) fpr_read_float(cpu, instr->fs), fp_round_nearest_even));
 			break;
 		case OP_DIV :
 			dividend = (int32_t) gpr_read_32(cpu, instr->rs);
@@ -491,6 +530,18 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			float_a = fpr_read_float(cpu, instr->fs);
 			float_b = fpr_read_float(cpu, instr->ft);
 			fpr_write_float(cpu, instr->fd, fp_result_float(float_a / float_b, float_a, float_b));
+			break;
+		case OP_FLOOR_L_D :
+			fpr_write_64(cpu, instr->fd, (uint64_t) fp_to_int64(fpr_read_double(cpu, instr->fs), fp_floor));
+			break;
+		case OP_FLOOR_L_S :
+			fpr_write_64(cpu, instr->fd, (uint64_t) fp_to_int64((double) fpr_read_float(cpu, instr->fs), fp_floor));
+			break;
+		case OP_FLOOR_W_D :
+			fpr_write_32(cpu, instr->fd, (uint32_t) fp_to_int32(fpr_read_double(cpu, instr->fs), fp_floor));
+			break;
+		case OP_FLOOR_W_S :
+			fpr_write_32(cpu, instr->fd, (uint32_t) fp_to_int32((double) fpr_read_float(cpu, instr->fs), fp_floor));
 			break;
 		case OP_J :
 			cpu->next_PC = ((cpu->PC + 4) & 0xF0000000u) | ((uint32_t) (instr->target << 2) & 0x0FFFFFFCu);
@@ -723,6 +774,18 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			u32 = u32 >> u8 | u32 << ((32 - u8) & 31);
 			gpr_write_32(cpu, instr->rd, u32);
 			break;
+		case OP_ROUND_L_D :
+			fpr_write_64(cpu, instr->fd, (uint64_t) fp_to_int64(fpr_read_double(cpu, instr->fs), fp_round_nearest_even));
+			break;
+		case OP_ROUND_L_S :
+			fpr_write_64(cpu, instr->fd, (uint64_t) fp_to_int64((double) fpr_read_float(cpu, instr->fs), fp_round_nearest_even));
+			break;
+		case OP_ROUND_W_D :
+			fpr_write_32(cpu, instr->fd, (uint32_t) fp_to_int32(fpr_read_double(cpu, instr->fs), fp_round_nearest_even));
+			break;
+		case OP_ROUND_W_S :
+			fpr_write_32(cpu, instr->fd, (uint32_t) fp_to_int32((double) fpr_read_float(cpu, instr->fs), fp_round_nearest_even));
+			break;
 		case OP_RSQRT_D :
 			if(fp_invalid_unary_64(cpu, instr)) break;
 			double_a = fpr_read_double(cpu, instr->fs);
@@ -871,6 +934,18 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 		case OP_SWC1 :
 			address = gpr_read_32(cpu, instr->base) + (uint32_t) instr->offset;
 			memory_write_32(cpu, address, fpr_read_32(cpu, instr->ft));
+			break;
+		case OP_TRUNC_L_D :
+			fpr_write_64(cpu, instr->fd, (uint64_t) fp_to_int64(fpr_read_double(cpu, instr->fs), fp_trunc));
+			break;
+		case OP_TRUNC_L_S :
+			fpr_write_64(cpu, instr->fd, (uint64_t) fp_to_int64((double) fpr_read_float(cpu, instr->fs), fp_trunc));
+			break;
+		case OP_TRUNC_W_D :
+			fpr_write_32(cpu, instr->fd, (uint32_t) fp_to_int32(fpr_read_double(cpu, instr->fs), fp_trunc));
+			break;
+		case OP_TRUNC_W_S :
+			fpr_write_32(cpu, instr->fd, (uint32_t) fp_to_int32((double) fpr_read_float(cpu, instr->fs), fp_trunc));
 			break;
 		case OP_XOR :
 			u32 = gpr_read_32(cpu, instr->rs) ^ gpr_read_32(cpu, instr->rt);

@@ -24,10 +24,14 @@ static uint32_t cop1_format(Opcode opcode)
 	{
 		case OP_ABS_D :
 		case OP_ADD_D :
+		case OP_CEIL_L_D :
+		case OP_CEIL_W_D :
 		case OP_CVT_L_D :
 		case OP_CVT_S_D :
 		case OP_CVT_W_D :
 		case OP_DIV_D :
+		case OP_FLOOR_L_D :
+		case OP_FLOOR_W_D :
 		case OP_MAX_D :
 		case OP_MAXA_D :
 		case OP_MIN_D :
@@ -36,12 +40,16 @@ static uint32_t cop1_format(Opcode opcode)
 		case OP_MUL_D :
 		case OP_NEG_D :
 		case OP_RECIP_D :
+		case OP_ROUND_L_D :
+		case OP_ROUND_W_D :
 		case OP_RSQRT_D :
 		case OP_SEL_D :
 		case OP_SELEQZ_D :
 		case OP_SELNEZ_D :
 		case OP_SQRT_D :
 		case OP_SUB_D :
+		case OP_TRUNC_L_D :
+		case OP_TRUNC_W_D :
 			return(COP1_FMT_D);
 		case OP_CVT_D_L :
 		case OP_CVT_S_L :
