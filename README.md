@@ -29,6 +29,6 @@ Where
 ```
 are basically printf formatting for FPR/GPR :
 ```console
--fpr=hex|single|double|all (default=hex)
+-fpr=hex|float|double|all (default=hex)
 -gpr=dec|hex|both (default=dec)
 ```
