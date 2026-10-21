@@ -54,6 +54,3 @@ dkms.conf
 
 # Debug information files
 *.dwo
-
-# Test files
-test/*

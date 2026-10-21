@@ -6,9 +6,9 @@ The desire to make this code readable, the thrill of seeing this little project 
 
 -----
 
-Try it with committed secret.asm :
+Try it with committed secret.asm or any pi_*.asm :
 ```console
-make re; ./emul-mips secret.asm output.hex output.regs [options]
+make re; ./emul-mips test/<file.asm> output.hex output.regs [options]
 ```
 
 Or in interactive mode :
@@ -16,9 +16,9 @@ Or in interactive mode :
 make re; ./emul-mips [options]
 ```
 
-Better, if you want to see each of ~700 instructions step by step :
+Better, if you want to see each instruction step by step :
 ```console
-make re; ./emul-mips secret.asm -step [options]
+make re; ./emul-mips test/<file.asm> -step [options]
 ```
 
 -----
