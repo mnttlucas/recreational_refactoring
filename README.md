@@ -8,15 +8,27 @@ The desire to make this code readable, the thrill of seeing this little project 
 
 Try it with committed secret.asm :
 ```console
-make re; ./emul-mips secret.asm output.hex output.regs
+make re; ./emul-mips secret.asm output.hex output.regs [options]
 ```
 
 Or in interactive mode :
 ```console
-make re; ./emul-mips
+make re; ./emul-mips [options]
 ```
 
 Better, if you want to see each of ~700 instructions step by step :
 ```console
-make re; ./emul-mips secret.asm -step
+make re; ./emul-mips secret.asm -step [options]
+```
+
+-----
+
+Where  
+```console
+[options]
+```
+are basically printf formatting for FPR/GPR :
+```console
+-fpr=hex|single|double|all (default=hex)
+-gpr=dec|hex|both (default=dec)
 ```
