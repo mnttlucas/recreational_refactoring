@@ -13,6 +13,19 @@
 #include "utils.h"
 
 /* PC-relative branch target : the offset is counted in instructions, from the one following the branch */
+/* CRC32 / CRC32C step on the `bits` low bits of `data` (8, 16 or 32), reflected polynomial : the bits are
+   processed from the least significant one, there is no inversion of the CRC in or out (the program does it). */
+#define CRC32_POLY  UINT32_C(0xEDB88320)
+#define CRC32C_POLY UINT32_C(0x82F63B78)
+
+static uint32_t crc_update(uint32_t crc, uint32_t data, unsigned bits, uint32_t polynomial)
+{
+	crc ^= (bits == 32) ? data : data & ((UINT32_C(1) << bits) - 1);
+	for(unsigned i = 0; i < bits; i++) crc = (crc >> 1) ^ (polynomial & (0u - (crc & 1u)));
+
+	return(crc);
+}
+
 static uint32_t branch_target(const Cpu *cpu, int32_t offset)
 {
 	return(cpu->PC + ((uint32_t) offset << 2) + 4);
@@ -276,6 +289,24 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			break;
 		case OP_CMP_S :
 			fpr_write_32(cpu, instr->fd, (uint32_t) fp_compare(cpu, instr, &fp_float));
+			break;
+		case OP_CRC32B :
+			gpr_write_32(cpu, instr->rt, crc_update(gpr_read_32(cpu, instr->rt), gpr_read_32(cpu, instr->rs), 8, CRC32_POLY));
+			break;
+		case OP_CRC32CB :
+			gpr_write_32(cpu, instr->rt, crc_update(gpr_read_32(cpu, instr->rt), gpr_read_32(cpu, instr->rs), 8, CRC32C_POLY));
+			break;
+		case OP_CRC32CH :
+			gpr_write_32(cpu, instr->rt, crc_update(gpr_read_32(cpu, instr->rt), gpr_read_32(cpu, instr->rs), 16, CRC32C_POLY));
+			break;
+		case OP_CRC32CW :
+			gpr_write_32(cpu, instr->rt, crc_update(gpr_read_32(cpu, instr->rt), gpr_read_32(cpu, instr->rs), 32, CRC32C_POLY));
+			break;
+		case OP_CRC32H :
+			gpr_write_32(cpu, instr->rt, crc_update(gpr_read_32(cpu, instr->rt), gpr_read_32(cpu, instr->rs), 16, CRC32_POLY));
+			break;
+		case OP_CRC32W :
+			gpr_write_32(cpu, instr->rt, crc_update(gpr_read_32(cpu, instr->rt), gpr_read_32(cpu, instr->rs), 32, CRC32_POLY));
 			break;
 		case OP_CVT_D_L :
 			fpr_write_double(cpu, instr->fd, (double) (int64_t) fpr_read_64(cpu, instr->fs));

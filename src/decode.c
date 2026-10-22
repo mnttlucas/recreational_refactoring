@@ -322,6 +322,33 @@ static void build_rt_rs_immediate_16_instruction(Instruction *instr, int op_code
 	instr->encoding = encode_i((uint32_t) op_code, instr->rs, instr->rt, instr->immediate, IMM_16_SIZE);
 }
 
+static void build_rt_rs_rt_instruction(Instruction *instr, int funct_code)
+{
+	uint32_t shamt_value;
+	switch(instr->opcode)
+	{
+		case OP_CRC32B :
+			shamt_value = CRC32_SA_B;
+			break;
+		case OP_CRC32H :
+			shamt_value = CRC32_SA_H;
+			break;
+		case OP_CRC32W :
+			shamt_value = CRC32_SA_W;
+			break;
+		case OP_CRC32CB :
+			shamt_value = CRC32_SA_C | CRC32_SA_B;
+			break;
+		case OP_CRC32CH :
+			shamt_value = CRC32_SA_C | CRC32_SA_H;
+			break;
+		default :
+			shamt_value = CRC32_SA_C | CRC32_SA_W;
+			break;
+	}
+	instr->encoding = encode_r(OPCODE_SPECIAL3, instr->rs, instr->rt, 0, shamt_value, (uint32_t) funct_code);
+}
+
 static void build_target_instruction(Instruction *instr, int op_code)
 {
 	instr->encoding = ((uint32_t) op_code << OPCODE_SHIFT) | field(instr->target, 0, OFFSET_26_SIZE);
@@ -628,6 +655,22 @@ static void decode_rt_rs_immediate_operands(char *line, Instruction *instr)
 	if(instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
+/* CRC32x rt, rs, rt : the first and the last operands are the same register (rt is the CRC in and out) */
+static void decode_rt_rs_rt_operands(char *line, Instruction *instr)
+{
+	char rs[8], rt[8], rt_again[8];
+	if(sscanf(line, " $%7[^,] , $%7[^,] , $%7s ", rt, rs, rt_again) != 3)
+	{
+		syntax_error(instr);
+		return;
+	}
+	instr->rt = register_string_to_int(rt, REG_KIND_GPR);
+	instr->rs = register_string_to_int(rs, REG_KIND_GPR);
+	if(instr->rt == INVALID_REGISTER || instr->rs == INVALID_REGISTER || register_string_to_int(rt_again, REG_KIND_GPR) == INVALID_REGISTER)
+		instr->error |= ERR_INVALID_REGISTER;
+	else if(register_string_to_int(rt_again, REG_KIND_GPR) != instr->rt) constraint_error(instr, "the first and the last operands must be the same register");
+}
+
 static void decode_rt_rs_offset_operands(char *line, Instruction *instr)
 {
 	char offset[16], rs[8], rt[8];
@@ -829,6 +872,11 @@ Instruction decode_instruction(int mode, FILE *input)
 				decode_rt_rs_offset_operands(ptr, &instr);
 				build_rs_rt_offset_16_instruction(&instr, id->code);
 				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rt, instr.rs, instr.offset, instr.encoding);
+				break;
+			case FMT_RT_RS_RT :
+				decode_rt_rs_rt_operands(ptr, &instr);
+				build_rt_rs_rt_instruction(&instr, id->code);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, $%d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rt, instr.rs, instr.rt, instr.encoding);
 				break;
 			case FMT_TARGET :
 				decode_target_operands(ptr, &instr);

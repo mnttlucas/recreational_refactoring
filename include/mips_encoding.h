@@ -26,6 +26,7 @@
 #define FUNCT_BSHFL        32
 #define FUNCT_CLO          17
 #define FUNCT_CLZ          16
+#define FUNCT_CRC32        15
 #define FUNCT_FABS          5
 #define FUNCT_FADD          0
 #define FUNCT_FCEIL_L      10
@@ -164,6 +165,10 @@ When values are zero, it will be implicit */
 #define BC1NEZ_FS     13
 #define BGEZ_RT        1
 #define CLO_CLZ_SA     1
+#define CRC32_SA_B     0	/* CRC32 : bits 7..6 = size (byte, halfword, word), bit 8 = CRC32C polynomial */
+#define CRC32_SA_H     1
+#define CRC32_SA_W     2
+#define CRC32_SA_C     4
 #define DIV_DIVU_SA    2
 #define LWPC_RT        8
 #define MOD_MODU_SA    3
