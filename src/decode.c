@@ -74,6 +74,66 @@ static int32_t check_field(Instruction *instr, int32_t value, uint8_t size)
 	return(sign_extend(value, size));
 }
 
+static void constraint_error(Instruction *instr, const char *rule)
+{
+	fprintf(stderr, "[!] Register constraint : %s\n", rule);
+	instr->error |= ERR_CONSTRAINT;
+}
+
+static void swap_rs_rt(Instruction *instr)
+{
+	const uint8_t tmp = instr->rs;
+	instr->rs = instr->rt;
+	instr->rt = tmp;
+}
+
+/* The R6 compact branches share their opcode (POP06, POP07, POP10, POP26, POP27, POP30, POP66, POP76) and are
+   told apart by their registers. An encoding that breaks the rule of its instruction would be another instruction.
+   BEQC / BNEC (rs < rt) and BOVC / BNVC (rs >= rt) are symmetric, their operands are swapped when needed. */
+static void check_compact_branch(Instruction *instr)
+{
+	if(instr->error != NO_ERR) return;
+
+	switch(instr->opcode)
+	{
+		case OP_BEQC :
+		case OP_BNEC :
+			if(instr->rs > instr->rt) swap_rs_rt(instr);
+			if(instr->rs == instr->rt) constraint_error(instr, "rs and rt must be different");
+			else if(instr->rs == REG_ZERO) constraint_error(instr, "rs and rt must not be $zero (use BEQZC / BNEZC)");
+			break;
+		case OP_BOVC :
+		case OP_BNVC :
+			if(instr->rs < instr->rt) swap_rs_rt(instr);
+			break;
+		case OP_BGEC :
+		case OP_BGEUC :
+		case OP_BLTC :
+		case OP_BLTUC :
+			if(instr->rs == instr->rt) constraint_error(instr, "rs and rt must be different");
+			else if(instr->rs == REG_ZERO || instr->rt == REG_ZERO) constraint_error(instr, "rs and rt must not be $zero");
+			break;
+		case OP_BEQZALC :
+		case OP_BGEZALC :
+		case OP_BGEZC :
+		case OP_BGTZALC :
+		case OP_BGTZC :
+		case OP_BLEZALC :
+		case OP_BLEZC :
+		case OP_BLTZALC :
+		case OP_BLTZC :
+		case OP_BNEZALC :
+			if(instr->rt == REG_ZERO) constraint_error(instr, "rt must not be $zero");
+			break;
+		case OP_BEQZC :
+		case OP_BNEZC :
+			if(instr->rs == REG_ZERO) constraint_error(instr, "rs must not be $zero (this encoding is JIC / JIALC)");
+			break;
+		default :
+			break;
+	}
+}
+
 static uint32_t field(int32_t value, uint8_t shift, uint8_t size)
 {
 	return(((uint32_t) value & ((UINT32_C(1) << size) - 1)) << shift);
@@ -137,6 +197,7 @@ static void build_offset_26_instruction(Instruction *instr, int op_code)
 static void build_rd_rs_instruction(Instruction *instr, int funct_code)
 {
 	uint32_t shamt_value = 0;
+	if(instr->opcode == OP_JALR && instr->error == NO_ERR && instr->rd == REG_ZERO) constraint_error(instr, "rd must not be $zero (use JR)");
 	if(instr->opcode == OP_CLO || instr->opcode == OP_CLZ) shamt_value = CLO_CLZ_SA;
 	instr->encoding = encode_r(OPCODE_SPECIAL, instr->rs, 0, instr->rd, shamt_value, (uint32_t) funct_code);
 }
@@ -211,6 +272,7 @@ static void build_rs_offset_19_instruction(Instruction *instr, int op_code)
 
 static void build_rs_offset_21_instruction(Instruction *instr, int op_code)
 {
+	check_compact_branch(instr);
 	instr->offset = check_field(instr, instr->offset, OFFSET_21_SIZE);
 	instr->encoding = encode_i((uint32_t) op_code, instr->rs, 0, instr->offset, OFFSET_21_SIZE);
 }
@@ -222,6 +284,7 @@ static void build_rs_rt_instruction(Instruction *instr, int funct_code)
 
 static void build_rs_rt_offset_16_instruction(Instruction *instr, int op_code)
 {
+	check_compact_branch(instr);
 	instr->offset = check_field(instr, instr->offset, OFFSET_16_SIZE);
 	instr->encoding = encode_i((uint32_t) op_code, instr->rs, instr->rt, instr->offset, OFFSET_16_SIZE);
 }
@@ -239,8 +302,12 @@ static void build_rt_immediate_16_instruction(Instruction *instr, int op_code)
 
 static void build_rt_offset_16_instruction(Instruction *instr, int op_code)
 {
+	uint32_t rs_value = 0;
+	check_compact_branch(instr);
+	/* These four share their opcode with BLEZALC, BGTZALC, BLEZC and BGTZC (rs = 0) : rs = rt tells them apart */
+	if(instr->opcode == OP_BGEZALC || instr->opcode == OP_BLTZALC || instr->opcode == OP_BGEZC || instr->opcode == OP_BLTZC) rs_value = instr->rt;
 	instr->offset = check_field(instr, instr->offset, OFFSET_16_SIZE);
-	instr->encoding = encode_i((uint32_t) op_code, 0, instr->rt, instr->offset, OFFSET_16_SIZE);
+	instr->encoding = encode_i((uint32_t) op_code, rs_value, instr->rt, instr->offset, OFFSET_16_SIZE);
 }
 
 static void build_rt_offset_16_base_instruction(Instruction *instr, int op_code)

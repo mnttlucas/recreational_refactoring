@@ -10,6 +10,7 @@
 #define ERR_RANGE                   (1u << 2)
 #define ERR_SYNTAX                  (1u << 3)
 #define ERR_UNKNOWN_INSTRUCTION     (1u << 4)
+#define ERR_CONSTRAINT              (1u << 5)
 
 typedef enum
 {
