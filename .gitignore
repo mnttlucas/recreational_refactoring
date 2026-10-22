@@ -54,3 +54,6 @@ dkms.conf
 
 # Debug information files
 *.dwo
+
+# Original test files
+test/*.txt
