@@ -85,6 +85,11 @@ static void fp_report_invalid(void)
 	fprintf(stderr, "[!] Exception : Floating Point Invalid Operation\n");
 }
 
+static void fp_report_unimplemented(void)
+{
+	fprintf(stderr, "[!] Exception : Floating Point Unimplemented Operation\n");
+}
+
 /* The operands of the instruction that are selected, in the order fs, ft, fd */
 static int fp_operand_registers(const Instruction *instr, unsigned operands, int registers[3])
 {
@@ -242,6 +247,8 @@ static int fp_compare_condition(uint32_t condition, int less, int equal, int uno
 		case FUNCT_FCMP_SNE :
 			return(!unordered && !equal);
 		default :
+			/* Reserved condition (shaded entries of the CMP.condn.fmt table) : the result is not defined, 0 is written */
+			fp_report_unimplemented();
 			return(0);
 	}
 }
