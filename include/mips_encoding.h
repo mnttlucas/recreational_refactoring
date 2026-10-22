@@ -53,7 +53,8 @@
 #define FUNCT_FCMP_ULT      5
 #define FUNCT_FCMP_UN       1
 #define FUNCT_FCMP_UNE     18
-#define FCMP_SIGNALING      8
+#define FUNCT_FCMP_SIGNAL   8
+#define FUNCT_FCMP_MASK    31
 #define FUNCT_FCVT_D       33
 #define FUNCT_FCVT_L       37
 #define FUNCT_FCVT_S       32

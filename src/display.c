@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #include "display.h"
+#include "fp.h"
 #include "mips_memory.h"
 #include "mips_registers.h"
 
@@ -9,18 +10,20 @@ typedef void (*dump_cell)(Cpu *cpu, const Config *cfg, int index);
 
 /* Text of a float / double, from the raw bits. The host prints "nan" or "-nan" depending on the platform and
    does not tell the quiet NaNs from the signaling ones : both are spelled out here. */
+static void format_nan_or_number(char *out, size_t size, const FpFormat *format, uint64_t bits, const char *number_format, double value)
+{
+	if(fp_is_nan(format, bits)) snprintf(out, size, "%s%s", ((bits >> (format->width - 1)) & 1) ? "-" : "", fp_is_snan(format, bits) ? "snan" : "qnan");
+	else snprintf(out, size, number_format, value);
+}
+
 static void format_single(char *out, size_t size, uint32_t bits, float value)
 {
-	if((bits & UINT32_C(0x7F800000)) == UINT32_C(0x7F800000) && (bits & UINT32_C(0x007FFFFF)) != 0)
-		snprintf(out, size, "%s%s", (bits >> 31) ? "-" : "", (bits & UINT32_C(0x00400000)) ? "qnan" : "snan");
-	else snprintf(out, size, "%.9g", (double) value);
+	format_nan_or_number(out, size, &fp_float, bits, "%.9g", (double) value);
 }
 
 static void format_double(char *out, size_t size, uint64_t bits, double value)
 {
-	if((bits & UINT64_C(0x7FF0000000000000)) == UINT64_C(0x7FF0000000000000) && (bits & UINT64_C(0x000FFFFFFFFFFFFF)) != 0)
-		snprintf(out, size, "%s%s", (bits >> 63) ? "-" : "", (bits & UINT64_C(0x0008000000000000)) ? "qnan" : "snan");
-	else snprintf(out, size, "%.17g", value);
+	format_nan_or_number(out, size, &fp_double, bits, "%.17g", value);
 }
 
 static void print_gpr(Cpu *cpu, const Config *cfg, int index)
