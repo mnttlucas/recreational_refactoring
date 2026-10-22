@@ -16,58 +16,6 @@
 #define SA_MAX     31
 #define TARGET_MAX ((INT32_C(1) << OFFSET_26_SIZE) - 1)
 
-/* COP1 `fmt` field : single (S), double (D), word (W) or long (L), deduced from the instruction.
-   For the CVT family it is the format of the source operand (CVT.D.W : W). */
-static uint32_t cop1_format(Opcode opcode)
-{
-	switch(opcode)
-	{
-		case OP_ABS_D :
-		case OP_ADD_D :
-		case OP_CEIL_L_D :
-		case OP_CEIL_W_D :
-		case OP_CLASS_D :
-		case OP_CVT_L_D :
-		case OP_CVT_S_D :
-		case OP_CVT_W_D :
-		case OP_DIV_D :
-		case OP_FLOOR_L_D :
-		case OP_FLOOR_W_D :
-		case OP_MADDF_D :
-		case OP_MAX_D :
-		case OP_MAXA_D :
-		case OP_MIN_D :
-		case OP_MINA_D :
-		case OP_MOV_D :
-		case OP_MSUBF_D :
-		case OP_MUL_D :
-		case OP_NEG_D :
-		case OP_RECIP_D :
-		case OP_RINT_D :
-		case OP_ROUND_L_D :
-		case OP_ROUND_W_D :
-		case OP_RSQRT_D :
-		case OP_SEL_D :
-		case OP_SELEQZ_D :
-		case OP_SELNEZ_D :
-		case OP_SQRT_D :
-		case OP_SUB_D :
-		case OP_TRUNC_L_D :
-		case OP_TRUNC_W_D :
-			return(COP1_FMT_D);
-		case OP_CMP_D :
-		case OP_CVT_D_L :
-		case OP_CVT_S_L :
-			return(COP1_FMT_L);
-		case OP_CMP_S :
-		case OP_CVT_D_W :
-		case OP_CVT_S_W :
-			return(COP1_FMT_W);
-		default :
-			return(COP1_FMT_S);
-	}
-}
-
 static void syntax_error(Instruction *instr)
 {
 	fprintf(stderr, "[!] Syntax error : missing or malformed operands\n");
@@ -147,14 +95,14 @@ static void build_cmd_instruction(Instruction *instr, int funct_code, int op_cod
 	instr->encoding = encode_r((uint32_t) op_code, (uint32_t) rs_value, (uint32_t) rt_value, (uint32_t) rd_value, (uint32_t) shamt_value, (uint32_t) funct_code);
 }
 
-static void build_fd_fs_instruction(Instruction *instr, int funct_code)
+static void build_fd_fs_instruction(Instruction *instr, int funct_code, int fmt)
 {
-	instr->encoding = encode_r(OPCODE_COP1, cop1_format(instr->opcode), 0, instr->fs, instr->fd, (uint32_t) funct_code);
+	instr->encoding = encode_r(OPCODE_COP1, (uint32_t) fmt, 0, instr->fs, instr->fd, (uint32_t) funct_code);
 }
 
-static void build_fd_fs_ft_instruction(Instruction *instr, int funct_code)
+static void build_fd_fs_ft_instruction(Instruction *instr, int funct_code, int fmt)
 {
-	instr->encoding = encode_r(OPCODE_COP1, cop1_format(instr->opcode), instr->ft, instr->fs, instr->fd, (uint32_t) funct_code);
+	instr->encoding = encode_r(OPCODE_COP1, (uint32_t) fmt, instr->ft, instr->fs, instr->fd, (uint32_t) funct_code);
 }
 
 static void build_ft_offset_16_instruction(Instruction *instr, int op_code)
@@ -692,12 +640,12 @@ Instruction decode_instruction(int mode, FILE *input)
 				break;
 			case FMT_FD_FS :
 				decode_fd_fs_operands(ptr, &instr);
-				build_fd_fs_instruction(&instr, id->code);
+				build_fd_fs_instruction(&instr, id->code, id->fmt);
 				snprintf(instr.to_string, sizeof(instr.to_string), "%s $f%d, $f%d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.fd, instr.fs, instr.encoding);
 				break;
 			case FMT_FD_FS_FT :
 				decode_fd_fs_ft_operands(ptr, &instr);
-				build_fd_fs_ft_instruction(&instr, id->code);
+				build_fd_fs_ft_instruction(&instr, id->code, id->fmt);
 				snprintf(instr.to_string, sizeof(instr.to_string), "%s $f%d, $f%d, $f%d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.fd, instr.fs, instr.ft, instr.encoding);
 				break;
 			case FMT_FT_OFFSET_16 :

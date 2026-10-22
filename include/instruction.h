@@ -227,6 +227,7 @@ typedef struct
 	Format format;
 	int code;
 	Opcode op;
+	int fmt;	/* COP1 `fmt` field (rs position), 0 for the other instructions. For CVT, the format of the source operand */
 } InstructionDesc;
 
 typedef struct
