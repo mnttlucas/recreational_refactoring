@@ -16,7 +16,7 @@ static void format_nan_or_number(char *out, size_t size, const FpFormat *format,
 	else snprintf(out, size, number_format, value);
 }
 
-static void format_single(char *out, size_t size, uint32_t bits, float value)
+static void format_float(char *out, size_t size, uint32_t bits, float value)
 {
 	format_nan_or_number(out, size, &fp_float, bits, "%.9g", (double) value);
 }
@@ -52,7 +52,7 @@ static void print_fpr(Cpu *cpu, const Config *cfg, int index)
 	switch(cfg->fpr_format)
 	{
 		case FPR_FLOAT :
-			format_single(text_single, sizeof(text_single), fpr_read_32(cpu, index), fpr_read_float(cpu, index));
+			format_float(text_single, sizeof(text_single), fpr_read_32(cpu, index), fpr_read_float(cpu, index));
 			printf("$%02d : %-15s ", index, text_single);
 			break;
 		case FPR_DOUBLE :
@@ -61,7 +61,7 @@ static void print_fpr(Cpu *cpu, const Config *cfg, int index)
 			break;
 		case FPR_ALL :
 			format_double(text_double, sizeof(text_double), bits, fpr_read_double(cpu, index));
-			format_single(text_single, sizeof(text_single), fpr_read_32(cpu, index), fpr_read_float(cpu, index));
+			format_float(text_single, sizeof(text_single), fpr_read_32(cpu, index), fpr_read_float(cpu, index));
 			printf("$%02d : 0x%016" PRIx64 "  d=%-24s f=%s", index, bits, text_double, text_single);
 			break;
 		default :

@@ -5,8 +5,8 @@
 
 #include "instruction.h"
 
-#define BATCH       1
-#define INTERACTIVE 0
+#define BATCH       0
+#define INTERACTIVE 1
 
 Instruction	decode_instruction(int mode, FILE *input);
 

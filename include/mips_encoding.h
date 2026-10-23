@@ -27,6 +27,7 @@
 #define FUNCT_CLO          17
 #define FUNCT_CLZ          16
 #define FUNCT_CRC32        15
+#define FUNCT_EXT           0
 #define FUNCT_FABS          5
 #define FUNCT_FADD          0
 #define FUNCT_FCEIL_L      10
@@ -80,7 +81,9 @@
 #define FUNCT_FSUB          1
 #define FUNCT_FTRUNC_L      9
 #define FUNCT_FTRUNC_W     13
+#define FUNCT_INS           4
 #define FUNCT_JALR          9
+#define FUNCT_LSA           5
 #define FUNCT_RECIP        21
 #define FUNCT_RSQRT        22
 #define FUNCT_SOP30        24
@@ -158,6 +161,7 @@
 /* Special register values for some operations
 This exists for clarity and to match MIPS32 R6 specification
 When values are zero, it will be implicit */
+#define ALIGN_SA       8	/* ALIGN : bits 10..8 = 010, bits 7..6 = byte position */
 #define ALUIPC_RT     31
 #define AUIPC_RT      30
 #define BAL_RT        17
@@ -179,5 +183,6 @@ When values are zero, it will be implicit */
 #define ROTRV_SA       1
 #define SEB_SA        16
 #define SEH_SA        24
+#define WSBH_SA        2
 
 #endif	/* MIPS_ENCODING_H */

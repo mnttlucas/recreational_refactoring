@@ -15,9 +15,6 @@
 typedef enum
 {
 	OP_MIN,
-	/* instruction object will be initialized to 0,
-	when line is fully skipped because of a comment,
-	opcode field will be equal to this dummy value for now */
 	OP_ABS_D,
 	OP_ABS_S,
 	OP_ADD,
@@ -26,6 +23,7 @@ typedef enum
 	OP_ADDU,
 	OP_ADD_D,
 	OP_ADD_S,
+	OP_ALIGN,
 	OP_ALUIPC,
 	OP_AND,
 	OP_ANDI,
@@ -93,10 +91,12 @@ typedef enum
 	OP_DIVU,
 	OP_DIV_D,
 	OP_DIV_S,
+	OP_EXT,
 	OP_FLOOR_L_D,
 	OP_FLOOR_L_S,
 	OP_FLOOR_W_D,
 	OP_FLOOR_W_S,
+	OP_INS,
 	OP_J,
 	OP_JAL,
 	OP_JALR,
@@ -107,6 +107,7 @@ typedef enum
 	OP_LDC1,
 	OP_LH,
 	OP_LHU,
+	OP_LSA,
 	OP_LW,
 	OP_LWC1,
 	OP_LWPC,
@@ -190,6 +191,7 @@ typedef enum
 	OP_TRUNC_L_S,
 	OP_TRUNC_W_D,
 	OP_TRUNC_W_S,
+	OP_WSBH,
 	OP_XOR,
 	OP_XORI,
 	OP_MAX
@@ -209,6 +211,8 @@ typedef enum
 	FMT_RD_RS,
 	FMT_RD_RT,
 	FMT_RD_RS_RT,
+	FMT_RD_RS_RT_BP,
+	FMT_RD_RS_RT_SA,
 	FMT_RD_RT_RS,
 	FMT_RD_RT_SA,
 	FMT_RS,
@@ -225,6 +229,7 @@ typedef enum
 	FMT_RT_OFFSET_BASE,
 	FMT_RT_RS_IMMEDIATE_16,
 	FMT_RT_RS_OFFSET_16,
+	FMT_RT_RS_POS_SIZE,
 	FMT_RT_RS_RT,
 	FMT_TARGET
 } Format;
@@ -235,7 +240,7 @@ typedef struct
 	Format format;
 	int code;
 	Opcode op;
-	int fmt;	/* COP1 `fmt` field (rs position), 0 for the other instructions. For CVT, the format of the source operand */
+	int fmt; /* COP1 `fmt` field (rs position), 0 for the other instructions. For CVT, the format of the source operand */
 } InstructionDesc;
 
 typedef struct
@@ -251,7 +256,8 @@ typedef struct
 	uint8_t exit;
 	uint8_t fd, fs, ft;
 	uint8_t rd, rs, rt;
-	uint8_t sa;
+	uint8_t pos, size;	/* EXT / INS : bit field */
+	uint8_t sa;	/* shift amount, or the byte position (ALIGN), or the scale (LSA) */
 } Instruction;
 
 const InstructionDesc *find_instruction(const char *mnemonic);

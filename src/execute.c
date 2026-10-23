@@ -105,6 +105,11 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			float_b = fpr_read_float(cpu, instr->ft);
 			fpr_write_float(cpu, instr->fd, fp_result_float(float_a + float_b, float_a, float_b));
 			break;
+		case OP_ALIGN :
+			u32 = gpr_read_32(cpu, instr->rt);
+			if(instr->sa) u32 = (u32 << (8 * instr->sa)) | (gpr_read_32(cpu, instr->rs) >> (32 - 8 * instr->sa));
+			gpr_write_32(cpu, instr->rd, u32);
+			break;
 		case OP_ALUIPC :
 			u32 = ~0xFFFFu & (cpu->PC + ((uint32_t) instr->immediate << 16));
 			gpr_write_32(cpu, instr->rs, u32);
@@ -373,6 +378,11 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			float_b = fpr_read_float(cpu, instr->ft);
 			fpr_write_float(cpu, instr->fd, fp_result_float(float_a / float_b, float_a, float_b));
 			break;
+		case OP_EXT :
+			u32 = gpr_read_32(cpu, instr->rs) >> instr->pos;
+			if(instr->size < 32) u32 &= (UINT32_C(1) << instr->size) - 1;
+			gpr_write_32(cpu, instr->rt, u32);
+			break;
 		case OP_FLOOR_L_D :
 			fp_to_integer(cpu, instr, &fp_double, 64, floor);
 			break;
@@ -384,6 +394,11 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			break;
 		case OP_FLOOR_W_S :
 			fp_to_integer(cpu, instr, &fp_float, 32, floor);
+			break;
+		case OP_INS :
+			u32 = (instr->size == 32) ? UINT32_MAX : ((UINT32_C(1) << instr->size) - 1) << instr->pos;
+			u32 = (gpr_read_32(cpu, instr->rt) & ~u32) | ((gpr_read_32(cpu, instr->rs) << instr->pos) & u32);
+			gpr_write_32(cpu, instr->rt, u32);
 			break;
 		case OP_J :
 			cpu->next_PC = ((cpu->PC + 4) & 0xF0000000u) | ((uint32_t) (instr->target << 2) & 0x0FFFFFFCu);
@@ -430,6 +445,9 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			address = gpr_read_32(cpu, instr->base) + (uint32_t) instr->offset;
 			u16 = memory_read_16(cpu, address);
 			gpr_write_32(cpu, instr->rt, (uint32_t) u16);
+			break;
+		case OP_LSA :
+			gpr_write_32(cpu, instr->rd, (gpr_read_32(cpu, instr->rs) << instr->sa) + gpr_read_32(cpu, instr->rt));
 			break;
 		case OP_LW :
 			address = gpr_read_32(cpu, instr->base) + (uint32_t) instr->offset;
@@ -823,6 +841,11 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			break;
 		case OP_TRUNC_W_S :
 			fp_to_integer(cpu, instr, &fp_float, 32, trunc);
+			break;
+		case OP_WSBH :
+			u32 = gpr_read_32(cpu, instr->rt);
+			u32 = ((u32 & 0x00FF00FFu) << 8) | ((u32 >> 8) & 0x00FF00FFu);
+			gpr_write_32(cpu, instr->rd, u32);
 			break;
 		case OP_XOR :
 			u32 = gpr_read_32(cpu, instr->rs) ^ gpr_read_32(cpu, instr->rt);

@@ -13,8 +13,8 @@ typedef struct
 	int mantissa_bits;
 } FpFormat;
 
-extern const FpFormat fp_float;
 extern const FpFormat fp_double;
+extern const FpFormat fp_float;
 
 /* Source operands of an instruction, to select the ones that are checked */
 #define FP_FS (1u << 0)

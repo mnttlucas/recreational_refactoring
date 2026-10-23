@@ -69,9 +69,9 @@ static int parse_option(const char *arg, Config *cfg)
 
 int main(int argc, char **argv)
 {
+	char *files[MAX_FILES];
 	Config cfg = {0};
 	Cpu cpu;
-	char *files[MAX_FILES];
 	int file_count = 0, status = EXIT_SUCCESS;
 
 	/* Options can be anywhere, everything else is a file name */

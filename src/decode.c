@@ -13,8 +13,16 @@
 #include "mips_registers.h"
 #include "utils.h"
 
-#define SA_MAX     31
+#define ALIGN_BP_MAX 3
+#define LSA_SA_MAX   4
+#define SA_MAX      31
 #define TARGET_MAX ((INT32_C(1) << OFFSET_26_SIZE) - 1)
+
+static void constraint_error(Instruction *instr, const char *rule)
+{
+	fprintf(stderr, "[!] Register constraint : %s\n", rule);
+	instr->error |= ERR_CONSTRAINT;
+}
 
 static void syntax_error(Instruction *instr)
 {
@@ -72,12 +80,6 @@ static int32_t check_field(Instruction *instr, int32_t value, uint8_t size)
 	}
 
 	return(sign_extend(value, size));
-}
-
-static void constraint_error(Instruction *instr, const char *rule)
-{
-	fprintf(stderr, "[!] Register constraint : %s\n", rule);
-	instr->error |= ERR_CONSTRAINT;
 }
 
 static void swap_rs_rt(Instruction *instr)
@@ -212,11 +214,23 @@ static void build_rd_rs_rt_instruction(Instruction *instr, int funct_code)
 	instr->encoding = encode_r(OPCODE_SPECIAL, instr->rs, instr->rt, instr->rd, shamt_value, (uint32_t) funct_code);
 }
 
+static void build_rd_rs_rt_bp_instruction(Instruction *instr, int funct_code)
+{
+	instr->encoding = encode_r(OPCODE_SPECIAL3, instr->rs, instr->rt, instr->rd, ALIGN_SA | instr->sa, (uint32_t) funct_code);
+}
+
+/* The 2-bit sa field holds the scale - 1 (the shift is 1 to 4) */
+static void build_rd_rs_rt_sa_instruction(Instruction *instr, int funct_code)
+{
+	instr->encoding = encode_r(OPCODE_SPECIAL, instr->rs, instr->rt, instr->rd, (uint32_t) (instr->sa - 1), (uint32_t) funct_code);
+}
+
 static void build_rd_rt_instruction(Instruction *instr, int funct_code)
 {
 	uint32_t shamt_value = 0;
 	if(instr->opcode == OP_SEB) shamt_value = SEB_SA;
 	else if(instr->opcode == OP_SEH) shamt_value = SEH_SA;
+	else if(instr->opcode == OP_WSBH) shamt_value = WSBH_SA;
 	instr->encoding = encode_r(OPCODE_SPECIAL3, 0, instr->rt, instr->rd, shamt_value, (uint32_t) funct_code);
 }
 
@@ -320,6 +334,13 @@ static void build_rt_rs_immediate_16_instruction(Instruction *instr, int op_code
 {
 	instr->immediate = check_field(instr, instr->immediate, IMM_16_SIZE);
 	instr->encoding = encode_i((uint32_t) op_code, instr->rs, instr->rt, instr->immediate, IMM_16_SIZE);
+}
+
+/* EXT : msbd = size - 1, lsb = pos. INS : msb = pos + size - 1, lsb = pos. msb(d) is in the rd position, lsb in sa */
+static void build_rt_rs_pos_size_instruction(Instruction *instr, int funct_code)
+{
+	const uint32_t msb = (instr->opcode == OP_INS) ? (uint32_t) (instr->pos + instr->size - 1) : (uint32_t) (instr->size - 1);
+	instr->encoding = encode_r(OPCODE_SPECIAL3, instr->rs, instr->rt, msb, instr->pos, (uint32_t) funct_code);
 }
 
 static void build_rt_rs_rt_instruction(Instruction *instr, int funct_code)
@@ -472,6 +493,29 @@ static void decode_rd_rs_rt_operands(char *line, Instruction *instr)
 	instr->rd = register_string_to_int(rd, REG_KIND_GPR);
 	instr->rs = register_string_to_int(rs, REG_KIND_GPR);
 	instr->rt = register_string_to_int(rt, REG_KIND_GPR);
+	if(instr->rd == INVALID_REGISTER || instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
+}
+
+/* rd, rs, rt, value : ALIGN (byte position) and LSA (scale), `value` goes to the sa field of the instruction */
+static void decode_rd_rs_rt_value_operands(char *line, Instruction *instr, int32_t min, int32_t max, const char *name)
+{
+	char rd[8], rs[8], rt[8], value[16];
+	if(sscanf(line, " $%7[^,] , $%7[^,] , $%7[^,] , %15s ", rd, rs, rt, value) != 4)
+	{
+		syntax_error(instr);
+		return;
+	}
+	instr->rd = register_string_to_int(rd, REG_KIND_GPR);
+	instr->rs = register_string_to_int(rs, REG_KIND_GPR);
+	instr->rt = register_string_to_int(rt, REG_KIND_GPR);
+	int32_t number = parse_integer(value, instr);
+	if(number < min || number > max)
+	{
+		fprintf(stderr, "[!] %s out of range : %" PRId32 " (allowed : %" PRId32 " to %" PRId32 ")\n", name, number, min, max);
+		instr->error |= ERR_RANGE;
+		number = min;
+	}
+	instr->sa = (uint8_t) number;
 	if(instr->rd == INVALID_REGISTER || instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
@@ -685,6 +729,31 @@ static void decode_rt_rs_offset_operands(char *line, Instruction *instr)
 	if(instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
+/* EXT / INS rt, rs, pos, size : the field must fit in a word (pos + size <= 32) */
+static void decode_rt_rs_pos_size_operands(char *line, Instruction *instr)
+{
+	char rs[8], rt[8], pos[16], size[16];
+	if(sscanf(line, " $%7[^,] , $%7[^,] , %15[^,] , %15s ", rt, rs, pos, size) != 4)
+	{
+		syntax_error(instr);
+		return;
+	}
+	instr->rt = register_string_to_int(rt, REG_KIND_GPR);
+	instr->rs = register_string_to_int(rs, REG_KIND_GPR);
+	if(instr->rt == INVALID_REGISTER || instr->rs == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
+	const int32_t pos_value = parse_integer(pos, instr);
+	const int32_t size_value = parse_integer(size, instr);
+	if(instr->error != NO_ERR) return;
+	if(pos_value < 0 || pos_value > SA_MAX || size_value < 1 || size_value > 32 || pos_value + size_value > 32)
+	{
+		fprintf(stderr, "[!] Bit field out of range : pos %" PRId32 ", size %" PRId32 " (allowed : pos 0 to %d, size 1 to 32, pos + size <= 32)\n", pos_value, size_value, SA_MAX);
+		instr->error |= ERR_RANGE;
+		return;
+	}
+	instr->pos = (uint8_t) pos_value;
+	instr->size = (uint8_t) size_value;
+}
+
 static void decode_target_operands(char *line, Instruction *instr)
 {
 	char target[16];
@@ -793,6 +862,16 @@ Instruction decode_instruction(int mode, FILE *input)
 				build_rd_rs_rt_instruction(&instr, id->code);
 				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, $%d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rd, instr.rs, instr.rt, instr.encoding);
 				break;
+			case FMT_RD_RS_RT_BP :
+				decode_rd_rs_rt_value_operands(ptr, &instr, 0, ALIGN_BP_MAX, "Byte position");
+				build_rd_rs_rt_bp_instruction(&instr, id->code);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, $%d, %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rd, instr.rs, instr.rt, instr.sa, instr.encoding);
+				break;
+			case FMT_RD_RS_RT_SA :
+				decode_rd_rs_rt_value_operands(ptr, &instr, 1, LSA_SA_MAX, "Scale");
+				build_rd_rs_rt_sa_instruction(&instr, id->code);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, $%d, %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rd, instr.rs, instr.rt, instr.sa, instr.encoding);
+				break;
 			case FMT_RD_RT :
 				decode_rd_rt_operands(ptr, &instr);
 				build_rd_rt_instruction(&instr, id->code);
@@ -872,6 +951,11 @@ Instruction decode_instruction(int mode, FILE *input)
 				decode_rt_rs_offset_operands(ptr, &instr);
 				build_rs_rt_offset_16_instruction(&instr, id->code);
 				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rt, instr.rs, instr.offset, instr.encoding);
+				break;
+			case FMT_RT_RS_POS_SIZE :
+				decode_rt_rs_pos_size_operands(ptr, &instr);
+				build_rt_rs_pos_size_instruction(&instr, id->code);
+				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, %d, %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rt, instr.rs, instr.pos, instr.size, instr.encoding);
 				break;
 			case FMT_RT_RS_RT :
 				decode_rt_rs_rt_operands(ptr, &instr);
