@@ -6,6 +6,7 @@
 #include "fp.h"
 #include "mips_encoding.h"
 #include "mips_registers.h"
+#include "utils.h"
 
 const FpFormat fp_float = {32, 23};
 const FpFormat fp_double = {64, 52};
@@ -82,12 +83,12 @@ uint32_t fp_class(const FpFormat *format, uint64_t bits)
 
 static void fp_report_invalid(void)
 {
-	fprintf(stderr, "[!] Exception : Floating Point Invalid Operation\n");
+	signal_exception("Floating Point Invalid Operation");
 }
 
 static void fp_report_unimplemented(void)
 {
-	fprintf(stderr, "[!] Exception : Floating Point Unimplemented Operation\n");
+	signal_exception("Floating Point Unimplemented Operation");
 }
 
 /* The operands of the instruction that are selected, in the order fs, ft, fd */

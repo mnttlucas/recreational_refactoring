@@ -106,6 +106,12 @@
 #define FUNCT_SRLV          6
 #define FUNCT_SUB          34
 #define FUNCT_SUBU         35
+#define FUNCT_TEQ          52
+#define FUNCT_TGE          48
+#define FUNCT_TGEU         49
+#define FUNCT_TLT          50
+#define FUNCT_TLTU         51
+#define FUNCT_TNE          54
 #define FUNCT_XOR          38
 
 /* Operation codes */

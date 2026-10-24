@@ -59,3 +59,10 @@ int32_t sign_extend(int32_t value, uint8_t bits)
 	uint32_t raw = (uint32_t) value << (32 - bits);
 	return((int32_t) raw >> (32 - bits));
 }
+
+/* TODO : there is no exception mechanism yet, an exception only prints a message and the program goes on.
+   Every exception of the emulator goes through here, to be replaced once exceptions are really handled. */
+void signal_exception(const char *name)
+{
+	fprintf(stderr, "[!] Exception : %s (TODO : not handled yet, execution goes on)\n", name);
+}

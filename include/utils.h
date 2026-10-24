@@ -10,5 +10,6 @@
 int mystrcasecmp(const char *a, const char *b);
 char *read_full_line(FILE *in);
 int32_t sign_extend(int32_t value, uint8_t bits);
+void signal_exception(const char *name);
 
 #endif	/* UTILS_H */

@@ -78,7 +78,7 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			break;
 		case OP_ADD :
 			i64 = (int64_t) (int32_t) gpr_read_32(cpu, instr->rs) + (int64_t) (int32_t) gpr_read_32(cpu, instr->rt);
-			if(i64 > INT32_MAX || i64 < INT32_MIN) fprintf(stderr, "[!] Exception : Integer Overflow\n");
+			if(i64 > INT32_MAX || i64 < INT32_MIN) signal_exception("Integer Overflow");
 			else gpr_write_32(cpu, instr->rd, (uint32_t) i64);
 			break;
 		case OP_ADDIU :
@@ -409,7 +409,7 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			break;
 		case OP_JALR :
 			gpr_write_32(cpu, instr->rd, cpu->PC + 8);
-			if(gpr_read_32(cpu, instr->rs) & 0x03u) fprintf(stderr, "[!] Exception : Address Error\n");
+			if(gpr_read_32(cpu, instr->rs) & 0x03u) signal_exception("Address Error");
 			else cpu->next_PC = gpr_read_32(cpu, instr->rs);
 			break;
 		case OP_JIALC :
@@ -802,7 +802,7 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			break;
 		case OP_SUB :
 			i64 = (int64_t) (int32_t) gpr_read_32(cpu, instr->rs) - (int64_t) (int32_t) gpr_read_32(cpu, instr->rt);
-			if(i64 > INT32_MAX || i64 < INT32_MIN) fprintf(stderr, "[!] Exception : Integer Overflow\n");
+			if(i64 > INT32_MAX || i64 < INT32_MIN) signal_exception("Integer Overflow");
 			else gpr_write_32(cpu, instr->rd, (uint32_t) i64);
 			break;
 		case OP_SUBU :
@@ -829,6 +829,24 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 		case OP_SWC1 :
 			address = gpr_read_32(cpu, instr->base) + (uint32_t) instr->offset;
 			memory_write_32(cpu, address, fpr_read_32(cpu, instr->ft));
+			break;
+		case OP_TEQ :
+			if(gpr_read_32(cpu, instr->rs) == gpr_read_32(cpu, instr->rt)) signal_exception("Trap");
+			break;
+		case OP_TGE :
+			if((int32_t) gpr_read_32(cpu, instr->rs) >= (int32_t) gpr_read_32(cpu, instr->rt)) signal_exception("Trap");
+			break;
+		case OP_TGEU :
+			if(gpr_read_32(cpu, instr->rs) >= gpr_read_32(cpu, instr->rt)) signal_exception("Trap");
+			break;
+		case OP_TLT :
+			if((int32_t) gpr_read_32(cpu, instr->rs) < (int32_t) gpr_read_32(cpu, instr->rt)) signal_exception("Trap");
+			break;
+		case OP_TLTU :
+			if(gpr_read_32(cpu, instr->rs) < gpr_read_32(cpu, instr->rt)) signal_exception("Trap");
+			break;
+		case OP_TNE :
+			if(gpr_read_32(cpu, instr->rs) != gpr_read_32(cpu, instr->rt)) signal_exception("Trap");
 			break;
 		case OP_TRUNC_L_D :
 			fp_to_integer(cpu, instr, &fp_double, 64, trunc);
