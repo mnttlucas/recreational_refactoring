@@ -127,7 +127,7 @@ void cpu_dump(Cpu *cpu, const Config *cfg)
 
 void log_instruction(Instruction *instr)
 {
-	if(!instr->exit) printf("%s", instr->to_string);
+	if(!instr->exit) printf("%s -> 0x%08" PRIx32 "\n", instr->to_string, instr->encoding);
 }
 
 void log_usage(char *prog_name)
@@ -135,12 +135,15 @@ void log_usage(char *prog_name)
 fprintf(stderr, "[!] Usage:\n \
 - interactive mode -> \t\t%s [options]\n \
 - step-by-step batch mode -> \t%s <prog.asm> -step [options]\n \
-- batch mode -> \t\t%s <prog.asm> <out.hex> <out.regs> [options]\n\n \
-Options (console display only, <out.regs> is not affected):\n \
+- batch mode -> \t\t%s <prog.asm> <out.hex> <out.regs> [options]\n \
+- batch mode, hexadecimal input -> %s <prog.hex> <out.regs> -hex [options]\n\n \
+Options :\n \
+-hex\t\t\t\tthe input is 32-bit hexadecimal words, not assembly\n \
+(console display only, <out.regs> is not affected by the next ones)\n \
 -gpr=dec|hex|both\t\tgeneral purpose registers (default : dec)\n \
 -fpr=hex|float|double|all\tfloating point registers (default : hex)\n \
 \t\t\t\t(float : low 32 bits as a float)\n",
-prog_name, prog_name, prog_name);
+prog_name, prog_name, prog_name, prog_name);
 }
 
 void wait_for_enter(void)

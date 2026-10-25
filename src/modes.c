@@ -49,7 +49,7 @@ static int program_grow(Program *prog)
 	return(1);
 }
 
-static int load_program(const char *path, Program *prog)
+static int load_program(const char *path, Program *prog, int hex)
 {
 	FILE *in = open_file(path, "r");
 	Instruction cur;
@@ -60,7 +60,7 @@ static int load_program(const char *path, Program *prog)
 	printf("\n--- Instruction decode ---\n\n");
 	while(1)
 	{
-		cur = decode_instruction(BATCH, in);
+		cur = decode_instruction(BATCH, in, hex);
 		line_no++;
 		if(cur.exit) break;
 		if(cur.error != NO_ERR)
@@ -125,7 +125,7 @@ void interactive_mode(Cpu *cpu, Config *cfg)
 	while(!cur.exit)
 	{
 		printf("[#] Enter your instruction :\n");
-		cur = decode_instruction(INTERACTIVE, NULL);
+		cur = decode_instruction(INTERACTIVE, NULL, cfg->hex);
 		if(!cur.exit && cur.opcode > OP_MIN && cur.opcode < OP_MAX)
 		{
 			execute_instruction(cpu, cfg, &cur);
@@ -140,19 +140,19 @@ int batch_mode(Cpu *cpu, Config *cfg, char *path_in, char *path_out_hex, char *p
 	int status = EXIT_FAILURE;
 	Program prog = {0};
 
-	if(load_program(path_in, &prog))
+	if(load_program(path_in, &prog, cfg->hex))
 	{
 		if(!cfg->step)
 		{
-			out_hex = open_file(path_out_hex, "w");
-			if(out_hex) out_regs = open_file(path_out_regs, "w");
+			if(path_out_hex) out_hex = open_file(path_out_hex, "w");
+			if(!path_out_hex || out_hex) out_regs = open_file(path_out_regs, "w");
 		}
 		if(cfg->step || out_regs)
 		{
 			run_program(cpu, cfg, &prog);
 			if(!cfg->step)
 			{
-				write_hex(out_hex, &prog);
+				if(out_hex) write_hex(out_hex, &prog);
 				cpu_dump(cpu, cfg);
 				write_regs(out_regs, cpu);
 			}

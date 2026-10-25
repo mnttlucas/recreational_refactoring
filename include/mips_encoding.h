@@ -1,6 +1,8 @@
 #ifndef	MIPS_ENCODING_H
 #define	MIPS_ENCODING_H
 
+#include <stdint.h>
+
 /* MIPS bit fields : position of the least significant bit of each field in the 32-bit encoding */
 #define FUNCT_SHIFT      0
 #define SHAMT_SHIFT      6
@@ -155,6 +157,13 @@
 #define OPCODE_SWC1      57
 #define OPCODE_SW        43
 #define OPCODE_XORI      14
+
+/* Sizes of the fields that are not an offset or an immediate */
+#define BYTE_BITS         8
+#define WORD_BITS        32
+#define REG_FIELD_SIZE    5	/* rs, rt, rd, sa */
+#define BP_FIELD_SIZE     2	/* ALIGN : byte position, LSA : scale - 1 (bits 7..6) */
+#define TRAP_CODE_MASK   UINT32_C(0x0000FFC0)	/* TEQ, TGE... : the code field (bits 15..6) is ignored by the hardware */
 
 /* Offset and immediate sizes */
 #define IMM_16_SIZE      16

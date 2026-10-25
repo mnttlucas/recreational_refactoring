@@ -83,12 +83,12 @@ uint32_t fp_class(const FpFormat *format, uint64_t bits)
 
 static void fp_report_invalid(void)
 {
-	signal_exception("Floating Point Invalid Operation");
+	signal_exception(EXC_FP_INVALID_OPERATION);
 }
 
 static void fp_report_unimplemented(void)
 {
-	signal_exception("Floating Point Unimplemented Operation");
+	signal_exception(EXC_FP_UNIMPLEMENTED_OPERATION);
 }
 
 /* The operands of the instruction that are selected, in the order fs, ft, fd */

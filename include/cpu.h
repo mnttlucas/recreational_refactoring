@@ -7,6 +7,7 @@
 #define	MEMORY_SIZE (256 * 4)
 #define	REGISTER_COUNT 32
 #define WORD_SIZE 4
+#define WORD_ALIGN_MASK (WORD_SIZE - 1u)	/* the low bits of an address aligned on a word are zero */
 
 typedef struct
 {

@@ -22,6 +22,7 @@ typedef struct
 {
 	FprFormat fpr_format;
 	GprFormat gpr_format;
+	int hex;	/* the input is made of hexadecimal words instead of assembly */
 	int step;
 	int verbose;
 } Config;

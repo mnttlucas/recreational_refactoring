@@ -15,6 +15,7 @@ SRC = src/main.c \
       src/display.c \
       src/execute.c \
       src/fp.c \
+      src/hex.c \
       src/instruction.c \
       src/mips_memory.c \
       src/mips_registers.c \

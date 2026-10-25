@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -20,7 +21,7 @@
 
 static uint32_t crc_update(uint32_t crc, uint32_t data, unsigned bits, uint32_t polynomial)
 {
-	crc ^= (bits == 32) ? data : data & ((UINT32_C(1) << bits) - 1);
+	crc ^= data & low_mask(bits);
 	for(unsigned i = 0; i < bits; i++) crc = (crc >> 1) ^ (polynomial & (0u - (crc & 1u)));
 
 	return(crc);
@@ -78,7 +79,7 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			break;
 		case OP_ADD :
 			i64 = (int64_t) (int32_t) gpr_read_32(cpu, instr->rs) + (int64_t) (int32_t) gpr_read_32(cpu, instr->rt);
-			if(i64 > INT32_MAX || i64 < INT32_MIN) signal_exception("Integer Overflow");
+			if(i64 > INT32_MAX || i64 < INT32_MIN) signal_exception(EXC_INTEGER_OVERFLOW);
 			else gpr_write_32(cpu, instr->rd, (uint32_t) i64);
 			break;
 		case OP_ADDIU :
@@ -107,7 +108,7 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			break;
 		case OP_ALIGN :
 			u32 = gpr_read_32(cpu, instr->rt);
-			if(instr->sa) u32 = (u32 << (8 * instr->sa)) | (gpr_read_32(cpu, instr->rs) >> (32 - 8 * instr->sa));
+			if(instr->sa) u32 = (u32 << (BYTE_BITS * instr->sa)) | (gpr_read_32(cpu, instr->rs) >> (WORD_BITS - BYTE_BITS * instr->sa));
 			gpr_write_32(cpu, instr->rd, u32);
 			break;
 		case OP_ALUIPC :
@@ -379,8 +380,7 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			fpr_write_float(cpu, instr->fd, fp_result_float(float_a / float_b, float_a, float_b));
 			break;
 		case OP_EXT :
-			u32 = gpr_read_32(cpu, instr->rs) >> instr->pos;
-			if(instr->size < 32) u32 &= (UINT32_C(1) << instr->size) - 1;
+			u32 = (gpr_read_32(cpu, instr->rs) >> instr->pos) & low_mask(instr->size);
 			gpr_write_32(cpu, instr->rt, u32);
 			break;
 		case OP_FLOOR_L_D :
@@ -396,7 +396,7 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			fp_to_integer(cpu, instr, &fp_float, 32, floor);
 			break;
 		case OP_INS :
-			u32 = (instr->size == 32) ? UINT32_MAX : ((UINT32_C(1) << instr->size) - 1) << instr->pos;
+			u32 = low_mask(instr->size) << instr->pos;
 			u32 = (gpr_read_32(cpu, instr->rt) & ~u32) | ((gpr_read_32(cpu, instr->rs) << instr->pos) & u32);
 			gpr_write_32(cpu, instr->rt, u32);
 			break;
@@ -409,7 +409,7 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			break;
 		case OP_JALR :
 			gpr_write_32(cpu, instr->rd, cpu->PC + 8);
-			if(gpr_read_32(cpu, instr->rs) & 0x03u) signal_exception("Address Error");
+			if(gpr_read_32(cpu, instr->rs) & WORD_ALIGN_MASK) signal_exception(EXC_ADDRESS_ERROR);
 			else cpu->next_PC = gpr_read_32(cpu, instr->rs);
 			break;
 		case OP_JIALC :
@@ -802,7 +802,7 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			break;
 		case OP_SUB :
 			i64 = (int64_t) (int32_t) gpr_read_32(cpu, instr->rs) - (int64_t) (int32_t) gpr_read_32(cpu, instr->rt);
-			if(i64 > INT32_MAX || i64 < INT32_MIN) signal_exception("Integer Overflow");
+			if(i64 > INT32_MAX || i64 < INT32_MIN) signal_exception(EXC_INTEGER_OVERFLOW);
 			else gpr_write_32(cpu, instr->rd, (uint32_t) i64);
 			break;
 		case OP_SUBU :
@@ -831,22 +831,22 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			memory_write_32(cpu, address, fpr_read_32(cpu, instr->ft));
 			break;
 		case OP_TEQ :
-			if(gpr_read_32(cpu, instr->rs) == gpr_read_32(cpu, instr->rt)) signal_exception("Trap");
+			if(gpr_read_32(cpu, instr->rs) == gpr_read_32(cpu, instr->rt)) signal_exception(EXC_TRAP);
 			break;
 		case OP_TGE :
-			if((int32_t) gpr_read_32(cpu, instr->rs) >= (int32_t) gpr_read_32(cpu, instr->rt)) signal_exception("Trap");
+			if((int32_t) gpr_read_32(cpu, instr->rs) >= (int32_t) gpr_read_32(cpu, instr->rt)) signal_exception(EXC_TRAP);
 			break;
 		case OP_TGEU :
-			if(gpr_read_32(cpu, instr->rs) >= gpr_read_32(cpu, instr->rt)) signal_exception("Trap");
+			if(gpr_read_32(cpu, instr->rs) >= gpr_read_32(cpu, instr->rt)) signal_exception(EXC_TRAP);
 			break;
 		case OP_TLT :
-			if((int32_t) gpr_read_32(cpu, instr->rs) < (int32_t) gpr_read_32(cpu, instr->rt)) signal_exception("Trap");
+			if((int32_t) gpr_read_32(cpu, instr->rs) < (int32_t) gpr_read_32(cpu, instr->rt)) signal_exception(EXC_TRAP);
 			break;
 		case OP_TLTU :
-			if(gpr_read_32(cpu, instr->rs) < gpr_read_32(cpu, instr->rt)) signal_exception("Trap");
+			if(gpr_read_32(cpu, instr->rs) < gpr_read_32(cpu, instr->rt)) signal_exception(EXC_TRAP);
 			break;
 		case OP_TNE :
-			if(gpr_read_32(cpu, instr->rs) != gpr_read_32(cpu, instr->rt)) signal_exception("Trap");
+			if(gpr_read_32(cpu, instr->rs) != gpr_read_32(cpu, instr->rt)) signal_exception(EXC_TRAP);
 			break;
 		case OP_TRUNC_L_D :
 			fp_to_integer(cpu, instr, &fp_double, 64, trunc);
@@ -883,5 +883,5 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 
 	if(pending_PC != INVALID_PC) cpu->PC = pending_PC;
 
-	if(cfg->verbose) printf("[#] Executed : %s", instr->to_string);
+	if(cfg->verbose) printf("[#] Executed : %s -> 0x%08" PRIx32 "\n", instr->to_string, instr->encoding);
 }

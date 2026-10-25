@@ -248,3 +248,9 @@ const InstructionDesc *find_instruction(const char *mnemonic)
 	for(size_t i = 0; i < ARR_SIZE(instruction_table); i++) if(!mystrcasecmp(mnemonic, instruction_table[i].mnemonic)) return(&instruction_table[i]);
 	return(NULL);
 }
+
+/* Entries of the table by index (NULL once past the end), to try them all */
+const InstructionDesc *instruction_at(size_t index)
+{
+	return(index < ARR_SIZE(instruction_table) ? &instruction_table[index] : NULL);
+}

@@ -1,6 +1,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <inttypes.h>
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,6 +9,7 @@
 
 #include "decode.h"
 #include "display.h"
+#include "hex.h"
 #include "instruction.h"
 #include "mips_encoding.h"
 #include "mips_registers.h"
@@ -18,15 +20,34 @@
 #define SA_MAX      31
 #define TARGET_MAX ((INT32_C(1) << OFFSET_26_SIZE) - 1)
 
+/* Error messages of the assembler. They are muted while a hexadecimal word is decoded : many table entries are tried
+   on the same word and most of them are rejected, which is not an error. */
+static int quiet;
+
+static void report(const char *format, ...)
+{
+	va_list args;
+
+	if(quiet) return;
+	va_start(args, format);
+	vfprintf(stderr, format, args);
+	va_end(args);
+}
+
+void decode_set_quiet(int mute)
+{
+	quiet = mute;
+}
+
 static void constraint_error(Instruction *instr, const char *rule)
 {
-	fprintf(stderr, "[!] Register constraint : %s\n", rule);
+	report("[!] Register constraint : %s\n", rule);
 	instr->error |= ERR_CONSTRAINT;
 }
 
 static void syntax_error(Instruction *instr)
 {
-	fprintf(stderr, "[!] Syntax error : missing or malformed operands\n");
+	report("[!] Syntax error : missing or malformed operands\n");
 	instr->error |= ERR_SYNTAX;
 }
 
@@ -42,7 +63,7 @@ static int32_t parse_integer(const char *str, Instruction *instr)
 
 	if(end == str)
 	{
-		fprintf(stderr, "[!] Invalid number : '%s'\n", str);
+		report("[!] Invalid number : '%s'\n", str);
 		instr->error |= ERR_INVALID_NUMBER;
 		return(0);
 	}
@@ -51,14 +72,14 @@ static int32_t parse_integer(const char *str, Instruction *instr)
 
 	if(*end != '\0')
 	{
-		fprintf(stderr, "[!] Invalid number : '%s'\n", str);
+		report("[!] Invalid number : '%s'\n", str);
 		instr->error |= ERR_INVALID_NUMBER;
 		return(0);
 	}
 
 	if(errno == ERANGE || value > INT32_MAX || value < INT32_MIN)
 	{
-		fprintf(stderr, "[!] Number out of range : '%s'\n", str);
+		report("[!] Number out of range : '%s'\n", str);
 		instr->error |= ERR_RANGE;
 		return(0);
 	}
@@ -74,7 +95,7 @@ static int32_t check_field(Instruction *instr, int32_t value, uint8_t size)
 
 	if(value < min || value > max)
 	{
-		fprintf(stderr, "[!] Value out of range : %" PRId32 " does not fit in %d bits (allowed : %" PRId32 " to %" PRId32 ")\n", value, size, min, max);
+		report("[!] Value out of range : %" PRId32 " does not fit in %d bits (allowed : %" PRId32 " to %" PRId32 ")\n", value, size, min, max);
 		instr->error |= ERR_RANGE;
 		return(0);
 	}
@@ -138,7 +159,7 @@ static void check_compact_branch(Instruction *instr)
 
 static uint32_t field(int32_t value, uint8_t shift, uint8_t size)
 {
-	return(((uint32_t) value & ((UINT32_C(1) << size) - 1)) << shift);
+	return(((uint32_t) value & low_mask(size)) << shift);
 }
 
 /* `value` is the already checked and sign-extended immediate/offset */
@@ -511,7 +532,7 @@ static void decode_rd_rs_rt_value_operands(char *line, Instruction *instr, int32
 	int32_t number = parse_integer(value, instr);
 	if(number < min || number > max)
 	{
-		fprintf(stderr, "[!] %s out of range : %" PRId32 " (allowed : %" PRId32 " to %" PRId32 ")\n", name, number, min, max);
+		report("[!] %s out of range : %" PRId32 " (allowed : %" PRId32 " to %" PRId32 ")\n", name, number, min, max);
 		instr->error |= ERR_RANGE;
 		number = min;
 	}
@@ -559,7 +580,7 @@ static void decode_rd_rt_sa_operands(char *line, Instruction *instr)
 	int32_t sa_value = parse_integer(sa, instr);
 	if(sa_value < 0 || sa_value > SA_MAX)
 	{
-		fprintf(stderr, "[!] Shift amount out of range : %" PRId32 " (allowed : 0 to %d)\n", sa_value, SA_MAX);
+		report("[!] Shift amount out of range : %" PRId32 " (allowed : 0 to %d)\n", sa_value, SA_MAX);
 		instr->error |= ERR_RANGE;
 		sa_value = 0;
 	}
@@ -729,7 +750,7 @@ static void decode_rt_rs_offset_operands(char *line, Instruction *instr)
 	if(instr->rs == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
-/* EXT / INS rt, rs, pos, size : the field must fit in a word (pos + size <= 32) */
+/* EXT / INS rt, rs, pos, size : the field must fit in a word (pos + size <= WORD_BITS) */
 static void decode_rt_rs_pos_size_operands(char *line, Instruction *instr)
 {
 	char rs[8], rt[8], pos[16], size[16];
@@ -744,9 +765,9 @@ static void decode_rt_rs_pos_size_operands(char *line, Instruction *instr)
 	const int32_t pos_value = parse_integer(pos, instr);
 	const int32_t size_value = parse_integer(size, instr);
 	if(instr->error != NO_ERR) return;
-	if(pos_value < 0 || pos_value > SA_MAX || size_value < 1 || size_value > 32 || pos_value + size_value > 32)
+	if(pos_value < 0 || pos_value > SA_MAX || size_value < 1 || size_value > WORD_BITS || pos_value + size_value > WORD_BITS)
 	{
-		fprintf(stderr, "[!] Bit field out of range : pos %" PRId32 ", size %" PRId32 " (allowed : pos 0 to %d, size 1 to 32, pos + size <= 32)\n", pos_value, size_value, SA_MAX);
+		report("[!] Bit field out of range : pos %" PRId32 ", size %" PRId32 " (allowed : pos 0 to %d, size 1 to %d, pos + size <= %d)\n", pos_value, size_value, SA_MAX, WORD_BITS, WORD_BITS);
 		instr->error |= ERR_RANGE;
 		return;
 	}
@@ -765,14 +786,185 @@ static void decode_target_operands(char *line, Instruction *instr)
 	int32_t target_value = parse_integer(target, instr);
 	if(target_value < 0 || target_value > TARGET_MAX)
 	{
-		fprintf(stderr, "[!] Target out of range : %" PRId32 " (allowed : 0 to %" PRId32 ")\n", target_value, TARGET_MAX);
+		report("[!] Target out of range : %" PRId32 " (allowed : 0 to %" PRId32 ")\n", target_value, TARGET_MAX);
 		instr->error |= ERR_RANGE;
 		target_value = 0;
 	}
 	instr->target = target_value;
 }
 
-Instruction decode_instruction(int mode, FILE *input)
+/* Assembles the operands of an instruction (the text after the mnemonic) : fills `instr`, its encoding and its text */
+void decode_assemble(const InstructionDesc *id, char *ptr, Instruction *instr)
+{
+	instr->opcode = id->op;
+	switch(id->format)
+	{
+		case FMT_EXIT :
+			instr->exit = 1;
+			break;
+		case FMT_NAL :
+			build_cmd_instruction(instr, 0, OPCODE_REGIMM, 0, NAL_RT, 0, 0);
+			snprintf(instr->to_string, sizeof(instr->to_string), "NAL");
+			break;
+		case FMT_NOP :
+			build_cmd_instruction(instr, FUNCT_SLL, OPCODE_SPECIAL, 0, 0, 0, 0);
+			snprintf(instr->to_string, sizeof(instr->to_string), "NOP");
+			break;
+		case FMT_FD_FS :
+			decode_fd_fs_operands(ptr, instr);
+			build_fd_fs_instruction(instr, id->code, id->fmt);
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s $f%d, $f%d", id->mnemonic, instr->fd, instr->fs);
+			break;
+		case FMT_FD_FS_FT :
+			decode_fd_fs_ft_operands(ptr, instr);
+			build_fd_fs_ft_instruction(instr, id->code, id->fmt);
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s $f%d, $f%d, $f%d", id->mnemonic, instr->fd, instr->fs, instr->ft);
+			break;
+		case FMT_FT_OFFSET_16 :
+			decode_ft_offset_operands(ptr, instr);
+			build_ft_offset_16_instruction(instr, id->code);
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s $f%d, %d", id->mnemonic, instr->ft, instr->offset);
+			break;
+		case FMT_FT_OFFSET_16_BASE :
+			decode_ft_offset_base_operands(ptr, instr);
+			build_ft_offset_16_base_instruction(instr, id->code);
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s $f%d, %d($%d)", id->mnemonic, instr->ft, instr->offset, instr->base);
+			break;
+		case FMT_RT_FS :
+			decode_rt_fs_operands(ptr, instr);
+			build_rt_fs_instruction(instr, id->code);
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s $%d, $f%d", id->mnemonic, instr->rt, instr->fs);
+			break;
+		case FMT_OFFSET_16 :
+			decode_offset_operand(ptr, instr);
+			build_offset_16_instruction(instr, id->code);
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s %d", id->mnemonic, instr->offset);
+			break;
+		case FMT_OFFSET_26 :
+			decode_offset_operand(ptr, instr);
+			build_offset_26_instruction(instr, id->code);
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s %d", id->mnemonic, instr->offset);
+			break;
+		case FMT_RD_RS :
+			decode_rd_rs_operands(ptr, instr);
+			build_rd_rs_instruction(instr, id->code);
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s $%d, $%d", id->mnemonic, instr->rd, instr->rs);
+			break;
+		case FMT_RD_RS_RT :
+			decode_rd_rs_rt_operands(ptr, instr);
+			build_rd_rs_rt_instruction(instr, id->code);
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s $%d, $%d, $%d", id->mnemonic, instr->rd, instr->rs, instr->rt);
+			break;
+		case FMT_RD_RS_RT_BP :
+			decode_rd_rs_rt_value_operands(ptr, instr, 0, ALIGN_BP_MAX, "Byte position");
+			build_rd_rs_rt_bp_instruction(instr, id->code);
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s $%d, $%d, $%d, %d", id->mnemonic, instr->rd, instr->rs, instr->rt, instr->sa);
+			break;
+		case FMT_RD_RS_RT_SA :
+			decode_rd_rs_rt_value_operands(ptr, instr, 1, LSA_SA_MAX, "Scale");
+			build_rd_rs_rt_sa_instruction(instr, id->code);
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s $%d, $%d, $%d, %d", id->mnemonic, instr->rd, instr->rs, instr->rt, instr->sa);
+			break;
+		case FMT_RD_RT :
+			decode_rd_rt_operands(ptr, instr);
+			build_rd_rt_instruction(instr, id->code);
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s $%d, $%d", id->mnemonic, instr->rd, instr->rt);
+			break;
+		case FMT_RD_RT_RS :
+			decode_rd_rt_rs_operands(ptr, instr);
+			build_rd_rt_rs_instruction(instr, id->code);
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s $%d, $%d, $%d", id->mnemonic, instr->rd, instr->rt, instr->rs);
+			break;
+		case FMT_RD_RT_SA :
+			decode_rd_rt_sa_operands(ptr, instr);
+			build_rd_rt_sa_instruction(instr, id->code);
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s $%d, $%d, %d", id->mnemonic, instr->rd, instr->rt, instr->sa);
+			break;
+		case FMT_RS :
+			decode_rs_operand(ptr, instr);
+			build_rs_instruction(instr, id->code);
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s $%d", id->mnemonic, instr->rs);
+			break;
+		case FMT_RS_IMMEDIATE_16 :
+			decode_rs_immediate_operands(ptr, instr);
+			build_rs_immediate_16_instruction(instr, id->code);
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s $%d, %d", id->mnemonic, instr->rs, instr->immediate);
+			break;
+		case FMT_RS_IMMEDIATE_19 :
+			decode_rs_immediate_operands(ptr, instr);
+			build_rs_immediate_19_instruction(instr, id->code);
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s $%d, %d", id->mnemonic, instr->rs, instr->immediate);
+			break;
+		case FMT_RS_OFFSET_16 :
+			decode_rs_offset_operands(ptr, instr);
+			build_rs_offset_16_instruction(instr, id->code);
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s $%d, %d", id->mnemonic, instr->rs, instr->offset);
+			break;
+		case FMT_RS_OFFSET_19 :
+			decode_rs_offset_operands(ptr, instr);
+			build_rs_offset_19_instruction(instr, id->code);
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s $%d, %d", id->mnemonic, instr->rs, instr->offset);
+			break;
+		case FMT_RS_OFFSET_21 :
+			decode_rs_offset_operands(ptr, instr);
+			build_rs_offset_21_instruction(instr, id->code);
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s $%d, %d", id->mnemonic, instr->rs, instr->offset);
+			break;
+		case FMT_RS_RT :
+			decode_rs_rt_operands(ptr, instr);
+			build_rs_rt_instruction(instr, id->code);
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s $%d, $%d", id->mnemonic, instr->rs, instr->rt);
+			break;
+		case FMT_RS_RT_OFFSET_16 :
+			decode_rs_rt_offset_operands(ptr, instr);
+			build_rs_rt_offset_16_instruction(instr, id->code);
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s $%d, $%d, %d", id->mnemonic, instr->rs, instr->rt, instr->offset);
+			break;
+		case FMT_RT_IMMEDIATE_16 :
+			decode_rt_immediate_operands(ptr, instr);
+			build_rt_immediate_16_instruction(instr, id->code);
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s $%d, %d", id->mnemonic, instr->rt, instr->immediate);
+			break;
+		case FMT_RT_OFFSET_16 :
+			decode_rt_offset_operands(ptr, instr);
+			build_rt_offset_16_instruction(instr, id->code);
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s $%d, %d", id->mnemonic, instr->rt, instr->offset);
+			break;
+		case FMT_RT_OFFSET_BASE :
+			decode_rt_offset_base_operands(ptr, instr);
+			build_rt_offset_16_base_instruction(instr, id->code);
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s $%d, %d($%d)", id->mnemonic, instr->rt, instr->offset, instr->base);
+			break;
+		case FMT_RT_RS_IMMEDIATE_16 :
+			decode_rt_rs_immediate_operands(ptr, instr);
+			build_rt_rs_immediate_16_instruction(instr, id->code);
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s $%d, $%d, %d", id->mnemonic, instr->rt, instr->rs, instr->immediate);
+			break;
+		case FMT_RT_RS_OFFSET_16 :
+			decode_rt_rs_offset_operands(ptr, instr);
+			build_rs_rt_offset_16_instruction(instr, id->code);
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s $%d, $%d, %d", id->mnemonic, instr->rt, instr->rs, instr->offset);
+			break;
+		case FMT_RT_RS_POS_SIZE :
+			decode_rt_rs_pos_size_operands(ptr, instr);
+			build_rt_rs_pos_size_instruction(instr, id->code);
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s $%d, $%d, %d, %d", id->mnemonic, instr->rt, instr->rs, instr->pos, instr->size);
+			break;
+		case FMT_RT_RS_RT :
+			decode_rt_rs_rt_operands(ptr, instr);
+			build_rt_rs_rt_instruction(instr, id->code);
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s $%d, $%d, $%d", id->mnemonic, instr->rt, instr->rs, instr->rt);
+			break;
+		case FMT_TARGET :
+			decode_target_operands(ptr, instr);
+			build_target_instruction(instr, id->code);
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s %d", id->mnemonic, instr->target);
+			break;
+	}
+}
+
+/* `hex` : the lines are 32-bit hexadecimal words, otherwise they are assembly (a file is one or the other) */
+Instruction decode_instruction(int mode, FILE *input, int hex)
 {
 	char mnemonic[16], *line, *ptr;
 	FILE *in = mode == INTERACTIVE ? stdin : input;
@@ -795,6 +987,15 @@ Instruction decode_instruction(int mode, FILE *input)
 		return(instr);
 	}
 
+	if(hex)
+	{
+		hex_decode_line(ptr, &instr);
+		if(instr.error != NO_ERR) instr.opcode = OP_MIN;
+		else log_instruction(&instr);
+		free(line);
+		return(instr);
+	}
+
 	sscanf(ptr, "%15s%n", mnemonic, &consumed);
 	ptr += consumed;
 
@@ -803,171 +1004,7 @@ Instruction decode_instruction(int mode, FILE *input)
 	if(id)
 	{
 		// if(chunk[0] == '.') printf("[!] Directives are currently not supported.\n"); TODO
-		instr.opcode = id->op;
-		switch(id->format)
-		{
-			case FMT_EXIT :
-				instr.exit = 1;
-				break;
-			case FMT_NAL :
-				build_cmd_instruction(&instr, 0, OPCODE_REGIMM, 0, NAL_RT, 0, 0);
-				snprintf(instr.to_string, sizeof(instr.to_string), "NAL -> 0x%08" PRIx32 "\n", instr.encoding);
-				break;
-			case FMT_NOP :
-				build_cmd_instruction(&instr, FUNCT_SLL, OPCODE_SPECIAL, 0, 0, 0, 0);
-				snprintf(instr.to_string, sizeof(instr.to_string), "NOP -> 0x%08" PRIx32 "\n", instr.encoding);
-				break;
-			case FMT_FD_FS :
-				decode_fd_fs_operands(ptr, &instr);
-				build_fd_fs_instruction(&instr, id->code, id->fmt);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $f%d, $f%d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.fd, instr.fs, instr.encoding);
-				break;
-			case FMT_FD_FS_FT :
-				decode_fd_fs_ft_operands(ptr, &instr);
-				build_fd_fs_ft_instruction(&instr, id->code, id->fmt);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $f%d, $f%d, $f%d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.fd, instr.fs, instr.ft, instr.encoding);
-				break;
-			case FMT_FT_OFFSET_16 :
-				decode_ft_offset_operands(ptr, &instr);
-				build_ft_offset_16_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $f%d, %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.ft, instr.offset, instr.encoding);
-				break;
-			case FMT_FT_OFFSET_16_BASE :
-				decode_ft_offset_base_operands(ptr, &instr);
-				build_ft_offset_16_base_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $f%d, %d($%d) -> 0x%08" PRIx32 "\n", id->mnemonic, instr.ft, instr.offset, instr.base, instr.encoding);
-				break;
-			case FMT_RT_FS :
-				decode_rt_fs_operands(ptr, &instr);
-				build_rt_fs_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $f%d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rt, instr.fs, instr.encoding);
-				break;
-			case FMT_OFFSET_16 :
-				decode_offset_operand(ptr, &instr);
-				build_offset_16_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.offset, instr.encoding);
-				break;
-			case FMT_OFFSET_26 :
-				decode_offset_operand(ptr, &instr);
-				build_offset_26_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.offset, instr.encoding);
-				break;
-			case FMT_RD_RS :
-				decode_rd_rs_operands(ptr, &instr);
-				build_rd_rs_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rd, instr.rs, instr.encoding);
-				break;
-			case FMT_RD_RS_RT :
-				decode_rd_rs_rt_operands(ptr, &instr);
-				build_rd_rs_rt_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, $%d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rd, instr.rs, instr.rt, instr.encoding);
-				break;
-			case FMT_RD_RS_RT_BP :
-				decode_rd_rs_rt_value_operands(ptr, &instr, 0, ALIGN_BP_MAX, "Byte position");
-				build_rd_rs_rt_bp_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, $%d, %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rd, instr.rs, instr.rt, instr.sa, instr.encoding);
-				break;
-			case FMT_RD_RS_RT_SA :
-				decode_rd_rs_rt_value_operands(ptr, &instr, 1, LSA_SA_MAX, "Scale");
-				build_rd_rs_rt_sa_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, $%d, %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rd, instr.rs, instr.rt, instr.sa, instr.encoding);
-				break;
-			case FMT_RD_RT :
-				decode_rd_rt_operands(ptr, &instr);
-				build_rd_rt_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rd, instr.rt, instr.encoding);
-				break;
-			case FMT_RD_RT_RS :
-				decode_rd_rt_rs_operands(ptr, &instr);
-				build_rd_rt_rs_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, $%d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rd, instr.rt, instr.rs, instr.encoding);
-				break;
-			case FMT_RD_RT_SA :
-				decode_rd_rt_sa_operands(ptr, &instr);
-				build_rd_rt_sa_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rd, instr.rt, instr.sa, instr.encoding);
-				break;
-			case FMT_RS :
-				decode_rs_operand(ptr, &instr);
-				build_rs_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rs, instr.encoding);
-				break;
-			case FMT_RS_IMMEDIATE_16 :
-				decode_rs_immediate_operands(ptr, &instr);
-				build_rs_immediate_16_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rs, instr.immediate, instr.encoding);
-				break;
-			case FMT_RS_IMMEDIATE_19 :
-				decode_rs_immediate_operands(ptr, &instr);
-				build_rs_immediate_19_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rs, instr.immediate, instr.encoding);
-				break;
-			case FMT_RS_OFFSET_16 :
-				decode_rs_offset_operands(ptr, &instr);
-				build_rs_offset_16_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rs, instr.offset, instr.encoding);
-				break;
-			case FMT_RS_OFFSET_19 :
-				decode_rs_offset_operands(ptr, &instr);
-				build_rs_offset_19_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rs, instr.offset, instr.encoding);
-				break;
-			case FMT_RS_OFFSET_21 :
-				decode_rs_offset_operands(ptr, &instr);
-				build_rs_offset_21_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rs, instr.offset, instr.encoding);
-				break;
-			case FMT_RS_RT :
-				decode_rs_rt_operands(ptr, &instr);
-				build_rs_rt_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rs, instr.rt, instr.encoding);
-				break;
-			case FMT_RS_RT_OFFSET_16 :
-				decode_rs_rt_offset_operands(ptr, &instr);
-				build_rs_rt_offset_16_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rs, instr.rt, instr.offset, instr.encoding);
-				break;
-			case FMT_RT_IMMEDIATE_16 :
-				decode_rt_immediate_operands(ptr, &instr);
-				build_rt_immediate_16_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rt, instr.immediate, instr.encoding);
-				break;
-			case FMT_RT_OFFSET_16 :
-				decode_rt_offset_operands(ptr, &instr);
-				build_rt_offset_16_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s %d, %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rt, instr.offset, instr.encoding);
-				break;
-			case FMT_RT_OFFSET_BASE :
-				decode_rt_offset_base_operands(ptr, &instr);
-				build_rt_offset_16_base_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, %d($%d) -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rt, instr.offset, instr.base, instr.encoding);
-				break;
-			case FMT_RT_RS_IMMEDIATE_16 :
-				decode_rt_rs_immediate_operands(ptr, &instr);
-				build_rt_rs_immediate_16_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rt, instr.rs, instr.immediate, instr.encoding);
-				break;
-			case FMT_RT_RS_OFFSET_16 :
-				decode_rt_rs_offset_operands(ptr, &instr);
-				build_rs_rt_offset_16_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rt, instr.rs, instr.offset, instr.encoding);
-				break;
-			case FMT_RT_RS_POS_SIZE :
-				decode_rt_rs_pos_size_operands(ptr, &instr);
-				build_rt_rs_pos_size_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, %d, %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rt, instr.rs, instr.pos, instr.size, instr.encoding);
-				break;
-			case FMT_RT_RS_RT :
-				decode_rt_rs_rt_operands(ptr, &instr);
-				build_rt_rs_rt_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s $%d, $%d, $%d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.rt, instr.rs, instr.rt, instr.encoding);
-				break;
-			case FMT_TARGET :
-				decode_target_operands(ptr, &instr);
-				build_target_instruction(&instr, id->code);
-				snprintf(instr.to_string, sizeof(instr.to_string), "%s %d -> 0x%08" PRIx32 "\n", id->mnemonic, instr.target, instr.encoding);
-				break;
-		}
+		decode_assemble(id, ptr, &instr);
 		if(instr.error != NO_ERR)
 		{
 			fprintf(stderr, "[!] Instruction rejected : %s\n", line);
@@ -977,7 +1014,7 @@ Instruction decode_instruction(int mode, FILE *input)
 	}
 	else
 	{
-		fprintf(stderr, "[!] Unknown instruction : %s\n", mnemonic);
+		fprintf(stderr, "[!] Unknown instruction : %s%s\n", mnemonic, hex_is_word(mnemonic) ? " (a hexadecimal word, use the -hex option)" : "");
 		instr.error |= ERR_UNKNOWN_INSTRUCTION;
 	}
 

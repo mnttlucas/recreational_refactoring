@@ -1,6 +1,7 @@
 #ifndef	INSTRUCTION_H
 #define	INSTRUCTION_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 /* Errors : bit flags, several can be set on the same instruction (use |=, test with &) */
@@ -11,6 +12,7 @@
 #define ERR_SYNTAX                  (1u << 3)
 #define ERR_UNKNOWN_INSTRUCTION     (1u << 4)
 #define ERR_CONSTRAINT              (1u << 5)
+#define ERR_RESERVED                (1u << 6)	/* a hexadecimal word that is not an implemented instruction */
 
 typedef enum
 {
@@ -251,7 +253,7 @@ typedef struct
 
 typedef struct
 {
-	char to_string[256];
+	char to_string[256];	/* the instruction as text, without its encoding */
 	int32_t immediate;
 	int32_t offset;
 	int32_t target;
@@ -267,5 +269,6 @@ typedef struct
 } Instruction;
 
 const InstructionDesc *find_instruction(const char *mnemonic);
+const InstructionDesc *instruction_at(size_t index);
 
 #endif	/* INSTRUCTION_H */

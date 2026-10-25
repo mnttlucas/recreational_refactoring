@@ -23,6 +23,15 @@ make re; ./emul-mips test/<file.asm> -step [options]
 
 -----
 
+The input can also be 32-bit instruction words in hexadecimal (`24090010`, or `0x24090010`) instead of assembly, with `-hex` : a file is one or the other, never both.
+```console
+make re; ./emul-mips input.hex output.regs -hex
+```
+The `.hex` file written by a previous run can therefore be executed again (the option works in interactive and in step-by-step modes too).
+A word that is not an implemented instruction, or whose reserved fields are not zero, is rejected with a "Reserved Instruction" message (the `code` field of the traps is ignored, as the manual says).
+
+-----
+
 Where  
 ```console
 [options]

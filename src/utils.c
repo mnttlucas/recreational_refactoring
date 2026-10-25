@@ -60,9 +60,25 @@ int32_t sign_extend(int32_t value, uint8_t bits)
 	return((int32_t) raw >> (32 - bits));
 }
 
+/* The `bits` low bits set (0 to 32) */
+uint32_t low_mask(unsigned bits)
+{
+	return(bits >= 32 ? UINT32_MAX : (UINT32_C(1) << bits) - 1);
+}
+
+/* The names of the exceptions of the manual, in the order of the Exception enum */
+static const char *const exception_names[] =
+{
+	"Address Error",
+	"Floating Point Invalid Operation",
+	"Floating Point Unimplemented Operation",
+	"Integer Overflow",
+	"Trap"
+};
+
 /* TODO : there is no exception mechanism yet, an exception only prints a message and the program goes on.
    Every exception of the emulator goes through here, to be replaced once exceptions are really handled. */
-void signal_exception(const char *name)
+void signal_exception(Exception exception)
 {
-	fprintf(stderr, "[!] Exception : %s (TODO : not handled yet, execution goes on)\n", name);
+	fprintf(stderr, "[!] Exception : %s (TODO : not handled yet, execution goes on)\n", exception_names[exception]);
 }

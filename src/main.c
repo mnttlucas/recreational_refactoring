@@ -11,6 +11,7 @@
 #include "utils.h"
 
 #define MAX_FILES 3
+#define HEX_FILES (MAX_FILES - 1)	/* -hex : no .hex to write, the input already is one */
 
 typedef struct
 {
@@ -56,6 +57,7 @@ static int parse_option(const char *arg, Config *cfg)
 	int value;
 
 	if(!strcmp(arg, "-step")) cfg->step = 1;
+	else if(!strcmp(arg, "-hex")) cfg->hex = 1;
 	else if(!strncmp(arg, "-gpr=", 5) && lookup_value(gpr_formats, arg + 5, &value)) cfg->gpr_format = (GprFormat) value;
 	else if(!strncmp(arg, "-fpr=", 5) && lookup_value(fpr_formats, arg + 5, &value)) cfg->fpr_format = (FprFormat) value;
 	else
@@ -98,7 +100,8 @@ int main(int argc, char **argv)
 
 	if(file_count == 0 && !cfg.step) interactive_mode(&cpu, &cfg);
 	else if(cfg.step && file_count == 1) status = batch_mode(&cpu, &cfg, files[0], NULL, NULL);
-	else if(!cfg.step && file_count == MAX_FILES) status = batch_mode(&cpu, &cfg, files[0], files[1], files[2]);
+	else if(!cfg.step && !cfg.hex && file_count == MAX_FILES) status = batch_mode(&cpu, &cfg, files[0], files[1], files[2]);
+	else if(!cfg.step && cfg.hex && file_count == HEX_FILES) status = batch_mode(&cpu, &cfg, files[0], NULL, files[1]);
 	else
 	{
 		status = EXIT_FAILURE;
