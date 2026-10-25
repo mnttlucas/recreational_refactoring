@@ -73,6 +73,7 @@ static const char *const exception_names[] =
 	"Floating Point Invalid Operation",
 	"Floating Point Unimplemented Operation",
 	"Integer Overflow",
+	"Reserved Instruction",
 	"Trap"
 };
 

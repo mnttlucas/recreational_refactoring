@@ -53,6 +53,67 @@ static uint8_t branch_compact_link(Cpu *cpu, int32_t offset)
 	return(branch_compact(cpu, offset));
 }
 
+/* Branches and jumps with a delay slot (the instruction after them is executed whether the branch is taken or not) */
+static uint8_t has_delay_slot(Opcode op)
+{
+	switch(op)
+	{
+		case OP_BAL :
+		case OP_BC1EQZ :
+		case OP_BC1NEZ :
+		case OP_BEQ :
+		case OP_BGEZ :
+		case OP_BGTZ :
+		case OP_BLEZ :
+		case OP_BLTZ :
+		case OP_BNE :
+		case OP_J :
+		case OP_JAL :
+		case OP_JALR :
+		case OP_NAL :
+			return(1);
+		default :
+			return(0);
+	}
+}
+
+/* Conditional compact branches : no delay slot, but the instruction after them is a forbidden slot when they are not taken.
+   BC, BALC, JIC and JIALC always jump, they have neither of the two. */
+static uint8_t has_forbidden_slot(Opcode op)
+{
+	switch(op)
+	{
+		case OP_BEQC :
+		case OP_BEQZALC :
+		case OP_BEQZC :
+		case OP_BGEC :
+		case OP_BGEUC :
+		case OP_BGEZALC :
+		case OP_BGEZC :
+		case OP_BGTZALC :
+		case OP_BGTZC :
+		case OP_BLEZALC :
+		case OP_BLEZC :
+		case OP_BLTC :
+		case OP_BLTUC :
+		case OP_BLTZALC :
+		case OP_BLTZC :
+		case OP_BNEC :
+		case OP_BNEZALC :
+		case OP_BNEZC :
+		case OP_BNVC :
+		case OP_BOVC :
+			return(1);
+		default :
+			return(0);
+	}
+}
+
+static uint8_t is_control_transfer(Opcode op)
+{
+	return(has_delay_slot(op) || has_forbidden_slot(op) || op == OP_BALC || op == OP_BC || op == OP_JIALC || op == OP_JIC);
+}
+
 void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 {
 	double double_a, double_b;
@@ -62,12 +123,21 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 	uint16_t u16;
 	uint32_t address, pending_PC, raw_dividend, raw_divisor, u32;
 	uint64_t u64;
+	Opcode opcode = instr->opcode;
 	uint8_t compact = 0, u8;
 
 	pending_PC = cpu->next_PC;
 	cpu->next_PC = INVALID_PC;
 
-	switch(instr->opcode)
+	/* A branch or a jump in a delay slot or in a forbidden slot is a Reserved Instruction, it is not executed */
+	if(cpu->slot != SLOT_NONE && is_control_transfer(opcode))
+	{
+		signal_exception(EXC_RESERVED_INSTRUCTION);
+		opcode = OP_NOP;
+	}
+	cpu->slot = SLOT_NONE;
+
+	switch(opcode)
 	{
 		case OP_ABS_D :
 			u64 = fpr_read_64(cpu, instr->fs) & 0x7FFFFFFFFFFFFFFFu;
@@ -880,6 +950,9 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 	/* In MIPS32 Release 6, compact branches skip delay slot
 	   This way we ensure this kind of instruction behaves properly */
 	if(!compact) cpu->PC += 4;
+
+	if(has_delay_slot(opcode)) cpu->slot = SLOT_DELAY;
+	else if(has_forbidden_slot(opcode) && !compact) cpu->slot = SLOT_FORBIDDEN;
 
 	if(pending_PC != INVALID_PC) cpu->PC = pending_PC;
 

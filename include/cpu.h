@@ -9,8 +9,18 @@
 #define WORD_SIZE 4
 #define WORD_ALIGN_MASK (WORD_SIZE - 1u)	/* the low bits of an address aligned on a word are zero */
 
+/* What the next instruction is, relative to the branch that was just executed : a control transfer
+   instruction (a branch or a jump) is not allowed there, it signals a Reserved Instruction exception */
+typedef enum
+{
+	SLOT_NONE,
+	SLOT_DELAY,		/* delay slot of a branch or jump (taken or not) */
+	SLOT_FORBIDDEN	/* forbidden slot of a compact branch that was not taken */
+} SlotKind;
+
 typedef struct
 {
+	SlotKind slot;
 	uint32_t GPR[REGISTER_COUNT];
 	uint32_t next_PC; /* Handle delay slot, field is INVALID_PC when no delay slot is pending */
 	uint32_t PC;

@@ -9,4 +9,5 @@ void cpu_init(Cpu *cpu)
 
 	cpu->next_PC = INVALID_PC;
 	cpu->PC = 0;
+	cpu->slot = SLOT_NONE;
 }
