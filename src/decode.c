@@ -220,7 +220,12 @@ static void build_offset_26_instruction(Instruction *instr, int op_code)
 static void build_rd_rs_instruction(Instruction *instr, int funct_code)
 {
 	uint32_t shamt_value = 0;
-	if(instr->opcode == OP_JALR && instr->error == NO_ERR && instr->rd == REG_ZERO) constraint_error(instr, "rd must not be $zero (use JR)");
+	if(instr->opcode == OP_JALR && instr->error == NO_ERR)
+	{
+		if(instr->rd == REG_ZERO) constraint_error(instr, "rd must not be $zero (use JR)");
+		/* Jump-and-Link Restartability (manual) : the instruction could not be re-executed after an exception in its delay slot */
+		else if(instr->rd == instr->rs) constraint_error(instr, "rd and rs must be different (UNPREDICTABLE otherwise)");
+	}
 	if(instr->opcode == OP_CLO || instr->opcode == OP_CLZ) shamt_value = CLO_CLZ_SA;
 	instr->encoding = encode_r(OPCODE_SPECIAL, instr->rs, 0, instr->rd, shamt_value, (uint32_t) funct_code);
 }
