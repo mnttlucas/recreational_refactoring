@@ -126,7 +126,8 @@ static int operands_from_word(const InstructionDesc *id, uint32_t word, char *te
 			snprintf(text, size, "$%u, %d($%u)", rt, imm16, rs);
 			return(1);
 		case FMT_RT_RS_IMMEDIATE_16 :
-			snprintf(text, size, "$%u, $%u, %d", rt, rs, imm16);
+			if(decode_immediate_range(id->op) == RANGE_UNSIGNED) snprintf(text, size, "$%u, $%u, %u", rt, rs, extract_unsigned(word, 0, IMM_16_SIZE));
+			else snprintf(text, size, "$%u, $%u, %d", rt, rs, imm16);
 			return(1);
 		case FMT_RT_RS_POS_SIZE :
 			/* EXT : msbd = size - 1, INS : msb = pos + size - 1, and lsb = pos in both cases (msb or msbd is in the rd position) */

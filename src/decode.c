@@ -87,11 +87,33 @@ static int32_t parse_integer(const char *str, Instruction *instr)
 	return((int32_t) value);
 }
 
-/* A value is accepted if it fits in `size` bits either as signed or as unsigned,
-   i.e. [-2^(size-1); 2^size - 1]. Returns it sign-extended, as the execution expects. */
-static int32_t check_field(Instruction *instr, int32_t value, uint8_t size)
+/* Which values an immediate or an offset field accepts, as the manual defines the field :
+   - RANGE_SIGNED   : two's complement, [-2^(size-1); 2^(size-1) - 1] (offsets, ADDIU, SLTI, SLTIU...)
+   - RANGE_UNSIGNED : zero-extended, [0; 2^size - 1] (ANDI, ORI, XORI)
+   - RANGE_PATTERN  : a 16-bit pattern placed in the upper half, both 0xFFFF and -1 are the same field (LUI, AUI, AUIPC, ALUIPC) */
+Range decode_immediate_range(Opcode opcode)
 {
-	int32_t min = -(INT32_C(1) << (size - 1)), max = (INT32_C(1) << size) - 1;
+	switch(opcode)
+	{
+		case OP_ANDI :
+		case OP_ORI :
+		case OP_XORI :
+			return(RANGE_UNSIGNED);
+		case OP_AUI :
+		case OP_AUIPC :
+		case OP_ALUIPC :
+			return(RANGE_PATTERN);
+		default :
+			return(RANGE_SIGNED);
+	}
+}
+
+/* Returns the value sign-extended, as the execution expects, or 0 with ERR_RANGE if it is out of range */
+static int32_t check_field(Instruction *instr, int32_t value, uint8_t size, Range range)
+{
+	const int32_t half = INT32_C(1) << (size - 1), full = (INT32_C(1) << size) - 1;
+	const int32_t min = range == RANGE_UNSIGNED ? 0 : -half;
+	const int32_t max = range == RANGE_SIGNED ? half - 1 : full;
 
 	if(value < min || value > max)
 	{
@@ -193,13 +215,13 @@ static void build_ft_offset_16_instruction(Instruction *instr, int op_code)
 	uint32_t fs_value = 0;
 	if(instr->opcode == OP_BC1EQZ) fs_value = BC1EQZ_FS;
 	else if(instr->opcode == OP_BC1NEZ) fs_value = BC1NEZ_FS;
-	instr->offset = check_field(instr, instr->offset, OFFSET_16_SIZE);
+	instr->offset = check_field(instr, instr->offset, OFFSET_16_SIZE, RANGE_SIGNED);
 	instr->encoding = encode_i((uint32_t) op_code, fs_value, instr->ft, instr->offset, OFFSET_16_SIZE);
 }
 
 static void build_ft_offset_16_base_instruction(Instruction *instr, int op_code)
 {
-	instr->offset = check_field(instr, instr->offset, OFFSET_16_SIZE);
+	instr->offset = check_field(instr, instr->offset, OFFSET_16_SIZE, RANGE_SIGNED);
 	instr->encoding = encode_i((uint32_t) op_code, instr->base, instr->ft, instr->offset, OFFSET_16_SIZE);
 }
 
@@ -207,13 +229,13 @@ static void build_offset_16_instruction(Instruction *instr, int op_code)
 {
 	uint32_t rt_value = 0;
 	if(instr->opcode == OP_BAL) rt_value = BAL_RT;
-	instr->offset = check_field(instr, instr->offset, OFFSET_16_SIZE);
+	instr->offset = check_field(instr, instr->offset, OFFSET_16_SIZE, RANGE_SIGNED);
 	instr->encoding = encode_i((uint32_t) op_code, 0, rt_value, instr->offset, OFFSET_16_SIZE);
 }
 
 static void build_offset_26_instruction(Instruction *instr, int op_code)
 {
-	instr->offset = check_field(instr, instr->offset, OFFSET_26_SIZE);
+	instr->offset = check_field(instr, instr->offset, OFFSET_26_SIZE, RANGE_SIGNED);
 	instr->encoding = ((uint32_t) op_code << OPCODE_SHIFT) | field(instr->offset, 0, OFFSET_26_SIZE);
 }
 
@@ -284,13 +306,13 @@ static void build_rs_immediate_16_instruction(Instruction *instr, int op_code)
 	uint32_t rt_value = 0;
 	if(instr->opcode == OP_AUIPC) rt_value = AUIPC_RT;
 	else if(instr->opcode == OP_ALUIPC) rt_value = ALUIPC_RT;
-	instr->immediate = check_field(instr, instr->immediate, IMM_16_SIZE);
+	instr->immediate = check_field(instr, instr->immediate, IMM_16_SIZE, decode_immediate_range(instr->opcode));
 	instr->encoding = encode_i((uint32_t) op_code, instr->rs, rt_value, instr->immediate, IMM_16_SIZE);
 }
 
 static void build_rs_immediate_19_instruction(Instruction *instr, int op_code)
 {
-	instr->immediate = check_field(instr, instr->immediate, IMM_19_SIZE);
+	instr->immediate = check_field(instr, instr->immediate, IMM_19_SIZE, RANGE_SIGNED);
 	instr->encoding = encode_i((uint32_t) op_code, instr->rs, 0, instr->immediate, IMM_19_SIZE);
 }
 
@@ -298,7 +320,7 @@ static void build_rs_offset_16_instruction(Instruction *instr, int op_code)
 {
 	uint32_t rt_value = 0;
 	if(instr->opcode == OP_BGEZ) rt_value = BGEZ_RT;
-	instr->offset = check_field(instr, instr->offset, OFFSET_16_SIZE);
+	instr->offset = check_field(instr, instr->offset, OFFSET_16_SIZE, RANGE_SIGNED);
 	instr->encoding = encode_i((uint32_t) op_code, instr->rs, rt_value, instr->offset, OFFSET_16_SIZE);
 }
 
@@ -306,14 +328,14 @@ static void build_rs_offset_19_instruction(Instruction *instr, int op_code)
 {
 	uint32_t rt_value = 0;
 	if(instr->opcode == OP_LWPC) rt_value = LWPC_RT;
-	instr->offset = check_field(instr, instr->offset, OFFSET_19_SIZE);
+	instr->offset = check_field(instr, instr->offset, OFFSET_19_SIZE, RANGE_SIGNED);
 	instr->encoding = encode_i((uint32_t) op_code, instr->rs, rt_value, instr->offset, OFFSET_19_SIZE);
 }
 
 static void build_rs_offset_21_instruction(Instruction *instr, int op_code)
 {
 	check_compact_branch(instr);
-	instr->offset = check_field(instr, instr->offset, OFFSET_21_SIZE);
+	instr->offset = check_field(instr, instr->offset, OFFSET_21_SIZE, RANGE_SIGNED);
 	instr->encoding = encode_i((uint32_t) op_code, instr->rs, 0, instr->offset, OFFSET_21_SIZE);
 }
 
@@ -325,7 +347,7 @@ static void build_rs_rt_instruction(Instruction *instr, int funct_code)
 static void build_rs_rt_offset_16_instruction(Instruction *instr, int op_code)
 {
 	check_compact_branch(instr);
-	instr->offset = check_field(instr, instr->offset, OFFSET_16_SIZE);
+	instr->offset = check_field(instr, instr->offset, OFFSET_16_SIZE, RANGE_SIGNED);
 	instr->encoding = encode_i((uint32_t) op_code, instr->rs, instr->rt, instr->offset, OFFSET_16_SIZE);
 }
 
@@ -336,7 +358,7 @@ static void build_rt_fs_instruction(Instruction *instr, int sub_code)
 
 static void build_rt_immediate_16_instruction(Instruction *instr, int op_code)
 {
-	instr->immediate = check_field(instr, instr->immediate, IMM_16_SIZE);
+	instr->immediate = check_field(instr, instr->immediate, IMM_16_SIZE, decode_immediate_range(instr->opcode));
 	instr->encoding = encode_i((uint32_t) op_code, 0, instr->rt, instr->immediate, IMM_16_SIZE);
 }
 
@@ -346,19 +368,19 @@ static void build_rt_offset_16_instruction(Instruction *instr, int op_code)
 	check_compact_branch(instr);
 	/* These four share their opcode with BLEZALC, BGTZALC, BLEZC and BGTZC (rs = 0) : rs = rt tells them apart */
 	if(instr->opcode == OP_BGEZALC || instr->opcode == OP_BLTZALC || instr->opcode == OP_BGEZC || instr->opcode == OP_BLTZC) rs_value = instr->rt;
-	instr->offset = check_field(instr, instr->offset, OFFSET_16_SIZE);
+	instr->offset = check_field(instr, instr->offset, OFFSET_16_SIZE, RANGE_SIGNED);
 	instr->encoding = encode_i((uint32_t) op_code, rs_value, instr->rt, instr->offset, OFFSET_16_SIZE);
 }
 
 static void build_rt_offset_16_base_instruction(Instruction *instr, int op_code)
 {
-	instr->offset = check_field(instr, instr->offset, OFFSET_16_SIZE);
+	instr->offset = check_field(instr, instr->offset, OFFSET_16_SIZE, RANGE_SIGNED);
 	instr->encoding = encode_i((uint32_t) op_code, instr->base, instr->rt, instr->offset, OFFSET_16_SIZE);
 }
 
 static void build_rt_rs_immediate_16_instruction(Instruction *instr, int op_code)
 {
-	instr->immediate = check_field(instr, instr->immediate, IMM_16_SIZE);
+	instr->immediate = check_field(instr, instr->immediate, IMM_16_SIZE, decode_immediate_range(instr->opcode));
 	instr->encoding = encode_i((uint32_t) op_code, instr->rs, instr->rt, instr->immediate, IMM_16_SIZE);
 }
 
@@ -943,7 +965,9 @@ void decode_assemble(const InstructionDesc *id, char *ptr, Instruction *instr)
 		case FMT_RT_RS_IMMEDIATE_16 :
 			decode_rt_rs_immediate_operands(ptr, instr);
 			build_rt_rs_immediate_16_instruction(instr, id->code);
-			snprintf(instr->to_string, sizeof(instr->to_string), "%s $%d, $%d, %d", id->mnemonic, instr->rt, instr->rs, instr->immediate);
+			/* Unsigned fields are shown as the manual defines them (ORI $9, $0, 65535, not -1) */
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s $%d, $%d, %d", id->mnemonic, instr->rt, instr->rs,
+			         decode_immediate_range(id->op) == RANGE_UNSIGNED ? (int32_t) ((uint32_t) instr->immediate & low_mask(IMM_16_SIZE)) : instr->immediate);
 			break;
 		case FMT_RT_RS_OFFSET_16 :
 			decode_rt_rs_offset_operands(ptr, instr);
