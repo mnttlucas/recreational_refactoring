@@ -123,8 +123,6 @@ static int operands_from_word(const InstructionDesc *id, uint32_t word, char *te
 			snprintf(text, size, "$%u, $f%u", rt, rd);
 			return(1);
 		case FMT_RT_IMMEDIATE_16 :
-			snprintf(text, size, "$%u, %d", rt, imm16);
-			return(1);
 		case FMT_RT_OFFSET_16 :
 			snprintf(text, size, "$%u, %d", rt, imm16);
 			return(1);
