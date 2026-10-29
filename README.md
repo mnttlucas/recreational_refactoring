@@ -32,6 +32,11 @@ A word that is not an implemented instruction, or whose reserved fields are not 
 
 -----
 
+An exception (Address Error, Integer Overflow, Trap, Reserved Instruction, `BREAK`, `SYSCALL`, `SDBBP`, `SIGRIE`) stops the program : the instruction that raised it is not executed, the message gives the EPC (and BadVAddr for an address error), the `.regs` / `.hex` files are still written and the exit status is not zero.
+There is no exception handler yet, so nothing can resume the program. In interactive mode the exception is reported and the next instruction is read.
+
+-----
+
 Where  
 ```console
 [options]

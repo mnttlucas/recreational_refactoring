@@ -83,12 +83,13 @@ uint32_t fp_class(const FpFormat *format, uint64_t bits)
 
 static void fp_report_invalid(void)
 {
-	signal_exception(EXC_FP_INVALID_OPERATION);
+	/* Only an exception once FCSR enables it, which is not implemented : the default result is written */
+	fprintf(stderr, "[!] Floating Point Invalid Operation (no trap : FCSR is not implemented, default result)\n");
 }
 
 static void fp_report_unimplemented(void)
 {
-	signal_exception(EXC_FP_UNIMPLEMENTED_OPERATION);
+	fprintf(stderr, "[!] Floating Point Unimplemented Operation (no trap : FCSR is not implemented, result 0)\n");
 }
 
 /* The operands of the instruction that are selected, in the order fs, ft, fd */

@@ -54,6 +54,12 @@ static int operands_from_word(const InstructionDesc *id, uint32_t word, char *te
 		case FMT_NOP :
 			text[0] = '\0';
 			return(1);
+		case FMT_CODE_16 :
+			snprintf(text, size, "%u", extract_unsigned(word, 0, IMM_16_SIZE));
+			return(1);
+		case FMT_CODE_20 :
+			snprintf(text, size, "%u", extract_unsigned(word, CODE_SHIFT, CODE_20_SIZE));
+			return(1);
 		case FMT_FD_FS :
 			snprintf(text, size, "$f%u, $f%u", sa, rd);
 			return(1);
@@ -193,7 +199,7 @@ static void decode_word(uint32_t word, Instruction *instr)
 	}
 	decode_set_quiet(0);
 
-	/* Not through signal_exception() : the word is rejected when the program is loaded, nothing is executed */
+	/* Not through raise_exception() : the word is rejected when the program is loaded, nothing is executed */
 	fprintf(stderr, "[!] Reserved Instruction : 0x%08" PRIx32 " is not an implemented instruction\n", word);
 	instr->error |= ERR_RESERVED;
 }

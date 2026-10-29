@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#include "exception.h"
+
 #define INVALID_PC UINT32_MAX
 #define	MEMORY_SIZE (256 * 4)
 #define	REGISTER_COUNT 32
@@ -21,6 +23,7 @@ typedef enum
 typedef struct
 {
 	SlotKind slot;
+	ExceptionState exception;
 	uint32_t GPR[REGISTER_COUNT];
 	uint32_t next_PC; /* Handle delay slot, field is INVALID_PC when no delay slot is pending */
 	uint32_t PC;
@@ -29,5 +32,6 @@ typedef struct
 } Cpu;
 
 void cpu_init(Cpu *cpu);
+void raise_exception(Cpu *cpu, Exception exception, uint32_t bad_vaddr);
 
 #endif	/* CPU_H */

@@ -6,6 +6,7 @@
 
 #include "config.h"
 #include "cpu.h"
+#include "exception.h"
 #include "execute.h"
 #include "fp.h"
 #include "mips_encoding.h"
@@ -126,16 +127,22 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 	Opcode opcode = instr->opcode;
 	uint8_t compact = 0, u8;
 
-	pending_PC = cpu->next_PC;
-	cpu->next_PC = INVALID_PC;
+	/* The fetch of the instruction : PC is aligned unless a jump went to a misaligned address */
+	if(cpu->PC & WORD_ALIGN_MASK)
+	{
+		raise_exception(cpu, EXC_ADDRESS_ERROR_LOAD, cpu->PC);
+		return;
+	}
 
-	/* A branch or a jump in a delay slot or in a forbidden slot is a Reserved Instruction, it is not executed */
+	/* A branch or a jump in a delay slot or in a forbidden slot is a Reserved Instruction */
 	if(cpu->slot != SLOT_NONE && is_control_transfer(opcode))
 	{
-		signal_exception(EXC_RESERVED_INSTRUCTION);
-		opcode = OP_NOP;
+		raise_exception(cpu, EXC_RESERVED_INSTRUCTION, 0);
+		return;
 	}
-	cpu->slot = SLOT_NONE;
+
+	pending_PC = cpu->next_PC;
+	cpu->next_PC = INVALID_PC;
 
 	switch(opcode)
 	{
@@ -149,7 +156,7 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			break;
 		case OP_ADD :
 			i64 = (int64_t) (int32_t) gpr_read_32(cpu, instr->rs) + (int64_t) (int32_t) gpr_read_32(cpu, instr->rt);
-			if(i64 > INT32_MAX || i64 < INT32_MIN) signal_exception(EXC_INTEGER_OVERFLOW);
+			if(i64 > INT32_MAX || i64 < INT32_MIN) raise_exception(cpu, EXC_INTEGER_OVERFLOW, 0);
 			else gpr_write_32(cpu, instr->rd, (uint32_t) i64);
 			break;
 		case OP_ADDIU :
@@ -311,6 +318,9 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 		case OP_BOVC :
 			i64 = (int64_t) (int32_t) gpr_read_32(cpu, instr->rs) + (int64_t) (int32_t) gpr_read_32(cpu, instr->rt);
 			if(i64 > INT32_MAX || i64 < INT32_MIN) compact = branch_compact(cpu, instr->offset);
+			break;
+		case OP_BREAK :
+			raise_exception(cpu, EXC_BREAKPOINT, 0);
 			break;
 		case OP_CEIL_L_D :
 			fp_to_integer(cpu, instr, &fp_double, 64, ceil);
@@ -479,8 +489,7 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			break;
 		case OP_JALR :
 			gpr_write_32(cpu, instr->rd, cpu->PC + 8);
-			if(gpr_read_32(cpu, instr->rs) & WORD_ALIGN_MASK) signal_exception(EXC_ADDRESS_ERROR);
-			else cpu->next_PC = gpr_read_32(cpu, instr->rs);
+			cpu->next_PC = gpr_read_32(cpu, instr->rs);
 			break;
 		case OP_JIALC :
 			compact = 1;
@@ -494,26 +503,31 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 		case OP_LB :
 			address = gpr_read_32(cpu, instr->base) + (uint32_t) instr->offset;
 			i32 = sign_extend(memory_read_8(cpu, address), 8);
+			if(cpu->exception.raised) break;
 			gpr_write_32(cpu, instr->rt, (uint32_t) i32);
 			break;
 		case OP_LBU :
 			address = gpr_read_32(cpu, instr->base) + (uint32_t) instr->offset;
 			u8 = memory_read_8(cpu, address);
+			if(cpu->exception.raised) break;
 			gpr_write_32(cpu, instr->rt, (uint32_t) u8);
 			break;
 		case OP_LDC1 :
 			address = gpr_read_32(cpu, instr->base) + (uint32_t) instr->offset;
 			u64 = memory_read_64(cpu, address);
+			if(cpu->exception.raised) break;
 			fpr_write_64(cpu, instr->ft, u64);
 			break;
 		case OP_LH :
 			address = gpr_read_32(cpu, instr->base) + (uint32_t) instr->offset;
 			i32 = sign_extend(memory_read_16(cpu, address), 16);
+			if(cpu->exception.raised) break;
 			gpr_write_32(cpu, instr->rt, (uint32_t) i32);
 			break;
 		case OP_LHU :
 			address = gpr_read_32(cpu, instr->base) + (uint32_t) instr->offset;
 			u16 = memory_read_16(cpu, address);
+			if(cpu->exception.raised) break;
 			gpr_write_32(cpu, instr->rt, (uint32_t) u16);
 			break;
 		case OP_LSA :
@@ -522,16 +536,19 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 		case OP_LW :
 			address = gpr_read_32(cpu, instr->base) + (uint32_t) instr->offset;
 			u32 = memory_read_32(cpu, address);
+			if(cpu->exception.raised) break;
 			gpr_write_32(cpu, instr->rt, u32);
 			break;
 		case OP_LWC1 :
 			address = gpr_read_32(cpu, instr->base) + (uint32_t) instr->offset;
 			u32 = memory_read_32(cpu, address);
+			if(cpu->exception.raised) break;
 			fpr_write_32(cpu, instr->ft, u32);
 			break;
 		case OP_LWPC :
 			address = cpu->PC + ((uint32_t) instr->offset << 2);
 			u32 = memory_read_32(cpu, address);
+			if(cpu->exception.raised) break;
 			gpr_write_32(cpu, instr->rs, u32);
 			break;
 		case OP_MADDF_D :
@@ -765,6 +782,9 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			address = gpr_read_32(cpu, instr->base) + (uint32_t) instr->offset;
 			memory_write_8(cpu, address, (uint8_t) gpr_read_32(cpu, instr->rt));
 			break;
+		case OP_SDBBP :
+			raise_exception(cpu, EXC_DEBUG_BREAKPOINT, 0);
+			break;
 		case OP_SDC1 :
 			address = gpr_read_32(cpu, instr->base) + (uint32_t) instr->offset;
 			memory_write_64(cpu, address, fpr_read_64(cpu, instr->ft));
@@ -870,9 +890,12 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			u32 = gpr_read_32(cpu, instr->rt) >> u8;
 			gpr_write_32(cpu, instr->rd, u32);
 			break;
+		case OP_SIGRIE :
+			raise_exception(cpu, EXC_RESERVED_INSTRUCTION, 0);
+			break;
 		case OP_SUB :
 			i64 = (int64_t) (int32_t) gpr_read_32(cpu, instr->rs) - (int64_t) (int32_t) gpr_read_32(cpu, instr->rt);
-			if(i64 > INT32_MAX || i64 < INT32_MIN) signal_exception(EXC_INTEGER_OVERFLOW);
+			if(i64 > INT32_MAX || i64 < INT32_MIN) raise_exception(cpu, EXC_INTEGER_OVERFLOW, 0);
 			else gpr_write_32(cpu, instr->rd, (uint32_t) i64);
 			break;
 		case OP_SUBU :
@@ -900,23 +923,26 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 			address = gpr_read_32(cpu, instr->base) + (uint32_t) instr->offset;
 			memory_write_32(cpu, address, fpr_read_32(cpu, instr->ft));
 			break;
+		case OP_SYSCALL :
+			raise_exception(cpu, EXC_SYSTEM_CALL, 0);
+			break;
 		case OP_TEQ :
-			if(gpr_read_32(cpu, instr->rs) == gpr_read_32(cpu, instr->rt)) signal_exception(EXC_TRAP);
+			if(gpr_read_32(cpu, instr->rs) == gpr_read_32(cpu, instr->rt)) raise_exception(cpu, EXC_TRAP, 0);
 			break;
 		case OP_TGE :
-			if((int32_t) gpr_read_32(cpu, instr->rs) >= (int32_t) gpr_read_32(cpu, instr->rt)) signal_exception(EXC_TRAP);
+			if((int32_t) gpr_read_32(cpu, instr->rs) >= (int32_t) gpr_read_32(cpu, instr->rt)) raise_exception(cpu, EXC_TRAP, 0);
 			break;
 		case OP_TGEU :
-			if(gpr_read_32(cpu, instr->rs) >= gpr_read_32(cpu, instr->rt)) signal_exception(EXC_TRAP);
+			if(gpr_read_32(cpu, instr->rs) >= gpr_read_32(cpu, instr->rt)) raise_exception(cpu, EXC_TRAP, 0);
 			break;
 		case OP_TLT :
-			if((int32_t) gpr_read_32(cpu, instr->rs) < (int32_t) gpr_read_32(cpu, instr->rt)) signal_exception(EXC_TRAP);
+			if((int32_t) gpr_read_32(cpu, instr->rs) < (int32_t) gpr_read_32(cpu, instr->rt)) raise_exception(cpu, EXC_TRAP, 0);
 			break;
 		case OP_TLTU :
-			if(gpr_read_32(cpu, instr->rs) < gpr_read_32(cpu, instr->rt)) signal_exception(EXC_TRAP);
+			if(gpr_read_32(cpu, instr->rs) < gpr_read_32(cpu, instr->rt)) raise_exception(cpu, EXC_TRAP, 0);
 			break;
 		case OP_TNE :
-			if(gpr_read_32(cpu, instr->rs) != gpr_read_32(cpu, instr->rt)) signal_exception(EXC_TRAP);
+			if(gpr_read_32(cpu, instr->rs) != gpr_read_32(cpu, instr->rt)) raise_exception(cpu, EXC_TRAP, 0);
 			break;
 		case OP_TRUNC_L_D :
 			fp_to_integer(cpu, instr, &fp_double, 64, trunc);
@@ -946,6 +972,15 @@ void execute_instruction(Cpu *cpu, Config *cfg, Instruction *instr)
 		default :
 			break;
 	}
+
+	/* An exception leaves the instruction uncommitted : PC, the pending branch and the slot stay as they were */
+	if(cpu->exception.raised)
+	{
+		cpu->next_PC = pending_PC;
+		return;
+	}
+
+	cpu->slot = SLOT_NONE;
 
 	/* In MIPS32 Release 6, compact branches skip delay slot
 	   This way we ensure this kind of instruction behaves properly */

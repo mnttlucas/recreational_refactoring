@@ -90,12 +90,13 @@ static int load_program(const char *path, Program *prog, int hex)
 	return(1);
 }
 
-static void run_program(Cpu *cpu, Config *cfg, const Program *prog)
+/* Returns 1 if an exception stopped the program, 0 if it ran to its end */
+static int run_program(Cpu *cpu, Config *cfg, const Program *prog)
 {
 	uint32_t pc_index = 0;
 
 	printf("\n-- Instruction  execute --\n\n");
-	while(pc_index < prog->count)
+	while(pc_index < prog->count && !cpu->exception.raised)
 	{
 		if(cfg->step) clear_output();
 		execute_instruction(cpu, cfg, &prog->items[pc_index]);
@@ -104,8 +105,10 @@ static void run_program(Cpu *cpu, Config *cfg, const Program *prog)
 			cpu_dump(cpu, cfg);
 			wait_for_enter();
 		}
-		pc_index = cpu->PC / 4;
+		pc_index = cpu->PC / WORD_SIZE;
 	}
+
+	return(cpu->exception.raised);
 }
 
 static void write_hex(FILE *out, const Program *prog)
@@ -130,6 +133,8 @@ void interactive_mode(Cpu *cpu, Config *cfg)
 		{
 			execute_instruction(cpu, cfg, &cur);
 			cpu_dump(cpu, cfg);
+			/* Each instruction is typed on its own, nothing is stopped : the state is the one before the instruction */
+			cpu->exception.raised = 0;
 		}
 	}
 }
@@ -149,14 +154,13 @@ int batch_mode(Cpu *cpu, Config *cfg, char *path_in, char *path_out_hex, char *p
 		}
 		if(cfg->step || out_regs)
 		{
-			run_program(cpu, cfg, &prog);
+			status = run_program(cpu, cfg, &prog) ? EXIT_FAILURE : EXIT_SUCCESS;
 			if(!cfg->step)
 			{
 				if(out_hex) write_hex(out_hex, &prog);
 				cpu_dump(cpu, cfg);
 				write_regs(out_regs, cpu);
 			}
-			status = EXIT_SUCCESS;
 		}
 	}
 

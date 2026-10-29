@@ -83,6 +83,7 @@
 #define FUNCT_FSUB          1
 #define FUNCT_FTRUNC_L      9
 #define FUNCT_FTRUNC_W     13
+#define FUNCT_BREAK        13
 #define FUNCT_INS           4
 #define FUNCT_JALR          9
 #define FUNCT_LSA           5
@@ -94,6 +95,7 @@
 #define FUNCT_SOP33        27
 #define FUNCT_NOR          39
 #define FUNCT_OR           37
+#define FUNCT_SDBBP        14
 #define FUNCT_SEL          16
 #define FUNCT_SELEQZ       53
 #define FUNCT_SELNEZ       55
@@ -108,6 +110,7 @@
 #define FUNCT_SRLV          6
 #define FUNCT_SUB          34
 #define FUNCT_SUBU         35
+#define FUNCT_SYSCALL      12
 #define FUNCT_TEQ          52
 #define FUNCT_TGE          48
 #define FUNCT_TGEU         49
@@ -166,6 +169,8 @@
 #define TRAP_CODE_MASK   UINT32_C(0x0000FFC0)	/* TEQ, TGE... : the code field (bits 15..6) is ignored by the hardware */
 
 /* Offset and immediate sizes */
+#define CODE_SHIFT        6	/* BREAK, SYSCALL, SDBBP : the code field is bits 25..6 */
+#define CODE_20_SIZE     20
 #define IMM_16_SIZE      16
 #define OFFSET_16_SIZE   16
 #define IMM_19_SIZE      19
@@ -196,6 +201,7 @@ When values are zero, it will be implicit */
 #define NAL_RT        16
 #define ROTR_RS        1
 #define ROTRV_SA       1
+#define SIGRIE_RT     23
 #define SEB_SA        16
 #define SEH_SA        24
 #define WSBH_SA        2

@@ -12,16 +12,4 @@ char *read_full_line(FILE *in);
 int32_t sign_extend(int32_t value, uint8_t bits);
 uint32_t low_mask(unsigned bits);
 
-typedef enum
-{
-	EXC_ADDRESS_ERROR,
-	EXC_FP_INVALID_OPERATION,
-	EXC_FP_UNIMPLEMENTED_OPERATION,
-	EXC_INTEGER_OVERFLOW,
-	EXC_RESERVED_INSTRUCTION,
-	EXC_TRAP
-} Exception;
-
-void signal_exception(Exception exception);
-
 #endif	/* UTILS_H */

@@ -296,6 +296,16 @@ static void build_rd_rt_sa_instruction(Instruction *instr, int funct_code)
 	instr->encoding = encode_r(OPCODE_SPECIAL, rs_value, instr->rt, instr->rd, instr->sa, (uint32_t) funct_code);
 }
 
+static void build_code_20_instruction(Instruction *instr, int funct_code)
+{
+	instr->encoding = ((uint32_t) instr->immediate << CODE_SHIFT) | (uint32_t) funct_code;
+}
+
+static void build_code_16_instruction(Instruction *instr, int op_code)
+{
+	instr->encoding = encode_i((uint32_t) op_code, 0, SIGRIE_RT, instr->immediate, IMM_16_SIZE);
+}
+
 static void build_rs_instruction(Instruction *instr, int funct_code)
 {
 	instr->encoding = encode_r(OPCODE_SPECIAL, instr->rs, 0, 0, 0, (uint32_t) funct_code);
@@ -615,6 +625,18 @@ static void decode_rd_rt_sa_operands(char *line, Instruction *instr)
 	if(instr->rd == INVALID_REGISTER || instr->rt == INVALID_REGISTER) instr->error |= ERR_INVALID_REGISTER;
 }
 
+/* The code of BREAK, SYSCALL, SDBBP (20 bits) and SIGRIE (16 bits) is optional, 0 by default */
+static void decode_code_operand(char *line, Instruction *instr, uint8_t size)
+{
+	char code[16];
+	instr->immediate = 0;
+	if(sscanf(line, " %15s ", code) == 1)
+	{
+		instr->immediate = parse_integer(code, instr);
+		check_field(instr, instr->immediate, size, RANGE_UNSIGNED);	/* the code stays unsigned, only the range matters */
+	}
+}
+
 static void decode_rs_operand(char *line, Instruction *instr)
 {
 	char rs[8];
@@ -836,6 +858,16 @@ void decode_assemble(const InstructionDesc *id, char *ptr, Instruction *instr)
 		case FMT_NOP :
 			build_cmd_instruction(instr, FUNCT_SLL, OPCODE_SPECIAL, 0, 0, 0, 0);
 			snprintf(instr->to_string, sizeof(instr->to_string), "NOP");
+			break;
+		case FMT_CODE_16 :
+			decode_code_operand(ptr, instr, IMM_16_SIZE);
+			build_code_16_instruction(instr, id->code);
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s %d", id->mnemonic, instr->immediate);
+			break;
+		case FMT_CODE_20 :
+			decode_code_operand(ptr, instr, CODE_20_SIZE);
+			build_code_20_instruction(instr, id->code);
+			snprintf(instr->to_string, sizeof(instr->to_string), "%s %d", id->mnemonic, instr->immediate);
 			break;
 		case FMT_FD_FS :
 			decode_fd_fs_operands(ptr, instr);

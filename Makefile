@@ -13,6 +13,7 @@ SRC = src/main.c \
       src/modes.c \
       src/decode.c \
       src/display.c \
+      src/exception.c \
       src/execute.c \
       src/fp.c \
       src/hex.c \
